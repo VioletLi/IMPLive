@@ -19,6 +19,12 @@ parseEquation =
     run (equation |. end)
 
 
+hole : Parser Term
+hole =
+    succeed (\spc -> THole [spc] (HInter 0))
+        |. keyword "_"
+        |= mspaces
+
 -- TInt
 int_ : Parser Term
 int_ =
@@ -428,6 +434,7 @@ aexpr =
     , tmap
     , backtrackable tloc
     , backtrackable empList
+    , backtrackable hole
     ]
 
 

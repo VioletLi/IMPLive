@@ -43,7 +43,7 @@ type Term
     | TMap WS Term Term Term
     | TLoc WS Int
     | TString WS String
-    -- | THole WS HoleName
+    | THole WS HoleName
 
 -- Div : Divide ; RDiv: Divide Rounding
 type Bop = Add | Sub | Mul | Div | Eq | Lt | Gt | Le | Ge | And | Or | Cat | RDiv
@@ -74,8 +74,8 @@ type Value
     | VNew String Value
     | VError Info
     | VHtml String Value Value Value
-    -- | VHole HoleName Env
-    -- | IndexedHole HoleName (List (Int, String, Value))
+    | VHole HoleName Env
+    | IndexedHole HoleName (List (Int, String, Value))
 
 type Pattern
     = PVar WS String
