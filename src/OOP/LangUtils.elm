@@ -3,200 +3,202 @@ module OOP.LangUtils exposing (..)
 import OOP.Syntax exposing (..)
 import Debug exposing (toString)
 import OOP.Subclassing exposing (..)
-import OOP.Printer.Value exposing (printValue)
+import OOP.Printer.Value exposing (printValue, printHoleName)
 import OOP.Utils exposing (findByName, updateValueInDict)
 
 
-processAfterParse : Term -> Term
-processAfterParse term =
+processAfterParse : Term -> Int -> (Term, Int)
+processAfterParse term holeID =
     case term of
+        THole ws (HInter _) -> (THole ws (HOri holeID), holeID + 1)
+
         TLam ws p t ->
             let
-                t_ =
-                    processAfterParse t
+                (t_, holeID_) =
+                    processAfterParse t holeID
             in
-                TLam ws p t_
+                (TLam ws p t_, holeID_)
         
         TApp ws t1 t2 ->
             let
-                t1_ =
-                    processAfterParse t1
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
                 
-                t2_ =
-                    processAfterParse t2
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
             in
-                TApp ws t1_ t2_
+                (TApp ws t1_ t2_, holeID__)
 
         TLet ws p t1 t2 ->
             let
-                t1_ =
-                    processAfterParse t1
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
                 
-                t2_ =
-                    processAfterParse t2
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
             in
-                TLet ws p t1_ t2_
+                (TLet ws p t1_ t2_, holeID__)
 
         TLetrec ws p t1 t2 ->
             let
-                t1_ =
-                    processAfterParse t1
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
                 
-                t2_ =
-                    processAfterParse t2
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
             in
-                TLetrec ws p t1_ t2_
+                (TLetrec ws p t1_ t2_, holeID__)
 
         TFix ws t ->
             let
-                t_ =
-                    processAfterParse t
+                (t_, holeID_) =
+                    processAfterParse t holeID
             in
-                TFix ws t_
+                (TFix ws t_, holeID_)
             
         TCase ws guard br ->
             let
-                (br_, _) =
-                    addIDToBranch br 0
+                (br_, _, holeID_) =
+                    addIDToBranch br 0 holeID
             in
-                TCase ws guard br_
+                (TCase ws guard br_, holeID_)
 
         TCons ws t1 t2 ->
             let
-                t1_ =
-                    processAfterParse t1
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
                 
-                t2_ =
-                    processAfterParse t2
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
             in
-                TCons ws t1_ t2_
+                (TCons ws t1_ t2_, holeID__)
 
         TList ws t1 t2 ->
             let
-                t1_ =
-                    processAfterParse t1
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
                 
-                t2_ =
-                    processAfterParse t2
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
             in
-                TList ws t1_ t2_
+                (TList ws t1_ t2_, holeID__)
 
         TTuple2 ws t1 t2 ->
             let
-                t1_ =
-                    processAfterParse t1
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
                 
-                t2_ =
-                    processAfterParse t2
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
             in
-                TTuple2 ws t1_ t2_
+                (TTuple2 ws t1_ t2_, holeID__)
         
         TTuple3 ws t1 t2 t3 ->
             let
-                t1_ =
-                    processAfterParse t1
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
                 
-                t2_ =
-                    processAfterParse t2
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
 
-                t3_ =
-                    processAfterParse t3
+                (t3_, holeID___) =
+                    processAfterParse t3 holeID__
             in
-                TTuple3 ws t1_ t2_ t3_
+                (TTuple3 ws t1_ t2_ t3_, holeID___)
 
         TBPrim ws op t1 t2 ->
             let
-                t1_ =
-                    processAfterParse t1
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
                 
-                t2_ =
-                    processAfterParse t2
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
             in
-                TBPrim ws op t1_ t2_
+                (TBPrim ws op t1_ t2_, holeID__)
 
         TUPrim ws op t ->
             let
-                t_ =
-                    processAfterParse t
+                (t_, holeID_) =
+                    processAfterParse t holeID
             in
-                TUPrim ws op t_
+                (TUPrim ws op t_, holeID_)
 
         TParens ws t ->
             let
-                t_ =
-                    processAfterParse t
+                (t_, holeID_) =
+                    processAfterParse t holeID
             in
-                TParens ws t_
+                (TParens ws t_, holeID_)
 
         TRef ws t ->
             let
-                t_ =
-                    processAfterParse t
+                (t_, holeID_) =
+                    processAfterParse t holeID
             in
-                TRef ws t_
+                (TRef ws t_, holeID_)
 
         TDeRef ws t ->
             let
-                t_ =
-                    processAfterParse t
+                (t_, holeID_) =
+                    processAfterParse t holeID
             in
-                TDeRef ws t_
+                (TDeRef ws t_, holeID_)
 
         TAssign ws t1 t2 ->
             let
-                t1_ =
-                    processAfterParse t1
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
                 
-                t2_ =
-                    processAfterParse t2
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
             in
-                TAssign ws t1_ t2_
+                (TAssign ws t1_ t2_, holeID__)
 
         TField ws t f ->
             let
-                t_ =
-                    processAfterParse t
+                (t_, holeID_) =
+                    processAfterParse t holeID
             in
-                TField ws t_ f
+                (TField ws t_ f, holeID_)
 
         TInvk ws t m ->
             let
-                t_ =
-                    processAfterParse t
+                (t_, holeID_) =
+                    processAfterParse t holeID
             in
-                TInvk ws t_ m
+                (TInvk ws t_ m, holeID_)
 
         TNew ws c t ->
             let
-                t_ =
-                    processAfterParse t
+                (t_, holeID_) =
+                    processAfterParse t holeID
             in
-                TNew ws c t_
+                (TNew ws c t_, holeID_)
         
-        _ -> term
+        _ -> (term, holeID)
 
 
-addIDToBranch : Branch -> ID -> (Branch, ID)
-addIDToBranch br id =
+addIDToBranch : Branch -> ID -> Int -> (Branch, ID, Int)
+addIDToBranch br id holeID =
     case br of
         BSin ws p t ->
             let
-                t_ =
-                    processAfterParse t
+                (t_, holeID_) =
+                    processAfterParse t holeID
             in
-            (BNSin ws id p t_, id+1)
+            (BNSin ws id p t_, id+1, holeID_)
         
         BCom ws b1 b2 ->
             let
-                (b1_, id1) =
-                    addIDToBranch b1 id
+                (b1_, id1, holeID_) =
+                    addIDToBranch b1 id holeID
                 
-                (b2_, id2) =
-                    addIDToBranch b2 id1
+                (b2_, id2, holeID__) =
+                    addIDToBranch b2 id1 holeID_
             in
-                (BCom ws b1_ b2_, id2)
+                (BCom ws b1_ b2_, id2, holeID__)
         
-        _ -> (br, id)
+        _ -> (br, id, holeID)
 
 
 match : Pattern -> Value -> Env
@@ -824,6 +826,13 @@ printEnv env =
         
         [] ->
             "\n"
+
+printHEnv : HEnv -> String
+printHEnv henv =
+    case henv of
+        (hn, env, v) :: henv_ -> 
+            (printHoleName hn) ++ " : " ++ (printEnv env) ++ " => " ++ (printValue v) ++ "\n" ++ (printHEnv henv_)
+        [] -> ""
 
 
 printState : State -> String

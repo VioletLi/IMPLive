@@ -184,6 +184,9 @@ printTerm term =
 
         TLoc [spc] n ->
             "<" ++ (toString n) ++ ">" ++ spc
+        
+        THole [spc] _ ->
+            "_" ++ spc
 
         _ -> 
             "Cannot Print : " ++ (toString term)

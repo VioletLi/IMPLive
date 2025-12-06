@@ -26,6 +26,7 @@ value =
     , loc
     , unit
     , new
+    , vhole
     ]
 
 
@@ -211,3 +212,7 @@ new =
     |= lazy (\_ -> value)
     |. symbol ")"
     |. spaces
+
+-- vhole : Parser Value
+-- vhole = 
+--     succeed

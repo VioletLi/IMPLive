@@ -1,6 +1,6 @@
 module OOP.Printer.Value exposing (..)
 
-import OOP.Syntax exposing (Value(..))
+import OOP.Syntax exposing (Value(..), HoleName(..))
 import Debug exposing (toString)
 import String
 
@@ -26,6 +26,17 @@ printValue v  =
         VNew s arg      -> "new "++s++"("++(printValue arg)++")"
         VHtml s v1 v2 v3 -> printHTML s v1 v2 v3
         VError info    -> info
+        VHole hn _ -> "{" ++ (printHoleName hn) ++ "}"
+        IndexedHole hn _ -> "{" ++ (printHoleName hn) ++ ")"
+
+printHoleName : HoleName -> String
+printHoleName hn =
+    case hn of
+        HField hn_ (HId n) -> (printHoleName hn_)++"·"++(toString n)
+        HInst hn_ n        -> (printHoleName hn_)++"_"++(toString n)
+        HInter n           -> "*"++(toString n)
+        HOri n             -> toString n 
+        _                  -> "Print HoleName Error."
 
 
 printList : Value -> Value -> String
