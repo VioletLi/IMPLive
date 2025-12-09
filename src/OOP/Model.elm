@@ -41,7 +41,7 @@ initModel = { code = ""
             , htmlOutput = ""
             , state = []
             , isConsistent = True
-            , isOnlyObjects = False
+            , isOnlyObjects = True
             , envDict = []
             , classTable = ([],[])
             , templates = []

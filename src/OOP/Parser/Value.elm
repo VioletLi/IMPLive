@@ -3,6 +3,7 @@ module OOP.Parser.Value exposing (..)
 import Parser exposing (..)
 import OOP.Syntax exposing (Value(..))
 import OOP.Parser.Utils exposing (char_, string_, varName)
+import Syntax exposing (HoleName(..))
 
 
 parse : String -> Result (List DeadEnd) Value

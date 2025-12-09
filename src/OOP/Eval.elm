@@ -1,6 +1,7 @@
 module OOP.Eval exposing (..)
 
-import OOP.Syntax exposing(..)
+import OOP.Syntax exposing (..)
+import Syntax exposing (HoleName(..))
 import OOP.Utils exposing (..)
 import OOP.LangUtils exposing (..)
 import Utils exposing (nth)
@@ -9,350 +10,495 @@ import Set exposing (insert, empty, union)
 import Round
 import List
 import Tuple
+import Eval exposing (findCount)
+-- import OOP.Parser.Term exposing (hole)
 
-eval : Env -> State -> ClassTable -> Term -> (Value, State, Invks)
-eval env state classtb term =
+
+
+-- invks只在类成员方法调用的时候更新，记录调用了哪些方法。为什么要记录？
+eval : HEnv -> Env -> State -> ClassTable -> Term -> List (HoleName, Int) -> EvalRes
+eval henv env state classtb term holeCount=
     case term of
 
-        TInt _ n -> (VInt n, state, empty)
+        TInt _ n -> {res = VInt n, state = state, invks = empty, holeIDs = holeCount}
 
-        TFloat _ n -> (VFloat n, state, empty)
+        TFloat _ n -> {res = VFloat n, state = state, invks = empty, holeIDs = holeCount}
 
-        TTrue _ -> (VTrue, state, empty)
+        TTrue _ -> {res = VTrue, state = state, invks = empty, holeIDs = holeCount}
 
-        TFalse _ -> (VFalse, state, empty)
+        TFalse _ -> {res = VFalse, state = state, invks = empty, holeIDs = holeCount}
 
-        TChar _ c -> (VChar c, state, empty)
+        TChar _ c -> {res = VChar c, state = state, invks = empty, holeIDs = holeCount}
 
         TString _ s ->
-            (VString s, state, empty)
+            {res = VString s, state = state, invks = empty, holeIDs = holeCount}
 
         TVar _ s ->
             case findByName s env of
-                Nothing -> (VError "No Such Variable : 01", [], empty)
+                Nothing -> 
+                    errEvalRes "No Such Variable : 01"
 
                 Just v -> 
                     case v of
                         -- TODO: FIX
-                        VFix t -> eval env state classtb (TFix [] t)
-                        _ -> (v, state, empty)
+                        VFix t -> eval henv env state classtb (TFix [] t) holeCount
+                        _ -> 
+                            { res = v
+                            , state = state
+                            , invks = empty
+                            , holeIDs = holeCount
+                            }
 
-        TLam _ p t -> (VClosure p t env, state, empty)
+        TLam _ p t -> 
+            { res = VClosure p t env
+            , state = state
+            , invks = empty
+            , holeIDs = holeCount
+            }
 
         TApp _ t1 t2 ->
-            case eval env state classtb t1 of
+            let res1 = eval henv env state classtb t1 holeCount in
+            case res1.res of
 
-                (VClosure p tf envf, state1, invks1) ->
+                VClosure p tf envf ->
                     case t2 of
                         TFix _ t -> 
                             case p of
-                                PVar _ s -> eval ((s, VFix t)::envf) state1 classtb  tf 
-                                _      -> (VError "Recursion Error : 01.", [], empty)
+                                PVar _ s -> eval henv ((s, VFix t)::envf) res1.state classtb tf res1.holeIDs
+                                _      -> 
+                                    errEvalRes "Recursion Error : 01."
                         _ ->  
                             let 
-                                (v2, state2, invks2) =
-                                    eval env state1 classtb t2
+                                res2 =
+                                    eval henv env res1.state classtb t2 res1.holeIDs
                                 
                                 envm =
-                                    match p v2
+                                    match p res2.res
                             in
                             case envm of
-                                [(_, VError info)] -> (VError info, [], empty)
+                                [(_, VError info)] -> errEvalRes info
                                 _             -> 
                                     let
 
-                                        (v, state3, invks3) =
-                                            eval (envm++envf) state2 classtb tf
+                                        res3 =
+                                            eval henv (envm++envf) res2.state classtb tf res2.holeIDs
                                     in
-                                        (v, state3, union invks1 invks2 |> union invks3)
+                                        {res = res3.res, state = res3.state, invks = union res1.invks res2.invks |> union res3.invks, holeIDs = res3.holeIDs}
 
-                _ -> (VError "Not Applicable : 01.", [], empty)
+                _ -> errEvalRes "Not Applicable : 01."
 
         TLet _ p t1 t2 ->
-            eval env state classtb (TApp [] (TLam [] p t2) t1)
+            eval henv env state classtb (TApp [] (TLam [] p t2) t1) holeCount
 
         TLetrec _ p t1 t2 ->
-            eval env state classtb 
-                (TApp [] (TLam [] p t2) (TFix [] (TLam [] p t1)))
+            eval henv env state classtb 
+                (TApp [] (TLam [] p t2) (TFix [] (TLam [] p t1))) holeCount
 
         TFix _ t ->
-            eval env state classtb (TApp [] t (TFix [] t))
+            eval henv env state classtb (TApp [] t (TFix [] t)) holeCount
 
         TCase _ (TVar _ s) branch ->
             case findByName s env of
                 Just v ->
-                    let
-                        res = 
-                            matchCase v branch 
-                    in
-                    case res.envm of
-                        [(_, VError info)] -> (VError info, [], empty)
-                        _ -> eval (res.envm++env) state classtb res.ti
+                    case v of
+                        VHole _ _ _ ->
+                            let n = findCount tempHoleCount holeCount in
+                            { res = VHole (HInter (n + 1)) env state
+                            , state = state
+                            , invks = empty
+                            , holeIDs = (tempHoleCount, n+1)::holeCount }
+                        _ ->
+                            let
+                                res = 
+                                    matchCase v branch 
+                            in
+                            case res.envm of
+                                [(_, VError info)] -> errEvalRes info
+                                _ -> eval henv (res.envm++env) state classtb res.ti holeCount
                 
                 Nothing ->
-                    (VError "No Such Variable : 02", [], empty)
+                    errEvalRes "No Such Variable : 02"
         
-        TCons _ t1 t2 ->
-            let 
-                (v1, state1, invks1) =
-                    eval env state classtb t1
-
-                (v2, state2, invks2) =
-                    eval env state1 classtb t2
+        THole _ hn ->
+            let v = findOOPValue hn (env, state) henv
             in
-                (VCons v1 v2, state2, union invks1 invks2)
+                case v of
+                    Nothing -> 
+                        let n = findCount hn holeCount in 
+                            { res = VHole (HInst hn (n+1)) env state
+                            , state = state
+                            , invks = empty
+                            , holeIDs = (hn, n+1)::holeCount }
+                    Just v_ -> 
+                        { res = v_
+                        , state = state
+                        , invks = empty
+                        , holeIDs = holeCount}
+
+        TCons _ t1 t2 ->
+        -- 只有tcons，x::_会出现这种情况，[x,_]不需要处理res2是hole的结果
+            let 
+                res1 =
+                    eval henv env state classtb t1 holeCount
+
+                res2 =
+                    eval henv env res1.state classtb t2 res1.holeIDs
+            in
+                case res2.res of
+                    VHole _ _ _ -> 
+                        let n = findCount tempHoleCount res2.holeIDs in
+                        {res = VHole (HInter (n+1)) env res2.state, state = res2.state, invks = union res1.invks res2.invks, holeIDs = (tempHoleCount, (n+1))::res2.holeIDs}
+                    _ ->
+                        {res = VCons res1.res res2.res, state = res2.state, invks = union res1.invks res2.invks, holeIDs = res2.holeIDs}
 
         TList _ t1 t2 ->
             let 
-                (v1, state1, invks1) =
-                    eval env state classtb t1
+                res1 =
+                    eval henv env state classtb t1 holeCount
 
-                (v2, state2, invks2) =
-                    eval env state1 classtb t2
+                res2 =
+                    eval henv env res1.state classtb t2 res1.holeIDs
             in
-                (VCons v1 v2, state2, union invks1 invks2)
+                {res = VCons res1.res res2.res, state = res2.state, invks = union res1.invks res2.invks, holeIDs = res2.holeIDs}
 
-        TNil _ -> (VNil, state, empty)
+        TNil _ -> {res = VNil, state = state, invks = empty, holeIDs = holeCount}
 
-        TEmpList _ -> (VNil, state, empty)
+        TEmpList _ -> {res = VNil, state = state, invks = empty, holeIDs = holeCount}
 
         TTuple2 _ t1 t2 ->
             let 
-                (v1, state1, invks1) =
-                    eval env state classtb t1
+                res1 =
+                    eval henv env state classtb t1 holeCount
 
-                (v2, state2, invks2) =
-                    eval env state1 classtb t2
+                res2 =
+                    eval henv env res1.state classtb t2 res1.holeIDs
             in
-                (VTuple2 v1 v2, state2, union invks1 invks2)
+                {res = VTuple2 res1.res res2.res, state = res2.state, invks = union res1.invks res2.invks, holeIDs = res2.holeIDs}
 
         TTuple3 _ t1 t2 t3 ->
             let 
-                (v1, state1, invks1) =
-                    eval env state classtb t1
+                res1 =
+                    eval henv env state classtb t1 holeCount
 
-                (v2, state2, invks2) =
-                    eval env state1 classtb t2
+                res2 =
+                    eval henv env res1.state classtb t2 res1.holeIDs
 
-                (v3, state3, invks3) =
-                    eval env state2 classtb t3
+                res3 =
+                    eval henv env res2.state classtb t3 res2.holeIDs
             in
-                (VTuple3 v1 v2 v3, state3, union invks1 invks2 |> union invks3)
+                {res = VTuple3 res1.res res2.res res3.res, state = res3.state, invks = union res1.invks res2.invks |> union res3.invks, holeIDs = res3.holeIDs}
 
         TBPrim _ op t1 t2 ->
             let 
-                (v1, state1, invks1) = 
-                    eval env state classtb t1 
+                res1 = 
+                    eval henv env state classtb t1 holeCount
 
-                (v2, state2, invks2) = 
-                    eval env state1 classtb t2
+                res2 = 
+                    eval henv env res1.state classtb t2 res1.holeIDs
                 
                 invks =
-                    union invks1 invks2
+                    union res1.invks res2.invks
+
+                v1 = res1.res
+                v2 = res2.res
             in
                 case v1 of
                     VInt n1 ->
                         case v2 of
                             VInt n2 -> 
-                                (intOp op n1 n2, state2, invks)
+                                {res = intOp op n1 n2, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                             
                             VFloat n2 ->
-                                (floatOp op (toFloat n1) n2, state2, invks)
+                                {res = floatOp op (toFloat n1) n2, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                             
-                            _ -> (VError "Operand Error : 01.", [], empty)
+                            VHole _ _ _ ->
+                                let 
+                                    n = 
+                                        findCount tempHoleCount res2.holeIDs
+                                in
+                                {res = VHole (HInter (n+1)) env res2.state, state = res2.state, invks = invks, holeIDs = (tempHoleCount, n+1)::res2.holeIDs}
+
+                            _ -> errEvalRes "Operand Error : 01."
 
                     VFloat n1 ->
                         case v2 of
                             VInt n2   -> 
-                                (floatOp op n1 (toFloat n2), state2, invks)
+                                {res = floatOp op n1 (toFloat n2), state = res2.state, invks = invks, holeIDs = res2.holeIDs}
 
                             VFloat n2 -> 
-                                (floatOp op n1 n2, state2, invks)
+                                {res = floatOp op n1 n2, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                             
-                            _         -> (VError "Operand Error : 02.", [], empty)
+                            VHole _ _ _ ->
+                                let 
+                                    n = 
+                                        findCount tempHoleCount res2.holeIDs
+                                in
+                                {res = VHole (HInter (n+1)) env res2.state, state = res2.state, invks = invks, holeIDs = (tempHoleCount, n+1)::res2.holeIDs}
+
+                            _         -> errEvalRes "Operand Error : 02."
 
                     VTrue ->
                         case v2 of
                             VTrue ->
                                 case op of
-                                And -> (VTrue, state2, invks)
-                                Or  -> (VTrue, state2, invks)
-                                _   -> (VError "Operator Error : 03.", [], empty)
+                                And -> {res = VTrue, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
+                                Or  -> {res = VTrue, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
+                                _   -> errEvalRes "Operator Error : 03."
                             
                             VFalse ->
                                 case op of
-                                    And -> (VFalse, state2, invks)
-                                    Or  -> (VTrue, state2, invks)
-                                    _   -> (VError "Operator Error: 04.", [], empty)
+                                    And -> {res = VFalse, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
+                                    Or  -> {res = VTrue, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
+                                    _   -> errEvalRes "Operator Error: 04."
+                            VHole _ _ _ ->
+                                if op == And || op == Or then
+                                    let 
+                                        n = 
+                                            findCount tempHoleCount res2.holeIDs
+                                    in
+                                    {res = VHole (HInter (n+1)) env res2.state, state = res2.state, invks = invks, holeIDs = (tempHoleCount, n+1)::res2.holeIDs}
+                                else
+                                    errEvalRes "Operator Error : 23."
 
-                            _ -> (VError "Operand Error : 03.", [], empty)
+                            _ -> errEvalRes "Operand Error : 03."
 
                     VFalse ->
                         case v2 of
                             VTrue ->
                                 case op of
-                                    And -> (VFalse, state2, invks)
-                                    Or  -> (VTrue, state2, invks)
-                                    _   -> (VError "Operator Error : 05.", [], empty)
+                                    And -> {res = VFalse, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
+                                    Or  -> {res = VTrue, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
+                                    _   -> errEvalRes "Operator Error : 05."
                             
                             VFalse ->
                                 case op of
-                                    And -> (VFalse, state2, invks)
-                                    Or  -> (VFalse, state2, invks)
-                                    _   -> (VError "Operator Error : 06.", [], empty)
+                                    And -> {res = VFalse, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
+                                    Or  -> {res = VFalse, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
+                                    _   -> errEvalRes "Operator Error : 06."
+
+                            VHole _ _ _ ->
+                                if op == And || op == Or then
+                                    let 
+                                        n = 
+                                            findCount tempHoleCount res2.holeIDs
+                                    in
+                                    {res = VHole (HInter (n+1)) env res2.state, state = res2.state, invks = invks, holeIDs = (tempHoleCount, n+1)::res2.holeIDs}
+                                else
+                                    errEvalRes "Operator Error : 22."
 
                             _ ->
-                                (VError "Operand Error : 04.", [], empty)
+                                errEvalRes "Operand Error : 04."
 
                     VCons _ _ ->
                         case v2 of
                             VCons _ _ ->
                                 if op == Cat then
-                                    (appendValueList v1 v2, state2, invks)
+                                    {res = appendValueList v1 v2, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else if op == Eq then
-                                    (if v1 == v2 then VTrue else VFalse, state2, invks)
+                                    {res = if v1 == v2 then VTrue else VFalse, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else
-                                    (VError "Operator Error : 07.", [], empty)
+                                    errEvalRes "Operator Error : 07."
                             
                             VNil ->
                                 if op == Cat then
-                                    (appendValueList v1 v2, state2, invks)
+                                    {res = appendValueList v1 v2, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else if op == Eq then
-                                    (VFalse, state2, invks)
+                                    {res = VFalse, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else
-                                    (VError "Operator Error : 08.", [], empty)
+                                    errEvalRes "Operator Error : 08."
+                            VHole _ _ _ ->
+                                if op == Cat || op == Eq then
+                                    let n = findCount tempHoleCount res2.holeIDs in
+                                    {res = VHole (HInter (n+1)) env res2.state, state = res2.state, invks = invks, holeIDs = (tempHoleCount, n+1)::res2.holeIDs}
+                                else
+                                    errEvalRes "Operator Error : 21."
                             _ ->
-                                (VError "Operand Error : 05.", [], empty)
+                                errEvalRes "Operand Error : 05."
 
                     VNil ->
                         case v2 of
                             VCons _ _ ->
                                 if op == Cat then
-                                    (appendValueList v1 v2, state2, invks)
+                                    {res = appendValueList v1 v2, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else if op == Eq then
-                                    (VFalse, state2, invks)
+                                    {res = VFalse, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else
-                                    (VError "Operator Error : 09.", [], empty)
+                                    errEvalRes "Operator Error : 09."
                             
                             VNil ->
                                 if op == Cat then
-                                    (VNil, state2, invks)
+                                    {res = VNil, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else if op == Eq then
-                                    (VTrue, state2, invks)
+                                    {res = VTrue, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else
-                                    (VError "Operator Error : 10.", [], empty)
-                            
+                                    errEvalRes "Operator Error : 10."
+                            VHole _ _ _ ->
+                                if op == Cat || op == Eq then
+                                    let 
+                                        n = 
+                                            findCount tempHoleCount res2.holeIDs
+                                    in
+                                    {res = VHole (HInter (n+1)) env res2.state, state = res2.state, invks = invks, holeIDs = (tempHoleCount, n+1)::res2.holeIDs}
+                                else 
+                                    errEvalRes "Operator Error : 19."
                             _ ->
-                                (VError "Operand Error : 07.", [], empty)
+                                errEvalRes "Operand Error : 07."
 
                     VChar c1 ->
                         case v2 of
                             VChar c2 ->
                                 if op == Eq then 
-                                    (if c1 == c2 then VTrue else VFalse, state2, invks)
+                                    {res = if c1 == c2 then VTrue else VFalse, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else
-                                    (VError "Operator Error : 18", [], empty)
-                                
-                            _ -> (VError "Oprand Error : 14", [], empty)
+                                    errEvalRes "Operator Error : 18"
+                            VHole _ _ _ ->
+                                if op == Eq then
+                                    let 
+                                        n = 
+                                            findCount tempHoleCount res2.holeIDs
+                                    in
+                                    {res = VHole (HInter (n+1)) env res2.state, state = res2.state, invks = invks, holeIDs = (tempHoleCount, n+1)::res2.holeIDs}
+                                else
+                                    errEvalRes "Operator Error : 20."
+                            _ -> errEvalRes "Oprand Error : 14"
                     
                     VString s1 ->
                         case v2 of
                             VString s2 ->
                                 if op == Cat then
-                                    (VString (s1 ++ s2), state2, invks)
+                                    {res = VString (s1 ++ s2), state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else if op == Eq then
-                                    (if v1 == v2 then VTrue else VFalse, state2, invks)
+                                    {res = if v1 == v2 then VTrue else VFalse, state = res2.state, invks = invks, holeIDs = res2.holeIDs}
                                 else
-                                    (VError "Operator Error : 12.", [], empty)
+                                    errEvalRes "Operator Error : 25."
+                            VHole _ _ _ ->
+                                if op == Eq || op == Cat then
+                                    let 
+                                        n = 
+                                            findCount tempHoleCount res2.holeIDs
+                                    in
+                                    {res = VHole (HInter (n+1)) env res2.state, state = res2.state, invks = invks, holeIDs = (tempHoleCount, n+1)::res2.holeIDs}
+                                else
+                                    errEvalRes "Operator Error : 24."
 
                             _ ->
-                                (VError "Operand Error : 12.", [], empty)
+                                errEvalRes "Operand Error : 12."
+                    VHole _ _ _ ->
+                        
+                        let 
+                            n = 
+                                findCount tempHoleCount res2.holeIDs
+                        in
+                        {res = VHole (HInter (n+1)) env res2.state, state = res2.state, invks = invks, holeIDs = (tempHoleCount, n+1)::res2.holeIDs}
 
                     _ ->
-                        (VError "Operand Error : 08.", [], empty)
+                        errEvalRes "Operand Error : 08."
 
         TUPrim _ op t ->
             case op of
                 Neg ->
                     let 
-                        (v, state1, invks1) =
-                            eval env state classtb t 
+                        res =
+                            eval henv env state classtb t holeCount
                     in
-                        case v of
+                        case res.res of
                             VInt n    ->
-                                (VInt (0-n), state1, invks1)
+                                {res | res = VInt (0-n)}
 
                             VFloat n  ->
-                                (VFloat (0-n), state1, invks1)
+                                {res | res = VFloat (0-n)}
+
+                            VHole _ _ _ ->
+                        
+                                let 
+                                    n = 
+                                        findCount tempHoleCount res.holeIDs
+                                in
+                                {res = VHole (HInter (n+1)) env res.state, state = res.state, invks = res.invks, holeIDs = (tempHoleCount, n+1)::res.holeIDs}
 
                             _         ->
-                                (VError "Operand Error : 09.", [], empty)
+                                errEvalRes "Operand Error : 09."
                 Not ->
                     let 
-                        (v, state1, invks1) =
-                            eval env state classtb t 
+                        res =
+                            eval henv env state classtb t holeCount
                     in
-                    case v of
+                    case res.res of
                         VTrue     ->
-                            (VFalse, state1, invks1)
+                            {res | res = VFalse}
                         
                         VFalse    ->
-                            (VTrue, state1, invks1)
+                            {res | res = VTrue}
+
+                        VHole _ _ _ ->
+                        
+                            let 
+                                n = 
+                                    findCount tempHoleCount res.holeIDs
+                            in
+                            {res = VHole (HInter (n+1)) env res.state, state = res.state, invks = res.invks, holeIDs = (tempHoleCount, n+1)::res.holeIDs}
+
     
                         _         ->
-                            (VError "Operand Error : 10.", [], empty)
+                            errEvalRes "Operand Error : 10."
 
         TParens _ t ->
-            eval env state classtb t
+            eval henv env state classtb t holeCount
 
         TRef _ t ->
             let
-                (v, state1, invks1) =
-                    eval env state classtb t
+                res =
+                    eval henv env state classtb t holeCount
             in
-                (VLoc (List.length state1), state1++[v], invks1)
+                {res = VLoc (List.length res.state), state = res.state++[res.res], invks = res.invks, holeIDs = res.holeIDs}
 
         TDeRef _ t ->
             let
-                (v, state1, invks1) =
-                    eval env state classtb t
+                res =
+                    eval henv env state classtb t holeCount
             in
-                case v of
+                case res.res of
                     VLoc n ->
-                        case nth n state of
+                        case nth n res.state of
                             Just val ->
-                                (val, state1, invks1)
+                                {res = val, state = res.state, invks = res.invks, holeIDs = res.holeIDs}
                             
                             Nothing ->
-                                (VError "Index Out Of Range : 01.", [], empty)
+                                errEvalRes "Index Out Of Range : 01."
+                    VHole _ _ _ ->
+                        let 
+                                n = 
+                                    findCount tempHoleCount res.holeIDs
+                            in
+                            {res = VHole (HInter (n+1)) env res.state, state = res.state, invks = res.invks, holeIDs = (tempHoleCount, n+1)::res.holeIDs}
 
-                    _ -> (VError "Not a Reference : 01.", [], empty)
+                    _ -> errEvalRes "Not a Reference : 01."
                 
         TAssign _ t1 t2 ->
             let
-                (v1, state1, invks1) =
-                    eval env state classtb t1
+                res1 =
+                    eval henv env state classtb t1 holeCount
                 
-                (v2, state2, invks2) =
-                    eval env state1 classtb t2
+                res2 =
+                    eval henv env res1.state classtb t2 res1.holeIDs
             in
-                case v1 of
+                case res1.res of
                     VLoc n ->
-                        (VUnit, replace n v2 state2, union invks1 invks2)
+                        {res = VUnit, state = replace n res2.res res2.state, invks = union res1.invks res2.invks, holeIDs = res2.holeIDs}
 
 
-                    _ -> (VError "Not a Reference : 02.", [], empty)
+                    _ -> errEvalRes "Not a Reference : 02."
 
-        TUnit _ -> (VUnit, state, empty)
+        TUnit _ -> {res = VUnit, state = state, invks = empty, holeIDs = holeCount}
 
         TField _ t1 t2 ->
             case t2 of
                 TVar _ f ->
                     let
-                        (v1, state1, invks1) =
-                            eval env state classtb t1
+                        res1 =
+                            eval henv env state classtb t1 holeCount
                     in
-                        case v1 of
+                        case res1.res of
                         VNew class args ->
                             let
                                 fields =
@@ -365,22 +511,22 @@ eval env state classtb term =
                                     findIndexValueList index args
                             in
                                 case val of
-                                    Just v -> (v, state1, invks1)
+                                    Just v -> {res = v, state = res1.state, invks = res1.invks, holeIDs = res1.holeIDs}
 
-                                    Nothing -> (VError "No Such Field : 01.", [], empty)
+                                    Nothing -> errEvalRes "No Such Field : 01."
 
-                        _ -> (VError "Not an Object : 01.", [], empty)
+                        _ -> errEvalRes "Not an Object : 01."
 
-                _ -> (VError "Not a Variable : 01.", [], empty)
+                _ -> errEvalRes "Not a Variable : 01."
 
         TInvk _ t1 t2 ->
             case t2 of
                 TVar _ m ->
                     let
-                        (v1, state1, invks1) =
-                            eval env state classtb t1
+                        res1 =
+                            eval henv env state classtb t1 holeCount
                     in
-                        case v1 of
+                        case res1.res of
                             VNew class _ ->
                                 let
                                     res =
@@ -388,75 +534,95 @@ eval env state classtb term =
                                 in
                                     case res of
                                         Just (_, (_, (_, p,t))) ->
-                                            ( VClosure p t (("this",v1)::env), state1
-                                            , insert (class, m) invks1)
+                                            { res = VClosure p t (("this",res1.res)::env), state = res1.state
+                                            , invks = insert (class, m) res1.invks, holeIDs = res1.holeIDs}
 
                                         Nothing ->
-                                            (VError "No Such Method : 01.", [], empty)
+                                            errEvalRes "No Such Method : 01."
 
-                            _ -> (VError "Not an Object : 02.", [], empty)
+                            _ -> errEvalRes "Not an Object : 02."
 
                 _ ->
-                    (VError "Not a Variable : 02.", [], empty)
+                    errEvalRes "Not a Variable : 02."
 
         TNew _ class ts ->
             let
-                (vs, state1, invks1) =
-                    eval env state classtb ts
+                res =
+                    eval henv env state classtb ts holeCount
             in
-                (VNew class vs, state1, invks1)
+                {res = VNew class res.res, state = res.state, invks = res.invks, holeIDs = res.holeIDs}
 
-        TError info -> (VError info, [], empty)
+        TError info -> errEvalRes info
 
         TSeq _ t1 t2 ->
             let
-                (_, state1, invks1) =
-                    eval env state classtb t1
-
-                (v2, state2, invks2) =
-                    eval env state1 classtb t2
+                res1 =
+                    eval henv env state classtb t1 holeCount
             in
-                (v2, state2, union invks1 invks2)
+            case res1.res of
+                VUnit ->
+                    let
+                        res2 =
+                            eval henv env res1.state classtb t2 res1.holeIDs
+                    in
+                        {res = res2.res, state = res2.state, invks = union res1.invks res2.invks, holeIDs = res2.holeIDs}
+                _ -> errEvalRes "First term of sequence is not unit : 01."
 
         -- TLoc _ n -> (VLoc n, state)
 
         THtml _ s t1 t2 t3 ->
             let 
-                (v1, state1, invks1) = 
-                    eval env state classtb t1 
+                res1 = 
+                    eval henv env state classtb t1 holeCount
 
-                (v2, state2, invks2) = 
-                    eval env state1 classtb t2
+                res2 = 
+                    eval henv env res1.state classtb t2 res1.holeIDs
 
-                (v3, state3, invks3) = 
-                    eval env state2 classtb t3
+                res3 = 
+                    eval henv env res2.state classtb t3 res2.holeIDs
             in
-                (VHtml s v1 v2 v3, state3, union invks1 invks2 |> union invks3)
+                {res = VHtml s res1.res res2.res res3.res, state = res3.state, invks = union res1.invks res2.invks |> union res3.invks, holeIDs = res3.holeIDs}
 
         TToStr _ t ->
             let
-                (v, state1, invks1) =
-                    eval env state classtb t
+                res =
+                    eval henv env state classtb t holeCount
             in
-                (v |> printValue |> VString, state1, invks1)
+            case res.res of
+                VHole _ _ _ -> 
+                    let 
+                        n = 
+                            findCount tempHoleCount res.holeIDs
+                    in
+                    {res = VHole (HInter (n+1)) env res.state, state = res.state, invks = res.invks, holeIDs = (tempHoleCount, n+1)::res.holeIDs}
+                _ ->
+                    {res = res.res |> printValue |> VString, state = res.state, invks = res.invks, holeIDs = res.holeIDs}
 
         TMap _ _ f ls ->
             let
-                (v1, state1, invks1) =
-                    eval env state classtb f
+                res1 =
+                    eval henv env state classtb f holeCount
 
-                (v2, state2, invks2) =
-                    eval env state1 classtb ls
+                res2 =
+                    eval henv env res1.state classtb ls res1.holeIDs
                 
-                (v3, state3, invks3) =
-                    vmap v1 v2 state2 classtb
+                res3 =
+                    vmap henv res1.res res2.res res2.state classtb res2.holeIDs
             in
-                (v3, state3, union invks1 invks2 |> union invks3)
+                {res = res3.res, state = res3.state, invks = union res1.invks res2.invks |> union res3.invks, holeIDs = res3.holeIDs}
 
         TLoc _ n ->
-            (VLoc n, state, empty)
+            {res = VLoc n, state = state, invks = empty, holeIDs = holeCount}
         
-        _ -> (VError "No Such Term : 01.", [], empty)
+        _ -> errEvalRes "No Such Term : 01."
+
+errEvalRes : String -> EvalRes
+errEvalRes info =
+    { res = VError info
+    , state = []
+    , invks = empty
+    , holeIDs = []
+    }
 
 
 boolOp : Bool -> Value
@@ -499,8 +665,8 @@ floatOp op n1 n2 =
         _  -> VError "Operator Error : 02."
 
 
-vmap : Value -> Value -> State -> ClassTable -> (Value, State, Invks)
-vmap v1 v2 state classtb =
+vmap : HEnv -> Value -> Value -> State -> ClassTable -> List (HoleName, Int) -> EvalRes
+vmap henv v1 v2 state classtb holeIDs =
     case v1 of
         VClosure p t envf ->
             case v2 of
@@ -510,22 +676,33 @@ vmap v1 v2 state classtb =
                             match p v21
                     in
                     case envm of
-                        [(_, VError info)] -> (VError info, [], empty)
+                        [(_, VError info)] -> errEvalRes info
                         _             ->
                             let
-                                (v21_, state1, invks1) =
-                                    eval (envm++envf) state classtb t
+                                res1 =
+                                    eval henv (envm++envf) state classtb t holeIDs
                                 
-                                (v22_, state2, invks2) =
-                                    vmap v1 v22 state1 classtb
+                                res2 =
+                                    vmap henv res1.res v22 res1.state classtb res1.holeIDs
                             in
-                                (VCons v21_ v22_, state2, union invks1 invks2)
+                                {res = VCons res1.res res2.res, state = res2.state, invks = union res1.invks res2.invks, holeIDs = res2.holeIDs}
 
                 VNil ->
-                    (VNil, state, empty)
+                    {res = VNil, state = state, invks = empty, holeIDs = holeIDs}
 
                 _ ->
-                    (VError "The third argument to map_ must be a list : 01.", [], empty)
+                    errEvalRes "The third argument to map_ must be a list : 01."
 
         _ ->
-            (VError "The second argument to map_ must be a function : 01.", [], empty)
+            errEvalRes "The second argument to map_ must be a function : 01."
+
+findOOPValue : HoleName -> (Env, State) -> HEnv -> Maybe Value
+findOOPValue u (env, state) henv =
+    case henv of
+
+        [] -> Nothing
+
+        (u_, (env_, state_), v_)::ls ->
+            if u_ == u && env_ == env && state_ == state
+            then Just v_
+            else findOOPValue u (env, state) ls

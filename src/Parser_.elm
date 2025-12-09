@@ -849,7 +849,7 @@ vHole context =
         |= holename 
         |. spaces
         |. symbol "}"
-        |.spaces
+        |. spaces
 
 
 parseHoleName : String -> Result (List DeadEnd) HoleName

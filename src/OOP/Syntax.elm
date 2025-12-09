@@ -1,7 +1,7 @@
 module OOP.Syntax exposing (..)
 
 import Set exposing (Set)
--- import Syntax exposing (HoleName)
+import Syntax exposing (HoleName(..))
 
 type OOP
     = WithCT ClassTable Term
@@ -49,12 +49,12 @@ type Term
 type Bop = Add | Sub | Mul | Div | Eq | Lt | Gt | Le | Ge | And | Or | Cat | RDiv
 type Uop = Not | Neg
 
-type HoleName
-    = HOri Int
-    | HInter Int
-    | HField HoleName HoleName
-    | HId Int
-    | HInst HoleName Int
+-- type HoleName
+--     = HOri Int
+--     | HInter Int
+--     | HField HoleName HoleName
+--     | HId Int
+--     | HInst HoleName Int
 
 type Value
     = VInt Int
@@ -74,7 +74,7 @@ type Value
     | VNew String Value
     | VError Info
     | VHtml String Value Value Value
-    | VHole HoleName Env
+    | VHole HoleName Env State
     | IndexedHole HoleName (List (Int, String, Value))
 
 type Pattern
@@ -114,7 +114,7 @@ type alias ID = Int
 
 type alias WS = List String
 
-type alias HEnv = List (HoleName, Env, Value)
+type alias HEnv = List (HoleName, (Env, State), Value)
 
 -- Case
 guardName : String
@@ -141,3 +141,10 @@ holeIDStart : Int
 holeIDStart = 1
 holeAddedByUserStart : Int
 holeAddedByUserStart = 100
+
+type alias EvalRes = 
+    { res: Value
+    , state: State
+    , invks: Invks
+    , holeIDs: List (HoleName, Int)
+    }

@@ -1,11 +1,46 @@
 module OOP.LangUtils exposing (..)
 
 import OOP.Syntax exposing (..)
+import Syntax exposing (HoleName(..))
 import Debug exposing (toString)
 import OOP.Subclassing exposing (..)
 import OOP.Printer.Value exposing (printValue, printHoleName)
 import OOP.Utils exposing (findByName, updateValueInDict)
+import Html.Attributes exposing (class)
 
+-- used to generate hole IDs and process terms after parsing
+processCTAfterParse : ClassTable -> (ClassTable, Int)
+processCTAfterParse classtb =
+    case classtb of 
+        (ws, clsdefs) -> 
+            let (clsdefs_, holeID) = processClsDefs clsdefs 0 in
+            ((ws, clsdefs_), holeID)
+
+processClsDefs : List ClassDef -> Int -> (List ClassDef, Int)
+processClsDefs clsdefs holeID =
+    case clsdefs of
+        (ws, ((c,f), fields, (ws_, methods))) :: clsdefs_ ->
+            let
+                (methods_, holeID_) = processMethods methods holeID
+                (clsdefs__, holeID__) = processClsDefs clsdefs_ holeID_
+            in
+                ( (ws, ((c,f), fields, (ws_, methods_)))
+                :: clsdefs__, holeID__
+                )
+
+        [] -> ([], holeID)
+
+processMethods : List Method -> Int -> (List Method, Int)
+processMethods methods holeID =
+    case methods of 
+        (ws, (m, p, t)) :: methods_ ->
+            let
+                (t_, holeID_) = processAfterParse t holeID
+                (methods__, holeID__) = processMethods methods_ holeID_
+            in
+                ( (ws, (m, p, t_)) :: methods__, holeID__ )
+
+        [] -> ([], holeID)
 
 processAfterParse : Term -> Int -> (Term, Int)
 processAfterParse term holeID =
@@ -174,6 +209,49 @@ processAfterParse term holeID =
                     processAfterParse t holeID
             in
                 (TNew ws c t_, holeID_)
+
+        TSeq ws t1 t2 ->
+            let
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
+                
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
+            in
+                (TSeq ws t1_ t2_, holeID__)
+        
+        THtml ws s t1 t2 t3 ->
+            let
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
+                
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
+                
+                (t3_, holeID___) =
+                    processAfterParse t3 holeID__
+            in
+                (THtml ws s t1_ t2_ t3_, holeID___)
+        
+        TToStr ws t ->
+            let
+                (t_, holeID_) =
+                    processAfterParse t holeID
+            in
+                (TToStr ws t_, holeID_)
+        
+        TMap ws t1 t2 f -> 
+            let
+                (t1_, holeID_) =
+                    processAfterParse t1 holeID
+                
+                (t2_, holeID__) =
+                    processAfterParse t2 holeID_
+                
+                (f_, holeID___) =
+                    processAfterParse f holeID__
+            in
+                (TMap ws t1_ t2_ f_, holeID___)
         
         _ -> (term, holeID)
 
@@ -204,6 +282,55 @@ addIDToBranch br id holeID =
 match : Pattern -> Value -> Env
 match pat val =
     case (pat, val) of
+
+        ((PCons _ p1 p2), (VHole u env state)) ->
+            let 
+                res1 = 
+                    match p1 (VHole (HField u (HId 1)) env state)
+                
+                res2 =
+                    match p2 (VHole (HField u (HId 2)) env state)
+            in
+            if res1 == [("ERROR", VError "Match Failed.")] ||
+                res2 == [("ERROR", VError "Match Failed.")]
+            then 
+                [("ERROR", VError "Match Failed.")]
+            else
+                res1++res2
+
+        ((PBTuple _ p1 p2), (VHole u env state)) ->
+            let 
+                res1 = 
+                    match p1 (VHole (HField u (HId 1)) env state)
+                
+                res2 =
+                    match p2 (VHole (HField u (HId 2)) env state)
+            in
+            if res1 == [("ERROR", VError "Match Failed.")] ||
+                res2 == [("ERROR", VError "Match Failed.")]
+            then 
+                [("ERROR", VError "Match Failed.")]
+            else
+                res1++res2
+
+        ((PTTuple _ p1 p2 p3), (VHole u env state)) ->
+            let 
+                res1 = 
+                    match p1 (VHole (HField u (HId 1)) env state)
+                
+                res2 =
+                    match p2 (VHole (HField u (HId 2)) env state)
+
+                res3 =
+                    match p3 (VHole (HField u (HId 3)) env state)
+            in
+            if res1 == [("ERROR", VError "Match Failed.")] ||
+                res2 == [("ERROR", VError "Match Failed.")] ||
+                res2 == [("ERROR", VError "Match Failed.")]
+            then 
+                [("ERROR", VError "Match Failed.")]
+            else
+                res1++res2++res3
 
         ((PString _ s1), (VString s2)) ->
             if s1 == s2 then [] else [("ERROR", VError "Match Failed.")]
@@ -830,8 +957,8 @@ printEnv env =
 printHEnv : HEnv -> String
 printHEnv henv =
     case henv of
-        (hn, env, v) :: henv_ -> 
-            (printHoleName hn) ++ " : " ++ (printEnv env) ++ " => " ++ (printValue v) ++ "\n" ++ (printHEnv henv_)
+        (hn, (env, state), v) :: henv_ -> 
+            (printHoleName hn) ++ " : \nenv:\n" ++ (printEnv env) ++ "state:\n" ++ (printState state) ++ " => " ++ (printValue v) ++ "\n" ++ (printHEnv henv_)
         [] -> ""
 
 

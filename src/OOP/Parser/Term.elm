@@ -7,6 +7,7 @@ import OOP.Syntax exposing (..)
 import OOP.Parser.Pattern exposing (pattern)
 import OOP.Parser.Utils exposing (..)
 import OOP.Parser.WhiteSpaces exposing (mspaces)
+import Syntax exposing (HoleName(..))
 
 
 parse : String -> Result (List DeadEnd) Term
