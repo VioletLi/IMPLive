@@ -2,11 +2,10 @@ module OOP.TestEvaluator exposing (..)
 
 import OOP.Parser.Program exposing (parse)
 import OOP.Syntax exposing (..)
-import OOP.LangUtils exposing (processAfterParse)
+import OOP.LangUtils exposing (processAfterParse, processCTAfterParse)
 import OOP.Preclude.Gui exposing (parsedGui,assemble)
 import OOP.Eval exposing (eval,errEvalRes)
 import OOP.Printer.Value exposing (printValue)
-import OOP.LangUtils exposing (processCTAfterParse)
 
 test : String -> (EvalRes, String)
 test prog =
@@ -32,4 +31,9 @@ test prog =
 
         _ ->
             ( errEvalRes "Parse Error", "" )
+
+
+
+
+
 

@@ -1,7 +1,6 @@
 module OOP.Eval exposing (..)
 
 import OOP.Syntax exposing (..)
-import Syntax exposing (HoleName(..))
 import OOP.Utils exposing (..)
 import OOP.LangUtils exposing (..)
 import Utils exposing (nth)
@@ -10,7 +9,6 @@ import Set exposing (insert, empty, union)
 import Round
 import List
 import Tuple
-import Eval exposing (findCount)
 -- import OOP.Parser.Term exposing (hole)
 
 
@@ -59,6 +57,11 @@ eval henv env state classtb term holeCount=
         TApp _ t1 t2 ->
             let res1 = eval henv env state classtb t1 holeCount in
             case res1.res of
+                VHole _ _ _ ->
+                    let
+                        n = findCount tempHoleCount res1.holeIDs in
+                    {res = VHole (HInter (n+1)) env state, state = res1.state, invks = res1.invks, holeIDs = (tempHoleCount, n+1)::res1.holeIDs}
+
 
                 VClosure p tf envf ->
                     case t2 of
@@ -125,10 +128,11 @@ eval henv env state classtb term holeCount=
                 case v of
                     Nothing -> 
                         let n = findCount hn holeCount in 
+                        let (newState, newHoleID) = setUnknownValue state state env holeCount in
                             { res = VHole (HInst hn (n+1)) env state
-                            , state = state
+                            , state = newState
                             , invks = empty
-                            , holeIDs = (hn, n+1)::holeCount }
+                            , holeIDs = (hn, n+1)::newHoleID }
                     Just v_ -> 
                         { res = v_
                         , state = state
@@ -499,6 +503,11 @@ eval henv env state classtb term holeCount=
                             eval henv env state classtb t1 holeCount
                     in
                         case res1.res of
+                        VHole _ _ _ ->
+                                let
+                                    n = findCount tempHoleCount res1.holeIDs in
+                                {res = VHole (HInter (n+1)) env state, state = res1.state, invks = res1.invks, holeIDs = (tempHoleCount, n+1)::res1.holeIDs}
+                                -- 需要把是谁调用的记录下来吗？记录也只是一个hole
                         VNew class args ->
                             let
                                 fields =
@@ -527,6 +536,11 @@ eval henv env state classtb term holeCount=
                             eval henv env state classtb t1 holeCount
                     in
                         case res1.res of
+                            VHole _ _ _ ->
+                                let
+                                    n = findCount tempHoleCount res1.holeIDs in
+                                {res = VHole (HInter (n+1)) env state, state = res1.state, invks = res1.invks, holeIDs = (tempHoleCount, n+1)::res1.holeIDs}
+                                -- 需要把是谁调用的记录下来吗？记录也只是一个hole
                             VNew class _ ->
                                 let
                                     res =
@@ -560,6 +574,12 @@ eval henv env state classtb term holeCount=
                     eval henv env state classtb t1 holeCount
             in
             case res1.res of
+                VHole _ _ _ ->
+                    let
+                        res2 =
+                            eval henv env res1.state classtb t2 res1.holeIDs
+                    in
+                        {res = res2.res, state = res2.state, invks = union res1.invks res2.invks, holeIDs = res2.holeIDs}
                 VUnit ->
                     let
                         res2 =

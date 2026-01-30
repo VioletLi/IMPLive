@@ -429,12 +429,3 @@ findValue u venv henv =
             else findValue u venv ls
 
 
-findCount : HoleName -> List (HoleName, Int) -> Int
-findCount hn count =
-    case count of
-        (HInter 0, n)::_ -> n
-        (hn_, n)::ct ->
-            if hn == hn_
-            then n
-            else findCount hn ct
-        [] -> 0

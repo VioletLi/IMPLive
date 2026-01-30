@@ -2,6 +2,7 @@ module OOP.Syntax exposing (..)
 
 import Set exposing (Set)
 import Syntax exposing (HoleName(..))
+-- import Syntax exposing (HoleName(..))
 
 type OOP
     = WithCT ClassTable Term
@@ -44,6 +45,13 @@ type Term
     | TLoc WS Int
     | TString WS String
     | THole WS HoleName
+
+type HoleName 
+    = HOri Int
+    | HInter Int
+    | HField HoleName HoleName
+    | HId Int
+    | HInst HoleName Int
 
 -- Div : Divide ; RDiv: Divide Rounding
 type Bop = Add | Sub | Mul | Div | Eq | Lt | Gt | Le | Ge | And | Or | Cat | RDiv

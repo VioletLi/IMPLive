@@ -4,6 +4,7 @@ import Round
 import List.Extra exposing (unconsLast, dropWhile)
 import List exposing (..)
 import OOP.Syntax exposing (..)
+import Syntax exposing (HoleName(..))
 import OOP.Eval exposing (eval)
 import OOP.Printer.Value exposing (printValue, printString)
 import OOP.Printer.Term exposing (printTerm)
@@ -12,6 +13,7 @@ import OOP.Utils exposing (updateValueInDict, findByName, replace)
 import Utils exposing (nth)
 import OOP.Parser.Value as Value
 import Debug exposing (toString)
+import Syntax exposing (HTotal)
 
 
 type alias Context =
@@ -26,101 +28,296 @@ type alias Res =
     , state : State
     }
 
+type alias UnEvalRes = 
+    { term : Term
+    , htotal : Int
+    , context : Context
+    , subClsCnt : SubClsCnt
+    , henv : HEnv
+    }
 
-uneval : SubClsCnt -> Context -> Term -> Res -> (Context, Term, SubClsCnt)
-uneval scc ctx term updates =
+errUnEvalRes : String -> SubClsCnt -> UnEvalRes
+errUnEvalRes info scc =
+    { term = TError info
+    , htotal = 0
+    , context = { env = [], state = [], classtb = ([], []) }
+    , subClsCnt = scc
+    , henv = []
+    }
+
+-- uneval之前要先把code 重新parse出来并且预处理一下（holeid） 然后用得到的term作为原来的source
+-- 看起来unevalres里面的classtb是指新增加的classtable
+uneval : SubClsCnt -> Context -> Term -> Res -> HEnv -> HTotal -> UnEvalRes
+uneval scc ctx term updates henv htotal =
     case term of
+        THole ws u ->
+            let 
+                newv = updates.value
+                save =
+                    case newv of
+                        VInt _        -> newv
+                        VFloat _      -> newv
+                        VTrue         -> newv
+                        VFalse        -> newv
+                        VCons _ _   -> newv
+                        VNil        -> newv
+                        VTuple2 _ _   -> newv
+                        VTuple3 _ _ _ -> newv
+                        VNew _ _ -> newv
+                        VLoc _ -> newv
+                        VUnit -> newv
+                        _         -> VError ""
+            in
+            case save of
+                VError _ ->
+                    case newv of
+                        VHole _ venv_ state_ ->
+                            let
+                                (newvenv, newstate) =
+                                    if venv_ == [] then (ctx.env, ctx.state) else (venv_, state_)
+                            in
+                            { term = THole ws u
+                            , htotal = htotal
+                            , context = { ctx | env = newvenv, state = newstate, classtb = ([], []) }
+                            , subClsCnt = scc
+                            , henv = henv
+                            }
+
+                        _ ->
+                            errUnEvalRes ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)) scc
+                _ ->
+                    { term = THole ws u
+                    , htotal = htotal
+                    , context = ctx
+                    , subClsCnt = scc
+                    , henv = insertHB u ctx.env ctx.state save henv
+                    }
         TInt ws _ ->
             case updates.value of
                 VInt n -> 
-                    ({ctx|state=updates.state,classtb=([],[])}, TInt ws n, scc)
+                    { term = TInt ws n
+                    , htotal = htotal
+                    , context = {ctx | state=updates.state, classtb = ([], [])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
 
                 VFloat n ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TFloat ws n,scc)
+                    { term = TFloat ws n
+                    , htotal = htotal
+                    , context = {ctx | state=updates.state, classtb = ([], [])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
+                
+                VHole _ venv_ state_ -> 
+                    let 
+                        (newvenv, newstate) = 
+                            if venv_ == [] then (ctx.env, ctx.state) else (venv_, state_) 
+                    in
+                    { term = THole ws (HOri htotal)
+                    , htotal = htotal + 1
+                    , context = { ctx | env = newvenv, state = newstate, classtb = ([], []) }
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
 
-                _ -> 
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)),scc)
+                _ -> errUnEvalRes ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)) scc
 
         TFloat ws _ ->
             case updates.value of
                 VInt n ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TFloat ws (toFloat n), scc)
+                    { term = TFloat ws (toFloat n)
+                    , htotal = htotal
+                    , context = {ctx | state=updates.state, classtb = ([], [])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
 
                 VFloat n ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TFloat ws n, scc)
+                    { term = TFloat ws n
+                    , htotal = htotal
+                    , context = {ctx | state=updates.state, classtb = ([], [])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
+                
+                VHole _ venv_ state_ -> 
+                    let 
+                        (newvenv, newstate) = 
+                            if venv_ == [] then (ctx.env, ctx.state) else (venv_, state_) 
+                    in
+                    { term = THole ws (HOri htotal)
+                    , htotal = htotal + 1
+                    , context = { ctx | env = newvenv, state = newstate, classtb = ([], []) }
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
 
                 _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+                    errUnEvalRes ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)) scc
 
         TTrue ws ->
             case updates.value of
                 VTrue ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TTrue ws, scc)
+                    { term = TTrue ws
+                    , htotal = htotal
+                    , context = {ctx | state=updates.state, classtb = ([], [])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
                 
                 VFalse ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TFalse ws, scc)
+                    { term = TFalse ws
+                    , htotal = htotal
+                    , context = {ctx | state=updates.state, classtb = ([], [])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
                 
+                VHole _ venv_ state_ -> 
+                    let 
+                        (newvenv, newstate) = 
+                            if venv_ == [] then (ctx.env, ctx.state) else (venv_, state_) 
+                    in
+                    { term = THole ws (HOri htotal)
+                    , htotal = htotal + 1
+                    , context = { ctx | env = newvenv, state = newstate, classtb = ([], []) }
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
+
                 _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+                    errUnEvalRes ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)) scc
 
         TFalse ws->
             case updates.value of
                 VTrue ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TTrue ws, scc)
+                    { term = TTrue ws
+                    , htotal = htotal
+                    , context = {ctx | state=updates.state, classtb = ([], [])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
                 
                 VFalse ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TFalse ws, scc)
+                    { term = TFalse ws
+                    , htotal = htotal
+                    , context = {ctx | state=updates.state, classtb = ([], [])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
                 
+                VHole _ venv_ state_ -> 
+                    let 
+                        (newvenv, newstate) = 
+                            if venv_ == [] then (ctx.env, ctx.state) else (venv_, state_) 
+                    in
+                    { term = THole ws (HOri htotal)
+                    , htotal = htotal + 1
+                    , context = { ctx | env = newvenv, state = newstate, classtb = ([], []) }
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
+
                 _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+                    errUnEvalRes ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)) scc
 
         TChar ws _ ->
             case updates.value of
                 VChar c ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TChar ws c, scc)
+                    { term = TChar ws c
+                    , htotal = htotal
+                    , context = {ctx | state=updates.state, classtb = ([], [])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
                 
+                VHole _ venv_ state_ -> 
+                    let 
+                        (newvenv, newstate) = 
+                            if venv_ == [] then (ctx.env, ctx.state) else (venv_, state_) 
+                    in
+                    { term = THole ws (HOri htotal)
+                    , htotal = htotal + 1
+                    , context = { ctx | env = newvenv, state = newstate, classtb = ([], []) }
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
+
                 _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+                    errUnEvalRes ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)) scc
 
         TString ws _ ->
             case updates.value of
                 VString s ->
-                    
-                    ({ctx|state=updates.state,classtb=([],[])}, TString ws s, scc)
+                    { term = TString ws s
+                    , htotal = htotal
+                    , context = {ctx | state=updates.state, classtb = ([], [])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
+                VHole _ venv_ state_ ->
+                    let 
+                        (newvenv, newstate) = 
+                            if venv_ == [] then (ctx.env, ctx.state) else (venv_, state_) 
+                    in
+                    { term = THole ws (HOri htotal)
+                    , htotal = htotal + 1
+                    , context = { ctx | env = newvenv, state = newstate, classtb = ([], []) }
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
                 _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
-
+                    errUnEvalRes ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)) scc
         TVar ws s ->
             let
                 env_ =
                     updateValueInDict s updates.value ctx.env
             in
-                ({env=env_,state=updates.state,classtb=([],[])}, TVar ws s, scc)
+                { term = TVar ws s
+                , htotal = htotal
+                , context = { ctx | env = env_, state = updates.state, classtb = ([], []) }
+                , subClsCnt = scc
+                , henv = henv
+                }
 
         TLam ws _ _ ->
             case updates.value of
                 VClosure p_ t_ env_ ->
-                    ({env=env_,state=updates.state,classtb=([],[])}, TLam ws p_ t_, scc)
+                    { term = TLam ws p_ t_
+                    , htotal = htotal
+                    , context = {env=env_,state=updates.state,classtb=([],[])}
+                    , subClsCnt = scc
+                    , henv = henv
+                    }
 
                 _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+                    errUnEvalRes ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)) scc
+
+        -- TODO：把B-app的semantics写出来，来验证这个实现是否正确
 
         TApp ws t1 (TFix _ t2) ->
             let 
-                (v1, state1, _) = 
-                    eval ctx.env ctx.state ctx.classtb t1
+                evalres = 
+                    eval henv ctx.env ctx.state ctx.classtb t1 []
+                v1 = evalres.res
+                state1 = evalres.state
             in
             case v1 of
                 VClosure p tf envf ->
                     case p of
                         PVar _ s  ->
                             let
-                                (ctx1, tf_, scc1) =
-                                    uneval scc {ctx|env=((s, VFix t2)::envf),state=state1} tf updates
+                                unevalres =
+                                    uneval scc {ctx|env=((s, VFix t2)::envf),state=state1} tf updates henv htotal
+                                ctx1 = unevalres.context
+                                tf_ = unevalres.term
+                                scc1 = unevalres.subClsCnt
                             in
                             case tf_  of
                                 TError info ->
-                                    ({ctx|classtb=([],[])}, TError info, scc)
+                                    errUnEvalRes info scc
                                 
                                 _ ->
                                     let 
@@ -131,8 +328,12 @@ uneval scc ctx term updates =
                                         newUpdates_1 =
                                             {value=VClosure p tf_ (ctx1_env), state=ctx1.state}
                                         
-                                        (ctx_, t1_, scc2) =
-                                            uneval scc1 ctx t1 newUpdates_1
+                                        unevalres2
+                                            uneval scc1 ctx t1 newUpdates_1 henv unevalres.htotal
+
+                                        ctx_ = unevalres2.context
+                                        t1_ = unevalres2.term
+                                        scc2 = unevalres2.subClsCnt
 
                                         newCT =
                                             appendCT ctx_.classtb ctx1.classtb
@@ -140,7 +341,12 @@ uneval scc ctx term updates =
                                     in
                                     case t1_ of
                                         TError info ->
-                                            ({ctx|classtb=([],[])}, TError info, scc2)
+                                            { term = TError info
+                                            , htotal = 0
+                                            , context = { ctx | classtb = ([], [])}
+                                            , subClsCnt = scc2
+                                            , henv = unevalres2.henv --这里真的应该是这个henv吗？再想想
+                                            }
                                         
                                         _ -> -- Magic Code
                                             case (findByName s ctx1.env) of
@@ -155,611 +361,621 @@ uneval scc ctx term updates =
                                                         ({ctx_|classtb=newCT}, TApp ws t1_ t2_, scc3)
                                     
                                                 Just (VFix t2_) ->
-                                                    ({ctx_|classtb=newCT}, TApp ws t1_ (TFix [] t2_), scc2)
+                                                    { term = TApp ws t1_ (TFix [] t2_)
+                                                    , htotal = unevalres2.htotal
+                                                    , context = { ctx_ | classtb = newCT }
+                                                    , subClsCnt = scc2
+                                                    , henv = unevalres2.henv
+                                                    }
                                                 
                                                 Just (VError info) ->
-                                                    ({ctx_|classtb=newCT}, TError info, scc2)
+                                                    { term = TError Info
+                                                    , htotal = 0
+                                                    , context = { ctx_ | classtb = newCT }
+                                                    , subClsCnt = scc2
+                                                    , henv = unevalres2.henv
+                                                    }
                                                 
                                                 Just error ->
-                                                    ({ctx|classtb=([],[])}, TError ("Fixpoint is Not a Function in Update : " ++ (printValue error)), scc2)
+                                                    errUnEvalRes ("Fixpoint is Not a Function in Update : " ++ (printValue error)) scc2
                                                 
                                                 Nothing ->
-                                                    ({ctx|classtb=([],[])}, TError "No Such Variable : 04.", scc2)
+                                                    errUnEvalRes "No Such Variable : 04." scc2
                         
                         _ ->
-                            ({ctx|classtb=([],[])}, TError "Pattern Error in Recursion : 01.", scc)
+                            errUnEvalRes "Pattern Error in Recursion : 01." scc
 
                 _ ->
-                    ({ctx|classtb=([],[])}, TError "Not Applicable : 02.", scc)
+                    errUnEvalRes "Not Applicable : 02." scc
 
-        TApp ws t1 t2 ->
-            let 
-                (v1, state1, _) = 
-                    eval ctx.env ctx.state ctx.classtb t1 
-            in
-            case v1 of
-                VClosure p tf envf ->
-                    let 
-                        (v2, state2, _) =
-                            eval ctx.env state1 ctx.classtb t2
+        -- TApp ws t1 t2 ->
+        --     let 
+        --         (v1, state1, _) = 
+        --             eval ctx.env ctx.state ctx.classtb t1 
+        --     in
+        --     case v1 of
+        --         VClosure p tf envf ->
+        --             let 
+        --                 (v2, state2, _) =
+        --                     eval ctx.env state1 ctx.classtb t2
                         
-                        envm =
-                            match p v2
+        --                 envm =
+        --                     match p v2
 
-                        (ctx2_, tf_, scc1) =
-                            uneval scc {env=(envm++envf),state=state2,classtb=ctx.classtb} tf updates 
-                    in
-                    case tf_ of
-                        TError info ->
-                            ({ctx|classtb=([],[])}, TError info, scc1)
+        --                 (ctx2_, tf_, scc1) =
+        --                     uneval scc {env=(envm++envf),state=state2,classtb=ctx.classtb} tf updates 
+        --             in
+        --             case tf_ of
+        --                 TError info ->
+        --                     ({ctx|classtb=([],[])}, TError info, scc1)
                         
-                        _ ->
-                            let 
-                                newUpdates_2 =
-                                    {value = patternSubst ctx2_.env p, state=ctx2_.state}
+        --                 _ ->
+        --                     let 
+        --                         newUpdates_2 =
+        --                             {value = patternSubst ctx2_.env p, state=ctx2_.state}
                                 
-                                (ctx1_, t2_, scc2) =
-                                    uneval scc1  {ctx|state=state1} t2 newUpdates_2
-                            in
-                            case t2_ of
-                                TError info ->
-                                    ({ctx|classtb=([],[])}, TError info, scc2)
+        --                         (ctx1_, t2_, scc2) =
+        --                             uneval scc1  {ctx|state=state1} t2 newUpdates_2
+        --                     in
+        --                     case t2_ of
+        --                         TError info ->
+        --                             ({ctx|classtb=([],[])}, TError info, scc2)
                                 
-                                _ ->
-                                    let
-                                        newUpdates_1 =
-                                            {value = VClosure p tf_ (drop (length envm) ctx2_.env),state=ctx1_.state}
+        --                         _ ->
+        --                             let
+        --                                 newUpdates_1 =
+        --                                     {value = VClosure p tf_ (drop (length envm) ctx2_.env),state=ctx1_.state}
 
-                                        (ctx_, t1_, scc3) =
-                                            uneval scc2 ctx t1 newUpdates_1
-                                    in
-                                    case t1_ of
-                                        TError info ->
-                                            ({ctx|classtb=([],[])}, TError info, scc3)
+        --                                 (ctx_, t1_, scc3) =
+        --                                     uneval scc2 ctx t1 newUpdates_1
+        --                             in
+        --                             case t1_ of
+        --                                 TError info ->
+        --                                     ({ctx|classtb=([],[])}, TError info, scc3)
                                         
-                                        _ ->
-                                            let
-                                                newCT =
-                                                    appendCT ctx_.classtb ctx1_.classtb
-                                                    |> appendCT ctx2_.classtb
+        --                                 _ ->
+        --                                     let
+        --                                         newCT =
+        --                                             appendCT ctx_.classtb ctx1_.classtb
+        --                                             |> appendCT ctx2_.classtb
 
-                                                (newEnv, newCT_) =
-                                                    mergeEnv ctx1_.env ctx_.env ctx.env newCT
+        --                                         (newEnv, newCT_) =
+        --                                             mergeEnv ctx1_.env ctx_.env ctx.env newCT
 
-                                            in
-                                                ({env = newEnv
-                                                , state = ctx_.state
-                                                , classtb = newCT_
-                                                }
-                                                , TApp ws t1_ t2_
-                                                , scc3
-                                                )
+        --                                     in
+        --                                         ({env = newEnv
+        --                                         , state = ctx_.state
+        --                                         , classtb = newCT_
+        --                                         }
+        --                                         , TApp ws t1_ t2_
+        --                                         , scc3
+        --                                         )
                                         
-                _ ->
-                    ({ctx|classtb=([],[])}, TError "Not Appliable : 03.", scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError "Not Appliable : 03.", scc)
 
-        TLet ws p t1 t2 ->
-            let
-                (ctx_, term_, scc1) =
-                    uneval scc ctx (TApp [] (TLam [] p t2) t1) updates
-            in
-            case term_ of
-                TError info ->
-                    ({ctx|classtb=([],[])}, TError info, scc1)
+        -- TLet ws p t1 t2 ->
+        --     let
+        --         (ctx_, term_, scc1) =
+        --             uneval scc ctx (TApp [] (TLam [] p t2) t1) updates
+        --     in
+        --     case term_ of
+        --         TError info ->
+        --             ({ctx|classtb=([],[])}, TError info, scc1)
 
-                TApp _ (TLam _ p_ t2_) t1_->
-                    (ctx_, TLet ws p_ t1_ t2_, scc1)
+        --         TApp _ (TLam _ p_ t2_) t1_->
+        --             (ctx_, TLet ws p_ t1_ t2_, scc1)
 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Wrong Result When Updating Let Statement : "++(printTerm term_)), scc1)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Wrong Result When Updating Let Statement : "++(printTerm term_)), scc1)
         
-        TLetrec ws p t1 t2 ->
-            let
-                (ctx_, term_, scc1) =
-                    uneval scc ctx (TApp [] (TLam [] p t2) (TFix [] (TLam [] p t1))) updates
-            in
-            case term_ of
-                TError info ->
-                    ({ctx|classtb=([],[])}, TError info, scc1)
+        -- TLetrec ws p t1 t2 ->
+        --     let
+        --         (ctx_, term_, scc1) =
+        --             uneval scc ctx (TApp [] (TLam [] p t2) (TFix [] (TLam [] p t1))) updates
+        --     in
+        --     case term_ of
+        --         TError info ->
+        --             ({ctx|classtb=([],[])}, TError info, scc1)
 
-                TApp _ (TLam _ p_ t2_) (TFix _ (TLam _ _ t1_))->
-                    (ctx_, TLetrec ws p_ t1_ t2_, scc1)
+        --         TApp _ (TLam _ p_ t2_) (TFix _ (TLam _ _ t1_))->
+        --             (ctx_, TLetrec ws p_ t1_ t2_, scc1)
 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Wrong Result When Updating Letrec Statement : "++(printTerm term_)), scc1)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Wrong Result When Updating Letrec Statement : "++(printTerm term_)), scc1)
 
-        TFix ws t ->
-            let
-                (ctx_, t_, scc1) =
-                    uneval scc ctx (TApp [] t (TFix [] t)) updates
+        -- TFix ws t ->
+        --     let
+        --         (ctx_, t_, scc1) =
+        --             uneval scc ctx (TApp [] t (TFix [] t)) updates
 
-                newT =
-                    case t_ of
-                        TApp _ t1 (TFix _ t2) ->
-                            if t2 /= t then t2 else t1
-                        _ ->
-                            TError ("Wrong Result When Updating Letrec Statement : "++(printTerm t_))
-            in
-                (ctx_, TFix ws newT, scc1)
+        --         newT =
+        --             case t_ of
+        --                 TApp _ t1 (TFix _ t2) ->
+        --                     if t2 /= t then t2 else t1
+        --                 _ ->
+        --                     TError ("Wrong Result When Updating Letrec Statement : "++(printTerm t_))
+        --     in
+        --         (ctx_, TFix ws newT, scc1)
 
-        TCase ws1 (TVar ws2 s) branches ->
-            let
-                res = 
-                    findByName s ctx.env 
-            in
-            case res of
-                Just v ->
-                    let
-                        matchRes =
-                            matchCase v branches
+        -- TCase ws1 (TVar ws2 s) branches ->
+        --     let
+        --         res = 
+        --             findByName s ctx.env 
+        --     in
+        --     case res of
+        --         Just v ->
+        --             let
+        --                 matchRes =
+        --                     matchCase v branches
 
-                        (ctx_, ti_, scc1) =
-                            uneval scc {ctx|env=(matchRes.envm++ctx.env)} matchRes.ti updates
-                    in
-                    case ti_ of
-                        TError info ->
-                            ({ctx|classtb=([],[])}, TError info, scc1)
+        --                 (ctx_, ti_, scc1) =
+        --                     uneval scc {ctx|env=(matchRes.envm++ctx.env)} matchRes.ti updates
+        --             in
+        --             case ti_ of
+        --                 TError info ->
+        --                     ({ctx|classtb=([],[])}, TError info, scc1)
 
-                        _ ->   
-                            let 
-                                branches_ =
-                                    updateBranch branches matchRes.choice ti_
+        --                 _ ->   
+        --                     let 
+        --                         branches_ =
+        --                             updateBranch branches matchRes.choice ti_
                                 
-                                len =
-                                    length matchRes.envm
+        --                         len =
+        --                             length matchRes.envm
 
-                                newV = matchRes.pi 
-                                        |> patternSubst ctx_.env
+        --                         newV = matchRes.pi 
+        --                                 |> patternSubst ctx_.env
 
-                                env_ =
-                                    ((s, newV) :: (drop (len + 1) ctx_.env))
-                            in
-                                ({ctx_|env=env_}, TCase ws1 (TVar ws2 s) branches_, scc1)
+        --                         env_ =
+        --                             ((s, newV) :: (drop (len + 1) ctx_.env))
+        --                     in
+        --                         ({ctx_|env=env_}, TCase ws1 (TVar ws2 s) branches_, scc1)
                 
-                Nothing ->
-                    ({ctx|classtb=([],[])}, TError "No Such Variable : 03.", scc)
+        --         Nothing ->
+        --             ({ctx|classtb=([],[])}, TError "No Such Variable : 03.", scc)
 
-        TCons ws t1 t2 ->
-            case updates.value of
-                VCons v1 v2 ->
-                    let
-                        (_, state1, _) =
-                            eval ctx.env ctx.state ctx.classtb t1
+        -- TCons ws t1 t2 ->
+        --     case updates.value of
+        --         VCons v1 v2 ->
+        --             let
+        --                 (_, state1, _) =
+        --                     eval ctx.env ctx.state ctx.classtb t1
 
-                        (ctx1_, t2_, scc1) =
-                            uneval scc {ctx|state=state1} t2 {value=v2,state=updates.state}
+        --                 (ctx1_, t2_, scc1) =
+        --                     uneval scc {ctx|state=state1} t2 {value=v2,state=updates.state}
                         
-                        (ctx_, t1_, scc2) =
-                            uneval scc1 ctx t1 {value=v1,state=ctx1_.state}
+        --                 (ctx_, t1_, scc2) =
+        --                     uneval scc1 ctx t1 {value=v1,state=ctx1_.state}
                         
-                        newCT =
-                            appendCT ctx1_.classtb ctx_.classtb
+        --                 newCT =
+        --                     appendCT ctx1_.classtb ctx_.classtb
 
-                        (newEnv, newCT_) =
-                            mergeEnv ctx1_.env ctx_.env ctx.env newCT
-                    in
-                        ({env=newEnv,state=ctx_.state,classtb=newCT_}, TCons ws t1_ t2_, scc2)
+        --                 (newEnv, newCT_) =
+        --                     mergeEnv ctx1_.env ctx_.env ctx.env newCT
+        --             in
+        --                 ({env=newEnv,state=ctx_.state,classtb=newCT_}, TCons ws t1_ t2_, scc2)
 
-                VNil ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TNil ws, scc)
+        --         VNil ->
+        --             ({ctx|state=updates.state,classtb=([],[])}, TNil ws, scc)
                 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
 
-        TList _ _ _ ->
-            let
-                (origin_val, _, _) =
-                    eval ctx.env ctx.state ctx.classtb term
+        -- TList _ _ _ ->
+        --     let
+        --         (origin_val, _, _) =
+        --             eval ctx.env ctx.state ctx.classtb term
 
-                (_, delta) =
-                    diff origin_val updates.value
-            in
-                deltaUpdate term delta ctx updates.state scc
+        --         (_, delta) =
+        --             diff origin_val updates.value
+        --     in
+        --         deltaUpdate term delta ctx updates.state scc
 
-        TNil ws ->
-            case updates.value of
-                VNil ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TNil ws, scc)
+        -- TNil ws ->
+        --     case updates.value of
+        --         VNil ->
+        --             ({ctx|state=updates.state,classtb=([],[])}, TNil ws, scc)
 
-                VCons _ _ ->
-                    ({ctx|state=updates.state,classtb=([],[])}, valueToTerm updates.value ws, scc)
+        --         VCons _ _ ->
+        --             ({ctx|state=updates.state,classtb=([],[])}, valueToTerm updates.value ws, scc)
 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
 
-        TEmpList _ ->
-            let
-                (origin_val, _, _) =
-                    eval ctx.env ctx.state ctx.classtb term
+        -- TEmpList _ ->
+        --     let
+        --         (origin_val, _, _) =
+        --             eval ctx.env ctx.state ctx.classtb term
 
-                (_, delta) =
-                    diff origin_val updates.value
-            in
-                deltaUpdate term delta ctx updates.state scc
+        --         (_, delta) =
+        --             diff origin_val updates.value
+        --     in
+        --         deltaUpdate term delta ctx updates.state scc
         
-        TTuple2 ws t1 t2 ->
-            case updates.value of
-                VTuple2 v1 v2 ->
-                    let
-                        (_, state1, _) =
-                            eval ctx.env ctx.state ctx.classtb t1
+        -- TTuple2 ws t1 t2 ->
+        --     case updates.value of
+        --         VTuple2 v1 v2 ->
+        --             let
+        --                 (_, state1, _) =
+        --                     eval ctx.env ctx.state ctx.classtb t1
 
-                        (ctx1_, t2_, scc1) =
-                            uneval scc {ctx|state=state1} t2 {value=v2,state=updates.state}
+        --                 (ctx1_, t2_, scc1) =
+        --                     uneval scc {ctx|state=state1} t2 {value=v2,state=updates.state}
 
-                        (ctx_, t1_, scc2) =
-                            uneval scc1 ctx t1 {value=v1,state=ctx1_.state}
+        --                 (ctx_, t1_, scc2) =
+        --                     uneval scc1 ctx t1 {value=v1,state=ctx1_.state}
 
-                        newCT =
-                            appendCT ctx1_.classtb ctx_.classtb
+        --                 newCT =
+        --                     appendCT ctx1_.classtb ctx_.classtb
 
-                        (newEnv, newCT_) =
-                            mergeEnv ctx1_.env ctx_.env ctx.env newCT
-                    in
-                        ({env=newEnv, state=ctx_.state, classtb=newCT_}, TTuple2 ws t1_ t2_, scc2)
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --                 (newEnv, newCT_) =
+        --                     mergeEnv ctx1_.env ctx_.env ctx.env newCT
+        --             in
+        --                 ({env=newEnv, state=ctx_.state, classtb=newCT_}, TTuple2 ws t1_ t2_, scc2)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
 
-        TTuple3 ws t1 t2 t3 ->
-            case updates.value of
-                VTuple3 v1 v2 v3 ->
-                    let
-                        (_, state1, _) =
-                            eval ctx.env ctx.state ctx.classtb t1
+        -- TTuple3 ws t1 t2 t3 ->
+        --     case updates.value of
+        --         VTuple3 v1 v2 v3 ->
+        --             let
+        --                 (_, state1, _) =
+        --                     eval ctx.env ctx.state ctx.classtb t1
 
-                        (_, state2, _) =
-                            eval ctx.env state1 ctx.classtb t2
+        --                 (_, state2, _) =
+        --                     eval ctx.env state1 ctx.classtb t2
 
-                        (ctx2_, t3_, scc1) =
-                            uneval scc {ctx|state=state2} t3 {value=v3,state=updates.state}
+        --                 (ctx2_, t3_, scc1) =
+        --                     uneval scc {ctx|state=state2} t3 {value=v3,state=updates.state}
 
-                        (ctx1_, t2_, scc2) =
-                            uneval scc1 {ctx|state=state1} t2 {value=v2,state=ctx2_.state}
+        --                 (ctx1_, t2_, scc2) =
+        --                     uneval scc1 {ctx|state=state1} t2 {value=v2,state=ctx2_.state}
 
-                        (ctx_, t1_, scc3) =
-                            uneval scc2 ctx t1 {value=v1,state=ctx1_.state}
+        --                 (ctx_, t1_, scc3) =
+        --                     uneval scc2 ctx t1 {value=v1,state=ctx1_.state}
 
-                        newCT =
-                            appendCT ctx2_.classtb ctx1_.classtb
-                            |> appendCT ctx_.classtb
+        --                 newCT =
+        --                     appendCT ctx2_.classtb ctx1_.classtb
+        --                     |> appendCT ctx_.classtb
                         
-                        (newEnv1, newCT1) =
-                            mergeEnv ctx1_.env ctx_.env ctx.env newCT
+        --                 (newEnv1, newCT1) =
+        --                     mergeEnv ctx1_.env ctx_.env ctx.env newCT
 
-                        (newEnv2, newCT2) =
-                            mergeEnv ctx2_.env newEnv1 ctx.env newCT1
-                    in
-                        ({env=newEnv2, state=ctx_.state, classtb=newCT2}, TTuple3 ws t1_ t2_ t3_, scc3)
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --                 (newEnv2, newCT2) =
+        --                     mergeEnv ctx2_.env newEnv1 ctx.env newCT1
+        --             in
+        --                 ({env=newEnv2, state=ctx_.state, classtb=newCT2}, TTuple3 ws t1_ t2_ t3_, scc3)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
 
-        TBPrim ws op t1 t2 ->
-            let
-                logic_ =
-                    logic scc ctx t1 t2 updates ws
+        -- TBPrim ws op t1 t2 ->
+        --     let
+        --         logic_ =
+        --             logic scc ctx t1 t2 updates ws
 
-                arith_ = 
-                    arith scc ctx t1 t2 updates ws
+        --         arith_ = 
+        --             arith scc ctx t1 t2 updates ws
 
-                comp_ = 
-                    comp scc ctx t1 t2 updates ws
-            in
-            case op of
-                And -> logic_ And
+        --         comp_ = 
+        --             comp scc ctx t1 t2 updates ws
+        --     in
+        --     case op of
+        --         And -> logic_ And
 
-                Or  -> logic_ Or
+        --         Or  -> logic_ Or
                 
-                Add -> arith_ Add
+        --         Add -> arith_ Add
 
-                Sub -> arith_ Sub
+        --         Sub -> arith_ Sub
 
-                Mul -> arith_ Mul
+        --         Mul -> arith_ Mul
 
-                Div -> arith_ Div
+        --         Div -> arith_ Div
 
-                RDiv -> arith_ RDiv
+        --         RDiv -> arith_ RDiv
 
-                Cat -> arith_ Cat
+        --         Cat -> arith_ Cat
                 
-                _ -> comp_ op
+        --         _ -> comp_ op
         
-        TUPrim ws op t ->
-            unevalUnaryOperation ctx op t updates ws scc
+        -- TUPrim ws op t ->
+        --     unevalUnaryOperation ctx op t updates ws scc
 
-        TParens ws t ->
-            let
-                (ctx_, t_, scc1) =
-                    uneval scc ctx t updates
-            in
-                (ctx_, TParens ws t_, scc1)
+        -- TParens ws t ->
+        --     let
+        --         (ctx_, t_, scc1) =
+        --             uneval scc ctx t updates
+        --     in
+        --         (ctx_, TParens ws t_, scc1)
 
-        TRef ws t ->
-            case updates.value of
-                VLoc n ->
-                    case (nth n updates.state) of
-                        Just newV ->
-                            case (unconsLast updates.state) of
-                                Just (_, state1) ->
-                                    let
-                                        (ctx_, t_, scc1) =
-                                            uneval scc ctx t {value=newV,state=state1}
-                                    in
-                                        (ctx_, TRef ws t_, scc1)
+        -- TRef ws t ->
+        --     case updates.value of
+        --         VLoc n ->
+        --             case (nth n updates.state) of
+        --                 Just newV ->
+        --                     case (unconsLast updates.state) of
+        --                         Just (_, state1) ->
+        --                             let
+        --                                 (ctx_, t_, scc1) =
+        --                                     uneval scc ctx t {value=newV,state=state1}
+        --                             in
+        --                                 (ctx_, TRef ws t_, scc1)
 
-                                Nothing ->
-                                    ({ctx|classtb=([],[])}, TError "Index Out of Range : 03.", scc)
+        --                         Nothing ->
+        --                             ({ctx|classtb=([],[])}, TError "Index Out of Range : 03.", scc)
 
-                        Nothing ->
-                            ({ctx|classtb=([],[])}, TError "Index Out Of Range : 04.", scc)
+        --                 Nothing ->
+        --                     ({ctx|classtb=([],[])}, TError "Index Out Of Range : 04.", scc)
 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
 
-        TDeRef ws t ->
-            let
-                (v1, _, _) =
-                    eval ctx.env ctx.state ctx.classtb t
-            in
-            case v1 of
-                VLoc n ->
-                    case nth n ctx.state of
-                        Just v2 ->
-                            if v2 == updates.value then
-                                let
-                                    (ctx_, t_, scc1) =
-                                        uneval scc ctx t {value=VLoc n,state=updates.state}
-                                in
-                                    (ctx_, TDeRef ws t_, scc1)
-                            else
-                                let
-                                    newState =
-                                        replace n updates.value updates.state                                    
+        -- TDeRef ws t ->
+        --     let
+        --         (v1, _, _) =
+        --             eval ctx.env ctx.state ctx.classtb t
+        --     in
+        --     case v1 of
+        --         VLoc n ->
+        --             case nth n ctx.state of
+        --                 Just v2 ->
+        --                     if v2 == updates.value then
+        --                         let
+        --                             (ctx_, t_, scc1) =
+        --                                 uneval scc ctx t {value=VLoc n,state=updates.state}
+        --                         in
+        --                             (ctx_, TDeRef ws t_, scc1)
+        --                     else
+        --                         let
+        --                             newState =
+        --                                 replace n updates.value updates.state                                    
                                     
-                                    (ctx_, t_, scc1) =
-                                        uneval scc ctx t {value=VLoc n,state=newState}
-                                in
-                                    (ctx_, TDeRef ws t_, scc1)
+        --                             (ctx_, t_, scc1) =
+        --                                 uneval scc ctx t {value=VLoc n,state=newState}
+        --                         in
+        --                             (ctx_, TDeRef ws t_, scc1)
 
-                        Nothing ->
-                            ({ctx|classtb=([],[])}, TError "Error : 35.", scc)
+        --                 Nothing ->
+        --                     ({ctx|classtb=([],[])}, TError "Error : 35.", scc)
 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError "Error : 05.", scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError "Error : 05.", scc)
 
-        TAssign ws t1 t2 ->
-            case updates.value of
-                VUnit ->
-                    let
-                        (v1, state1, _) =
-                            eval ctx.env ctx.state ctx.classtb t1
+        -- TAssign ws t1 t2 ->
+        --     case updates.value of
+        --         VUnit ->
+        --             let
+        --                 (v1, state1, _) =
+        --                     eval ctx.env ctx.state ctx.classtb t1
                         
-                        (_, state2, _) =
-                            eval ctx.env state1 ctx.classtb t2
-                    in
-                        case v1 of
-                            VLoc n ->
-                                case (nth n updates.state) of
-                                    Just newV ->
-                                        case (nth n state2) of
-                                            Just oriV ->
-                                                let
-                                                    (ctx1_, t2_, scc1) =
-                                                        uneval scc {ctx|state=state1} t2 {value=newV,state=replace n oriV updates.state}
+        --                 (_, state2, _) =
+        --                     eval ctx.env state1 ctx.classtb t2
+        --             in
+        --                 case v1 of
+        --                     VLoc n ->
+        --                         case (nth n updates.state) of
+        --                             Just newV ->
+        --                                 case (nth n state2) of
+        --                                     Just oriV ->
+        --                                         let
+        --                                             (ctx1_, t2_, scc1) =
+        --                                                 uneval scc {ctx|state=state1} t2 {value=newV,state=replace n oriV updates.state}
 
-                                                    (ctx_, t1_, scc2) =
-                                                        uneval scc1 ctx t1 {value=VLoc n,state=ctx1_.state} 
+        --                                             (ctx_, t1_, scc2) =
+        --                                                 uneval scc1 ctx t1 {value=VLoc n,state=ctx1_.state} 
 
-                                                    (newEnv, newCT_) =
-                                                        mergeEnv ctx1_.env ctx_.env ctx.env newCT
+        --                                             (newEnv, newCT_) =
+        --                                                 mergeEnv ctx1_.env ctx_.env ctx.env newCT
                                                     
-                                                    newCT =
-                                                        appendCT ctx1_.classtb ctx_.classtb
-                                                in
-                                                    ({env=newEnv, state=ctx_.state, classtb=newCT_}, TAssign ws t1_ t2_, scc2)
+        --                                             newCT =
+        --                                                 appendCT ctx1_.classtb ctx_.classtb
+        --                                         in
+        --                                             ({env=newEnv, state=ctx_.state, classtb=newCT_}, TAssign ws t1_ t2_, scc2)
 
-                                            Nothing ->
-                                                ({ctx|classtb=([],[])}, TError "Index Out Of Range : 06.", scc)
+        --                                     Nothing ->
+        --                                         ({ctx|classtb=([],[])}, TError "Index Out Of Range : 06.", scc)
 
-                                    Nothing ->
-                                        ({ctx|classtb=([],[])}, TError "Index Out Of Range : 07.", scc)
+        --                             Nothing ->
+        --                                 ({ctx|classtb=([],[])}, TError "Index Out Of Range : 07.", scc)
 
-                            _ ->
-                                ({ctx|classtb=([],[])}, TError "Error : 15.", scc)
+        --                     _ ->
+        --                         ({ctx|classtb=([],[])}, TError "Error : 15.", scc)
 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
         
-        TUnit ws ->
-            case updates.value of
-                VUnit -> 
-                    ({ctx|state=updates.state,classtb=([],[])}, TUnit ws, scc)
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        -- TUnit ws ->
+        --     case updates.value of
+        --         VUnit -> 
+        --             ({ctx|state=updates.state,classtb=([],[])}, TUnit ws, scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
 
-        TField ws t1 t2 ->
-            case t2 of
-                TVar _ f ->
-                    let
-                        (v1, _, _) =
-                            eval ctx.env ctx.state ctx.classtb t1
-                    in
-                        case v1 of
-                            VNew class args ->
-                                let
-                                    fields =
-                                        getFields class ctx.classtb
+        -- TField ws t1 t2 ->
+        --     case t2 of
+        --         TVar _ f ->
+        --             let
+        --                 (v1, _, _) =
+        --                     eval ctx.env ctx.state ctx.classtb t1
+        --             in
+        --                 case v1 of
+        --                     VNew class args ->
+        --                         let
+        --                             fields =
+        --                                 getFields class ctx.classtb
 
-                                    index =
-                                        findFieldsIndex f (List.indexedMap Tuple.pair fields)
+        --                             index =
+        --                                 findFieldsIndex f (List.indexedMap Tuple.pair fields)
 
-                                    args_ =
-                                        vreplace index updates.value args
-                                in
-                                case args_ of
-                                    VError info ->
-                                        ({ctx|classtb=([],[])}, TError info, scc)
+        --                             args_ =
+        --                                 vreplace index updates.value args
+        --                         in
+        --                         case args_ of
+        --                             VError info ->
+        --                                 ({ctx|classtb=([],[])}, TError info, scc)
                                     
-                                    _ ->
-                                        let
-                                            (ctx_, t1_, scc1) =
-                                                uneval scc ctx t1 {value=VNew class args_,state=updates.state}
-                                        in
-                                            (ctx_, TField ws t1_ t2, scc1)
+        --                             _ ->
+        --                                 let
+        --                                     (ctx_, t1_, scc1) =
+        --                                         uneval scc ctx t1 {value=VNew class args_,state=updates.state}
+        --                                 in
+        --                                     (ctx_, TField ws t1_ t2, scc1)
 
-                            _ ->
-                                ({ctx|classtb=([],[])}, TError "Not an Object : 03.", scc)
+        --                     _ ->
+        --                         ({ctx|classtb=([],[])}, TError "Not an Object : 03.", scc)
 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError "Not a Variable : 03.", scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError "Not a Variable : 03.", scc)
 
-        TInvk ws t1 t2 ->
-            case t2 of
-                TVar _ m ->
-                    let
-                        (v1, _, _) =
-                            eval ctx.env ctx.state ctx.classtb t1
-                    in
-                        case v1 of
-                            VNew class _ ->
-                                let
-                                    res =
-                                        findMethod m class ctx.classtb
-                                in
-                                    case res of
-                                        Just _ ->
-                                            case updates.value of
-                                                VClosure _ t_ env_ ->
-                                                    case env_ of
-                                                        ("this", VNew c_ args)::_ ->
-                                                            let
-                                                                (newCT, subClass, scc1) =
-                                                                    subclassing m c_ t_ ctx.classtb scc
+        -- TInvk ws t1 t2 ->
+        --     case t2 of
+        --         TVar _ m ->
+        --             let
+        --                 (v1, _, _) =
+        --                     eval ctx.env ctx.state ctx.classtb t1
+        --             in
+        --                 case v1 of
+        --                     VNew class _ ->
+        --                         let
+        --                             res =
+        --                                 findMethod m class ctx.classtb
+        --                         in
+        --                             case res of
+        --                                 Just _ ->
+        --                                     case updates.value of
+        --                                         VClosure _ t_ env_ ->
+        --                                             case env_ of
+        --                                                 ("this", VNew c_ args)::_ ->
+        --                                                     let
+        --                                                         (newCT, subClass, scc1) =
+        --                                                             subclassing m c_ t_ ctx.classtb scc
                                                                 
-                                                                (ctx_, t1_, scc2) =
-                                                                    uneval scc1 ctx t1 {value=VNew subClass args,state=updates.state}
-                                                            in
-                                                                ({ctx_|classtb=appendCT ctx_.classtb newCT}, TInvk ws t1_ t2, scc2)
-                                                        _ ->
-                                                            ({ctx|classtb=([],[])}, TError "Error : 06.", scc)
+        --                                                         (ctx_, t1_, scc2) =
+        --                                                             uneval scc1 ctx t1 {value=VNew subClass args,state=updates.state}
+        --                                                     in
+        --                                                         ({ctx_|classtb=appendCT ctx_.classtb newCT}, TInvk ws t1_ t2, scc2)
+        --                                                 _ ->
+        --                                                     ({ctx|classtb=([],[])}, TError "Error : 06.", scc)
 
-                                                _ ->
-                                                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --                                         _ ->
+        --                                             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
 
-                                        Nothing ->
-                                            ({ctx|classtb=([],[])}, TError "No Such Method : 02.", scc)
+        --                                 Nothing ->
+        --                                     ({ctx|classtb=([],[])}, TError "No Such Method : 02.", scc)
 
-                            _ -> ({ctx|classtb=([],[])}, TError "Not an Object : 04.", scc)
+        --                     _ -> ({ctx|classtb=([],[])}, TError "Not an Object : 04.", scc)
 
-                _ -> ({ctx|classtb=([],[])}, TError "Not a Variable : 04.", scc)
+        --         _ -> ({ctx|classtb=([],[])}, TError "Not a Variable : 04.", scc)
 
-        TNew ws _ args ->
-            case updates.value of
-                VNew class_ vargs_ ->
-                    let
-                        (ctx_, args_, scc1) =
-                            uneval scc ctx args {value=vargs_,state=updates.state}
-                    in
-                        (ctx_, TNew ws class_ args_, scc1)
+        -- TNew ws _ args ->
+        --     case updates.value of
+        --         VNew class_ vargs_ ->
+        --             let
+        --                 (ctx_, args_, scc1) =
+        --                     uneval scc ctx args {value=vargs_,state=updates.state}
+        --             in
+        --                 (ctx_, TNew ws class_ args_, scc1)
 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
 
-        TError info ->
-            ({ctx|classtb=([],[])}, TError info, scc)
+        -- TError info ->
+        --     ({ctx|classtb=([],[])}, TError info, scc)
 
-        TSeq ws t1 t2 ->
-            let
-                (v1, state1, _) =
-                    eval ctx.env ctx.state ctx.classtb t1
+        -- TSeq ws t1 t2 ->
+        --     let
+        --         (v1, state1, _) =
+        --             eval ctx.env ctx.state ctx.classtb t1
                 
-                (ctx1_, t2_, scc1) =
-                    uneval scc {ctx|state=state1} t2 updates
+        --         (ctx1_, t2_, scc1) =
+        --             uneval scc {ctx|state=state1} t2 updates
                 
-                (ctx_, t1_, scc2) =
-                    uneval scc1 ctx t1 {value=v1,state=ctx1_.state}
+        --         (ctx_, t1_, scc2) =
+        --             uneval scc1 ctx t1 {value=v1,state=ctx1_.state}
 
-                (newEnv, newCT_) =
-                    mergeEnv ctx1_.env ctx_.env ctx.env newCT
+        --         (newEnv, newCT_) =
+        --             mergeEnv ctx1_.env ctx_.env ctx.env newCT
 
-                newCT =
-                    appendCT ctx1_.classtb ctx_.classtb
-            in
-                ({env=newEnv, state=ctx_.state, classtb=newCT_}, TSeq ws t1_ t2_, scc2)
+        --         newCT =
+        --             appendCT ctx1_.classtb ctx_.classtb
+        --     in
+        --         ({env=newEnv, state=ctx_.state, classtb=newCT_}, TSeq ws t1_ t2_, scc2)
 
-        THtml ws s t1 t2 t3 ->
-            case updates.value of
-                VHtml _ v1 v2 v3 ->
-                    let
-                        (_, state1, _) =
-                            eval ctx.env ctx.state ctx.classtb t1
+        -- THtml ws s t1 t2 t3 ->
+        --     case updates.value of
+        --         VHtml _ v1 v2 v3 ->
+        --             let
+        --                 (_, state1, _) =
+        --                     eval ctx.env ctx.state ctx.classtb t1
 
-                        (_, state2, _) =
-                            eval ctx.env state1 ctx.classtb t2
+        --                 (_, state2, _) =
+        --                     eval ctx.env state1 ctx.classtb t2
 
-                        (ctx2_, t3_, scc1) =
-                            uneval scc {ctx|state=state2} t3 {value=v3,state=updates.state}
+        --                 (ctx2_, t3_, scc1) =
+        --                     uneval scc {ctx|state=state2} t3 {value=v3,state=updates.state}
 
-                        (ctx1_, t2_, scc2) =
-                            uneval scc1 {ctx|state=state1} t2 {value=v2,state=ctx2_.state}
+        --                 (ctx1_, t2_, scc2) =
+        --                     uneval scc1 {ctx|state=state1} t2 {value=v2,state=ctx2_.state}
 
-                        (ctx_, t1_, scc3) =
-                            uneval scc2 ctx t1 {value=v1,state=ctx1_.state}
+        --                 (ctx_, t1_, scc3) =
+        --                     uneval scc2 ctx t1 {value=v1,state=ctx1_.state}
 
-                        newCT =
-                            appendCT ctx2_.classtb ctx1_.classtb
-                            |> appendCT ctx_.classtb
+        --                 newCT =
+        --                     appendCT ctx2_.classtb ctx1_.classtb
+        --                     |> appendCT ctx_.classtb
                         
-                        (newEnv1, newCT1) =
-                            mergeEnv ctx1_.env ctx_.env ctx.env newCT
+        --                 (newEnv1, newCT1) =
+        --                     mergeEnv ctx1_.env ctx_.env ctx.env newCT
 
-                        (newEnv2, newCT2) =
-                            mergeEnv ctx2_.env newEnv1 ctx.env newCT1
-                    in
-                        ({env=newEnv2, state=ctx_.state, classtb=newCT2}, THtml ws s t1_ t2_ t3_, scc3)
+        --                 (newEnv2, newCT2) =
+        --                     mergeEnv ctx2_.env newEnv1 ctx.env newCT1
+        --             in
+        --                 ({env=newEnv2, state=ctx_.state, classtb=newCT2}, THtml ws s t1_ t2_ t3_, scc3)
                 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
 
-        TToStr ws t ->
-            case updates.value of
-                VString _ ->
-                    let
-                        parseRes =
-                            Value.parse (printString updates.value)
-                    in
-                    case parseRes of
-                        Result.Ok newV ->
-                            let
-                                (ctx_, t_, scc1) =
-                                    uneval scc ctx t {value=newV,state=updates.state}
-                            in
-                                (ctx_, TToStr ws t_, scc1)
+        -- TToStr ws t ->
+        --     case updates.value of
+        --         VString _ ->
+        --             let
+        --                 parseRes =
+        --                     Value.parse (printString updates.value)
+        --             in
+        --             case parseRes of
+        --                 Result.Ok newV ->
+        --                     let
+        --                         (ctx_, t_, scc1) =
+        --                             uneval scc ctx t {value=newV,state=updates.state}
+        --                     in
+        --                         (ctx_, TToStr ws t_, scc1)
                         
-                        Result.Err info ->
-                            ({ctx|classtb=([],[])}, TError (toString info), scc)
+        --                 Result.Err info ->
+        --                     ({ctx|classtb=([],[])}, TError (toString info), scc)
 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
 
-        TMap _ _ _ _ ->
-            let
-                (origin_val, _, _) =
-                    eval ctx.env ctx.state ctx.classtb term
+        -- TMap _ _ _ _ ->
+        --     let
+        --         (origin_val, _, _) =
+        --             eval ctx.env ctx.state ctx.classtb term
                 
-                (_, delta) =
-                    diff origin_val updates.value
-            in
-                updateMap scc term delta ctx updates.state
+        --         (_, delta) =
+        --             diff origin_val updates.value
+        --     in
+        --         updateMap scc term delta ctx updates.state
 
-        TLoc ws _ ->
-            case updates.value of
-                VLoc n_ ->
-                    ({ctx|state=updates.state,classtb=([],[])}, TLoc ws n_, scc)
+        -- TLoc ws _ ->
+        --     case updates.value of
+        --         VLoc n_ ->
+        --             ({ctx|state=updates.state,classtb=([],[])}, TLoc ws n_, scc)
                 
-                _ ->
-                    ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
+        --         _ ->
+        --             ({ctx|classtb=([],[])}, TError ("Update Error : "++(printValue updates.value)++"->"++(printTerm term)), scc)
             
-        _ -> ({ctx|classtb=([],[])}, TError ("Source Expression Error : "++(printTerm term)), scc)
+        -- _ -> ({ctx|classtb=([],[])}, TError ("Source Expression Error : "++(printTerm term)), scc)
 
 
 logic : SubClsCnt -> Context -> Term -> Term -> Res -> WS -> Bop -> (Context, Term, SubClsCnt)

@@ -1,7 +1,6 @@
 module OOP.LangUtils exposing (..)
 
 import OOP.Syntax exposing (..)
-import Syntax exposing (HoleName(..))
 import Debug exposing (toString)
 import OOP.Subclassing exposing (..)
 import OOP.Printer.Value exposing (printValue, printHoleName)
@@ -868,6 +867,33 @@ subclassing m class t_ classtb scc =
             (_, _, _) ->
                 (([], []), class, scc)
 
+insertHB : HoleName -> Env -> State -> Value -> HEnv -> HEnv
+insertHB hn env state v henv =
+    (hn, (env, state), v) :: henv
+
+findCount : HoleName -> List (HoleName, Int) -> Int
+findCount hn count =
+    case count of
+        (HInter 0, n)::_ -> n
+        (hn_, n)::ct ->
+            if hn == hn_
+            then n
+            else findCount hn ct
+        [] -> 0
+
+setUnknownValue : State -> State -> Env -> List (HoleName, Int) -> (State, List (HoleName, Int))
+setUnknownValue state newState env holeCount =
+    case state of 
+        [] -> ([], holeCount)
+
+        _ :: state_ -> 
+            let n = findCount tempHoleCount holeCount in
+            let v = VHole (HInter (n+1)) env newState in
+            let (state__, holeCount__) = setUnknownValue state_ newState env ((tempHoleCount, (n+1))::holeCount) in
+            (v :: state__, holeCount__)
+
+
+
 
 -- replaceClassMethods : String -> String -> Term -> ClassTable -> ClassTable
 -- replaceClassMethods class m t_ classtable =
@@ -1181,3 +1207,70 @@ eqB b1 b2 =
             eqB b11 b21 && eqB b12 b22
 
         _ -> False
+
+collectUniqueHoleContext : Value -> List Value
+collectUniqueHoleContext val =
+    unique (collectHoleContext val)
+
+
+collectHoleContext : Value -> List Value
+collectHoleContext val =
+    case val of
+        VCons v1 v2 -> 
+            collectHoleContext v1 ++ collectHoleContext v2
+
+        VTuple2 v1 v2 -> 
+            collectHoleContext v1 ++ collectHoleContext v2
+
+        VTuple3 v1 v2 v3 -> 
+            collectHoleContext v1 ++ collectHoleContext v2 ++ collectHoleContext v3
+        
+        VHole hn venv state ->
+            let 
+                venv_ = 
+                    addIndexToVenv 0 venv 
+            in
+                [IndexedHole hn venv_]
+
+        _ -> []
+
+addIndexToVenv : Int -> List (String, Value) -> List (Int, String, Value)
+addIndexToVenv  n venv =
+    case venv of
+        (s, v)::vs ->
+            case v of
+                VHole hn venv1 _ ->
+                    let 
+                        venv2 = 
+                            addIndexToVenv 0 venv1
+                    in
+                        (n, s, IndexedHole hn venv2)::(addIndexToVenv (n+1) vs)
+                _ -> (n, s, v)::(addIndexToVenv (n+1) vs)
+        [] -> []
+
+elemInHoleContext : Value -> List Value -> Bool
+elemInHoleContext v context =
+    case v of
+        IndexedHole hn _ ->
+            case context of
+                (IndexedHole hn_ _)::ct ->
+                    if hn == hn_
+                    then True
+                    else elemInHoleContext v ct
+                _ -> False
+        _ -> False
+
+
+unique : List Value -> List Value
+unique context =
+    case context of
+        [] -> []
+
+        v::vs ->
+            let 
+                rest = unique vs 
+            in
+            if elemInHoleContext v rest then
+                rest
+            else
+                v::rest

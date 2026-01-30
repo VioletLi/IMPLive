@@ -27,7 +27,7 @@ value =
     , loc
     , unit
     , new
-    , vhole
+    -- , vhole
     ]
 
 

@@ -1,7 +1,6 @@
 module OOP.Printer.Value exposing (..)
 
-import OOP.Syntax exposing (Value(..))
-import Syntax exposing (HoleName(..))
+import OOP.Syntax exposing (Value(..),HoleName(..))
 import Debug exposing (toString)
 import String
 
