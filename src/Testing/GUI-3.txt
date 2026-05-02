@@ -1,0 +1,42 @@
+let 
+    red = 255000000,
+    green = 255000,
+    blue = 255,
+    black = 0,
+    white = 255255255,
+    
+    initEvent = Event "Init" [],
+    gui = \n->\e->
+        let
+            n_ = 
+                case e of
+                    Event "Init" [] -> 0 |
+                    Event "Increase" [] -> n + 1 |
+                    Event "Reset" [] -> 0,
+                    
+            snap = 
+                Html.div
+                    [("text-align", "center")]
+                    []
+                    [ Html.div
+                        []
+                        []
+                        [n_]
+                    , Html.button
+                        [("color", black), ("margin", 10), ("border-radius", 2), ("font-size", 14), ("font-weight", 100)]
+                        [("onclick", "Increase")]
+                        ["Increase"]
+                    , Html.button
+                        [("color", white), ("background-color", black)]
+                        [("onclick", "Reset")]
+                        ["Reset"]
+                    ],
+                    
+            next = gui n_
+        in        
+        Gui snap next
+in gui 0 initEvent
+
+
+------
+Html.div id id (Html.div id id (+1)::id)::id

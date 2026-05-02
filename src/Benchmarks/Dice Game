@@ -1,0 +1,274 @@
+let
+    green  = 255000    ,
+    red    = 255000000 ,
+    blue   = 51133228  ,
+    white  = 255255255 ,
+    gray   = 105105105 ,
+    lightGreen = 209243209 ,
+    
+    hc = ("text-align", "center") , 
+    hl = ("text-align", "left")   ,
+    hr = ("text-align", "right")  ,
+    tc = ("align"     , "center") ,
+    
+    noBord      = ("border" , "none"        )   ,
+    border      = ("border" , "1px solid gray") ,
+    borderRight = ("border-right", "1px solid white") ,
+    
+    width  = \w -> ("width"           , w) ,
+    height = \h -> ("height"          , h) ,
+    
+    margin = \m -> ("margin"          , m) ,
+    mt     = \m -> ("margin-top"      , m) ,
+    mr     = \m -> ("margin-right"    , m) ,
+    ml     = \m -> ("margin-left"     , m) ,
+    mb     = \m -> ("margin-bottom"   , m) ,
+    
+    fs     = \s -> ("font-size"       , s) ,
+    fw     = \w -> ("font-weight"     , w) ,
+    bg     = \c -> ("background-color", c) ,
+    color  = \c -> ("color"           , c) ,
+    src    = \u -> ("src"             , u) ,
+    indent = \i -> ("text-indent"     , i) ,
+    
+    bold = fw 700 ,
+    
+    selected = ("selected", "")        ,
+    value    = \v -> ("value", v)      ,
+    minWid   = \w -> ("min-width" , w) ,
+    minHei   = \h -> ("min-height", h) ,
+
+    len = \xs ->
+        case xs of
+            []    -> 0            |
+            _::ys -> 1 + (len ys) ,
+    
+    nth = \xs -> \i ->
+        case xs of 
+            []    -> "error"          |         
+            x::ys -> 
+                case i of
+                    0 -> x            |
+                    _ -> nth ys (i-1) ,
+                    
+    rIndices = \xs -> \i ->
+        case xs of
+            [] -> []                       |
+            _::ys -> i::(rIndices ys (i-1)) ,
+    
+    sum = \xs ->
+        case xs of
+            []    -> 0            |
+            x::ys -> x + (sum ys) ,
+            
+    map = \f -> \xs ->
+        case xs of
+            [] -> []                     |
+            x::ys -> (f x) :: (map f ys) ,
+    
+    toInt = \s ->
+        case s of
+            "0" -> 0 | "1" -> 1 | "2" -> 2 | "3" -> 3 | "4" -> 4 |
+            "5" -> 5 | "6" -> 6 | "7" -> 7 | "8" -> 8 | "9" -> 9 ,
+    
+      img1Style = [ mr 80, width 200, height 100 ] ,
+      img2Style = [ width 100, height 100 ]        ,
+    headerStyle = [ minWid "60px", height 30, hc, bold, bg gray, color white, borderRight ] ,
+        tdStyle = [ height 25, hc, noBord, bg lightGreen, color blue ] ,
+     tableStyle = [ ("border-collapse", "collapse"), border ] ,
+    
+    getConfirmedScores = \scores ->
+        case scores of
+            [] -> [] |
+            xs::rest ->
+                case xs of
+                    x::[] -> rest   |
+                    _     -> scores ,
+    
+    getHeader = \scores ->
+        let 
+            confirmedScores = getConfirmedScores scores ,
+        
+            pIdHdr    =       Html.th headerStyle [] ["PID"  ] ,
+            totalHdr  =       Html.th headerStyle [] ["Score"] ,
+            roundHdr  = \r -> Html.th headerStyle [] ["#", r ] ,
+            roundsHdr = map 
+                roundHdr 
+                (rIndices confirmedScores (len confirmedScores))
+        in
+            pIdHdr :: totalHdr :: roundsHdr ,
+            
+    getPlayersScores = \players -> \scores ->
+        let
+            playerInfo = \pId ->
+                let 
+                    confirmedScores = getConfirmedScores scores         ,
+                    totolScore      = getTotalScore confirmedScores pId ,
+                    
+                    pLabel          = Html.td (bold::tdStyle) [] [pId]  ,
+                    pTotalScore     = Html.td tdStyle [] [totolScore]   ,
+                    pScores         = map 
+                        (\pair -> Html.td tdStyle [] [nth pair pId]) 
+                        confirmedScores
+                in
+                    Html.tr [] [] (pLabel::pTotalScore::pScores)
+        in
+            map playerInfo players ,
+        
+    getTotalScore = \scores -> \pId ->
+        sum (map (\pair -> nth pair pId) scores) ,
+
+    scoreSheet = \pIds -> \scores ->
+        let 
+            header        = Html.tr [] [] (getHeader scores) ,
+            playersScores = getPlayersScores pIds scores
+        in
+            Html.table tableStyle [tc] 
+                [ Html.tbody [] [] 
+                    [ Html.tr [] [] (header::playersScores) ] 
+                ] ,
+
+    diceOptions = \point ->
+        let 
+            genOpt = \opt ->
+                let 
+                    display = case opt of
+                        0 -> "Select your dice" |
+                        _ -> opt                ,
+                    
+                    selectedAttr = case (opt == point) of
+                        True  -> [selected] |
+                        False -> []
+                in
+                    Html.option [] selectedAttr [display]
+        in
+            map genOpt [ 0, 1, 2, 3, 4, 5, 6] ,
+    rule = "Two players take turns rolling dice. On each turn, you can choose to roll either one die or two dice. If you roll one die, you get the score of the rolled points. If you roll two dice, you get the score which equals to the sum of the points. However, if the dice are the same number, your score nothing. The first one to reach 100 points wins the game!" ,
+    url1 = "https://gamerbraves.sgp1.cdn.digitaloceanspaces.com/2017/08/GameOfDice.jpg" ,
+    url2 = "https://static.vecteezy.com/system/resources/previews/009/385/437/original/casino-dice-clipart-design-illustration-free-png.png" ,
+
+    view = \model ->
+        case model of
+            current::pointOne::pointTwo::pIds::pNames::scores::gameState::[] ->
+                let 
+                    pId     = nth pIds current                      ,
+                    pName   = nth pNames pId                        ,
+                    round   = (len (getConfirmedScores scores)) + 1 ,
+                    optsOne = diceOptions pointOne                  ,
+                    optsTwo = diceOptions pointTwo                  
+                in
+                    Html.div [margin 20, hc] [] 
+                        [ Html.img img1Style [src url1] []
+                        , Html.img img2Style [src url2] []
+                        , Html.div [hr] [] 
+                            [ Html.button [hr] [("onclick", "Reset")] ["Reset"] ]
+                        , Html.h2 [mt (-5), mb (-5)] [] ["Dice Game"]
+                        , Html.p  [fs 12, hl, indent "20px"] [] [rule]
+                        , scoreSheet pIds scores
+                        , Html.h3  [] [] [ "Round ", round ]
+                        , Html.p  [] [] 
+                            [ Html.span [bold, color red] [] [pName]
+                            , " with PID of "
+                            , Html.span [bold, color red] [] [pId]
+                            , ", it's your turn to throw dice(s)."
+                            ]
+                        , Html.div [] [] 
+                            [ Html.label  [] [] ["Dice One: "]
+                            , Html.select [] [("oninput", "DiceOne")] optsOne
+                            , Html.label  [ml 40] [] ["Dice Two(optional): "]
+                            , Html.select [] [("oninput", "DiceTwo")] optsTwo
+                            ]
+                        , Html.div [mt 15] [] 
+                            [ Html.button [bold] [("onclick", "Confirm")] ["Confirm"] ]
+                        ] ,
+    
+    calcScore = \p1 -> \p2 ->
+        case p1==p2 of
+            True  -> 0       |
+            False -> p1 + p2 ,
+    
+    appendScore = \scores -> \score ->
+        case scores of
+            [] -> [[score]] |
+            xs::rest ->
+                case xs of
+                    x::[] -> [x, score] :: rest   |
+                    x::y::[] -> [score] :: scores ,
+    
+    next = \current ->
+        case current of 
+            0 -> 1 |
+            1 -> 0 ,
+    
+    translateChoose = \n ->
+        case n of
+            "Select your dice" -> 0       |
+            _                  -> toInt n ,
+
+    update = \model -> \event ->
+        case model of   
+            current::pointOne::pointTwo::pIds::pNames::scores::gameState::[] ->
+                case event of
+                    Event "Reset"      [] -> initModel |
+                    Event "DiceOne" n::[] ->
+                        [ current
+                        , translateChoose n
+                        , pointTwo
+                        , pIds
+                        , pNames
+                        , scores
+                        , gameState 
+                        ] |
+                    Event "DiceTwo" n::[] -> 
+                        [ current
+                        , pointOne
+                        , translateChoose n
+                        , pIds
+                        , pNames
+                        , scores
+                        , gameState 
+                        ] |
+                    Event "Confirm"    [] -> 
+                        let 
+                            score = calcScore pointOne pointTwo  ,
+                            newScores = appendScore scores score ,
+                            newCurrent = next current
+                        in
+                            [ newCurrent
+                            , initPointOne
+                            , initPointTwo
+                            , pIds
+                            , pNames
+                            , newScores 
+                            , gameState
+                            ] ,
+
+    gui = \model -> \view -> \update -> \event ->
+        let 
+            model_ = update model event ,
+            snap_  = view model_        ,
+            gui_   = gui model_ view update
+        in
+            Gui snap_ gui_ ,
+    
+    initCurrent   = 0 ,
+    initPointOne  = 0 ,
+    initPointTwo  = 0 , 
+    initPIds      = [ 0, 1 ] ,
+    initPNames    = [ "John", "Nick" ] ,
+    initScores    = [] ,
+    initGameState =  1 ,
+    
+    initModel = 
+        [ initCurrent
+        , initPointOne
+        , initPointTwo
+        , initPIds
+        , initPNames
+        , initScores
+        , initGameState 
+        ] ,
+    initSnap = view initModel ,
+    initGui  = gui initModel view update
+in
+    Gui initSnap initGui

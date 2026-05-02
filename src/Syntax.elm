@@ -1,167 +1,130 @@
 module Syntax exposing (..)
 
+
+type alias ID = Int
+type alias Var = String
 type alias Info = String
 
-type alias WS =
-    (List String, Int)
+{- | Heap
+        = [(variable name
+        , (original exp, updated exp)
+        , delta
+        , (memorized val, if the fully updated exp has already been computed)))]
+-}
+type alias Heap = List (Var, ((Exp, Exp), Delta, (Maybe Value, Bool)))
 
-defaultWS : WS
-defaultWS = ([], 0)
-defaultId : number
-defaultId = 0
+-- | Value = Exps in WHNF (ELam, EInt, ENil, and ETuple & ECons that contain only Values)
+type alias Value = Exp
 
--- VCons: 
-vsId : number
-vsId = 1    -- String
-voId : number
-voId = 0    -- Other
+{- type and constants about whitespace -}
+type alias WSS = List String
 
--- ECons:
--- ENil like elm
-eoSquare : number
-eoSquare = 0
-eoElm : number
-eoElm = 1
-eoCons : number
-eoCons = 2
-esQuo : number
-esQuo = 3
-esElm : number
-esElm = 4
+type ListType = ConsType | SquareType | StringType
+type TupleType = TupleType | GuiType | EventType
 
--- Single ENil
-eoAddFromEmp : number
-eoAddFromEmp = 5
+eParensDefaultWSS : List String
+eParensDefaultWSS = [""," "]
+eIntDefaultWSS : WSS
+eIntDefaultWSS = [" "]
+eBoolDefaultWSS : WSS
+eBoolDefaultWSS = [" "]
+eStringDefaultWSS : WSS
+eStringDefaultWSS = [" "]
+eVarDefaultWSS : WSS
+eVarDefaultWSS = [" "]
+eLamDefaultWSS : WSS
+eLamDefaultWSS = ["", " ", " "]
+eLetDefaultWSS : WSS
+eLetDefaultWSS = [" ", " "]
+eConsDefaultWSS : WSS
+eConsDefaultWSS = [" "]
+eListDefaultWSS : WSS
+eListDefaultWSS = [" ", " "]
+eNilDefaultWSS : WSS
+eNilDefaultWSS = ["", " "]
+eTupleDefaultWSS : WSS
+eTupleDefaultWSS = [" ", " ", " "]
+eTupleEventDefaultWSS : WSS
+eTupleEventDefaultWSS = [" "]
+eCaseDefaultWSS : WSS
+eCaseDefaultWSS = [" ", " "]
+eUPrimDefaultWSS : WSS
+eUPrimDefaultWSS = [" "]
+eBPrimDefaultWSS : WSS
+eBPrimDefaultWSS = [" "]
+eHtmlDefaultWSS : WSS
+eHtmlDefaultWSS = [" "]
+bSinDefaultWSS : WSS
+bSinDefaultWSS = [" "]
+bComDefaultWSS : WSS
+bComDefaultWSS = [" "]
 
--- Single PNil
-poNil : number
-poNil = 6
+pConsDefaultWSS : WSS
+pConsDefaultWSS = [" "]
+pTupleDefaultWSS : WSS
+pTupleDefaultWSS = ["", " ", " "]
+pHtmlDefaultWS : WSS
+pHtmlDefaultWS = [" ", " ", " ", " "]
 
--- PCons
-poSquare : number
-poSquare = 0
-poElm : number
-poElm = 1
-poCons : number
-poCons = 2
-psQuo : number
-psQuo = 3
-psElm : number
-psElm = 4
+pVarDefaultWSS : WSS
+pVarDefaultWSS = [" "]
 
--- Case & If
-caseN : String
-caseN = "$CASE$"
-caseId : number
-caseId = 1
-ifId : number
-ifId = 2
-
-type Expr
-    = EParens WS Expr
-    | EVar WS String
-    | ELam WS Pattern Expr
-    | ELet WS Pattern Expr Expr
-    | ELetrec WS Pattern Expr Expr
-    | EApp WS Expr Expr
-    | EInt WS Int
-    | EFloat WS Float
-    | ETrue WS
-    | EFalse WS
-    | EChar WS Char
-    | ECons WS Expr Expr
-    | ENil WS
-    | EHole WS HoleName
-    | EBPrim WS Bop Expr Expr
-    | EUPrim WS Uop Expr
-    | ECase WS Expr Branch
-    | EFix WS Expr
-    | EBTuple WS Expr Expr
-    | ETTuple WS Expr Expr Expr
-    | EHtml WS String Expr Expr Expr
-    | EToStr WS Expr
+type Exp
+    = EInt   WSS Int
+    | EBool  WSS Bool
+    | EChar  WSS Char
+    | EParens WSS Exp
+    | EVar   WSS Var Int -- ^ Variable name, and the length of the delta difference that has been calculated so far
+    | ELam   WSS Var Exp
+    | EApp   Exp Exp
+    | ELet   WSS Heap Exp -- constructor arguments, let-body
+    | ECons  WSS ListType Exp Exp
+    | ENil   WSS ListType
+    | ETuple WSS TupleType Exp Exp
+    | ECase  WSS Exp Branch
+    | EUPrim WSS Uop Exp
+    | EBPrim WSS Bop Exp Exp
+    -- Html.div [("position", "relative")] [("id", "div1")] ["test"]
+    | EHtml  WSS String Exp Exp Exp
+    -- | EEvent WSS 
     | EError Info
 
-type Bop = Add | Sub | Mul | Div | Eq | Lt | Gt | Le | Ge | And | Or | Cat | DDiv
+type Bop = Add | Sub | Mul -- | Div
+        | Mod | Cat
+        | Eq  | Ne | Lt  | Gt  | Le  | Ge
+        | And | Or
+
 type Uop = Not | Neg
 
 type Branch
-    = BSin WS Pattern Expr
-    | BNSin WS Int Pattern Expr
-    | BCom WS Branch Branch
-
-type Value
-    = VInt Int
-    | VFloat Float
-    | VTrue
-    | VFalse
-    | VChar Char
-    | VCons Int Value Value
-    | VNil Int
-    | VHole HoleName VEnv
-    | IndexedHole HoleName (List (Int, String, Value))
-    | VFix Expr
-    | VClosure Pattern Expr VEnv
-    | VBTuple Value Value
-    | VTTuple Value Value Value 
-    | VHtml String Value Value Value
-    | VError Info
-
-type HoleName
-    = HOri Int
-    | HInter Int
-    | HField HoleName HoleName
-    | HId Int
-    | HInst HoleName Int
-
-type alias VEnv = List (String, Value)
-
-type alias IndexedVEnv = List (Int, String, Value)
-
-type alias HEnv = List (HoleName, VEnv, Value)
+    = BSin WSS Pattern Exp
+    | BCom WSS Branch Branch
 
 type Pattern
-    = PVar WS String
-    | PCons WS Pattern Pattern
-    | PNil WS
-    | PInt WS Int
-    | PFloat WS Float
-    | PTrue WS
-    | PFalse WS
-    | PChar WS Char
-    | PBTuple WS Pattern Pattern
-    | PTTuple WS Pattern Pattern Pattern
+    = PInt   WSS Int
+    | PBool  WSS Bool
+    | PChar  WSS Char
+    | PCons  WSS ListType Pattern Pattern
+    | PTuple WSS TupleType Pattern Pattern
+    | PHtml  WSS String Pattern Pattern Pattern
+    | PVar   WSS Var
+    | PNil   WSS ListType
+    | POk    WSS
 
-type alias HTotal = Int
+type Delta
+    = DZero
+    | DRem
+    | DId
+    | DAdd Int
+    | DTuple Delta Delta
+    | DInsert Int Value
+    | DDelete Int
+    | DCons (Maybe Exp) Delta Delta
+    | DLam Exp Delta
+    | DCom Delta Delta   -- dv2 . dv1, where dv1 is the first delta being applied
+    | DHtml String Delta Delta Delta
 
-type alias UnEvalRes = 
-    { henv : HEnv
-    , venv : VEnv
-    , expr : Expr
-    , htotal : Int
-    }
 
-type alias TryUnevalRes =
-    { ei     : Expr
-    , venv   : VEnv
-    , henv   : HEnv
-    , htotal : HTotal
-    , choice : Int
-    , pi     : Pattern
-    }
-
-type alias MatchCaseRes =
-    { venvm : VEnv
-    , choice: Int
-    , ei : Expr
-    , pi : Pattern
-    }
-
--- HOri ID start from 1
--- HOri 0 represent total number of temp Holes
-tempHoleCount : HoleName
-tempHoleCount = HInter 0
-holeIDStart : Int
-holeIDStart = 1
-holeAddedByUserStart : Int
-holeAddedByUserStart = 100
+type GUIEvent 
+    = Click
+    | Input String 

@@ -1,0 +1,134 @@
+let 
+    black = 0,
+    white = 255255255,
+    gray = 105105105,
+    lightGreen = 227240205,
+    
+    listGet = \xs -> \idx ->
+        case xs of
+            []    -> "error" |
+            x::ys -> 
+                case idx of 
+                    0 -> x |
+                    _ -> listGet ys (idx-1)
+    ,
+
+    genMainPageItem = \info ->
+        case info of 
+            url :: price :: loc :: event :: [] ->
+                Html.tr [("background-color", lightGreen)] [("onclick", event)]
+                    [ Html.td [("border", "none")] [] 
+                        [ Html.img 
+                            [("width", 150), ("height", 95)] [("src", url)] 
+                            []
+                        ]
+                    , Html.td [("border", "none"), ("width", 210), ("font-size", 16), ("vertical-align", "top")] [] 
+                        [ Html.div [("background-color", white), ("margin", 5)] [] 
+                            [loc]
+                        , Html.div [("margin", 5), ("margin-top", 45)] [] 
+                            ["$", price]
+                        ]
+                    ]
+    ,
+
+    genMainPageItems = \infos ->  
+        case infos of
+            []         -> [] |
+            info::rest -> 
+                (genMainPageItem info) :: (genMainPageItems rest)
+    ,
+
+    mainPage = \infos ->
+        Html.div [] [] 
+            [ Html.div [] [] 
+                [ Html.span [("font-size", 27), ("margin-right", 20), ("padding", 5)] [] 
+                    ["Springfield, MJ"]
+                , Html.span [("font-size", 10), ("padding", 5)] [] 
+                    ["Real Estate & Homes For Sale"]
+                ]
+            , Html.table [("border-spacing", "0px 10px")] [] 
+                [ Html.tbody [] [] (genMainPageItems infos) ]
+            ]
+    ,
+    
+    genSubPageDetail = \info ->
+        case info of
+            url :: price :: loc :: _ -> 
+                Html.tr [("background-color", lightGreen)] []
+                    [ Html.td [("border", "none")] [] 
+                        [ Html.img 
+                            [("width", 200), ("height", 130)] [("src", url)] 
+                            []
+                        ]
+                    , Html.td [("border", "none"), ("width", 280), ("font-size", 20), ("vertical-align", "top")] [] 
+                        [ Html.div [("background-color", white), ("margin", 5)] [] 
+                            [loc]
+                        , Html.div [("margin", 5), ("margin-top", 75)] [] 
+                            ["$", price]
+                        ]
+                    ]
+    ,
+    
+    genSubPageRates = \rates ->
+        case rates of
+            []           -> [] |
+            rate :: rest -> 
+                (Html.label [("margin", 20)] [] 
+                    [ Html.input [("display", "none")] [("type", "radio")] []
+                    , Html.span [] [] [ rate, "%"]
+                    ] 
+                )
+                :: (genSubPageRates rest)
+    ,
+    
+    subPageRates = 
+        Html.div [("width", 300), ("display", "inline-block"), ("background-color", black), ("color", white)] [] 
+            (genSubPageRates annualRates)
+    ,
+        
+    subPage = \info ->
+        Html.div [] [] 
+            [ Html.div [("width", 483), ("font-size", 25), ("background-color", gray), ("color", white), ("text-align", "center")] [] ["Details of House"]
+            , Html.table [("border-spacing", "0px 10px")] [] 
+                [ Html.tbody [] [] [genSubPageDetail info] ]
+            , Html.div [("font-size", 12)] [] 
+                [ Html.span [("display", "inline-block"), ("width", 120)] [] ["Annual Percentage:"]
+                , subPageRates
+                ]
+            ],
+    
+    annualRates = [2, 3, 4, 5, 6] ,
+    years = [10, 15, 20, 25, 30]  ,
+    
+    saleInfos = [
+        ["https://ssl.cdn-redfin.com/photo/1/bigphoto/682/2227682_0.jpg", 256000, "5806 249Th Ct Ne" , "Detail0"],
+        ["https://ssl.cdn-redfin.com/photo/1/bigphoto/014/394014_4.jpg", 848188, "18930 Ne 20Th Ct" , "Detail1"],
+        ["https://ssl.cdn-redfin.com/photo/1/bigphoto/568/415568_3.jpg", 400000, "23724 Ne 65Th Pl" , "Detail2"],
+        ["https://ssl.cdn-redfin.com/photo/1/bigphoto/843/401843_3.jpg", 530000, "9539 225Th Way Ne", "Detail3"]
+    ] ,
+    
+    view = \model ->
+        case model of
+            -1 -> mainPage saleInfos |
+            _  -> subPage (listGet saleInfos model) ,
+    
+    update = \model -> \event ->
+        case event of
+            Event "Detail0"  [] ->  0 |
+            Event "Detail1"  [] ->  1 |
+            Event "Detail2"  [] ->  2 |
+            Event "Detail3"  [] ->  3 ,
+    
+    gui = \model -> \view -> \update -> \event ->
+        let 
+            model_ = update model event ,
+            snap_  = view model_        ,
+            gui_   = gui model_ view update
+        in
+            Gui snap_ gui_ ,
+    
+    initModel = -1 ,
+    initSnap = view initModel ,
+    initGui  = gui initModel view update
+in
+    Gui initSnap initGui

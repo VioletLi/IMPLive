@@ -1,0 +1,111 @@
+let 
+    red = 255000000,
+    green = 255000,
+    blue = 255,
+    black = 0,
+    white = 255255255,
+
+
+    listAdd = 
+        \xs -> \ys -> 
+            case xs of
+                []       -> [] |
+                xh :: xt -> 
+                    case ys of 
+                        []       -> [] |
+                        yh :: yt -> 
+                            (xh + yh) :: (listAdd xt yt)
+    ,
+
+    head = 
+        \xs ->
+            case xs of
+                []       -> -1 |
+                xh :: xt -> xh
+    ,
+
+    tail =
+        \xs ->
+            case xs of
+                []       -> [] |
+                xh :: xt -> xt
+    ,
+
+    get =
+        \xs -> \idx ->
+            case idx of
+                0 -> head xs |
+                _ -> get (tail xs) (idx-1)
+    ,
+    
+    ones = 1 :: ones,
+    
+    nat = 1 :: (listAdd ones nat),
+
+    fib = 1 :: 1 :: (listAdd fib (tail fib)),
+    
+
+    initModel = 0,
+
+    view1 = \model -> 
+        Html.div 
+            [("text-align", "center")] 
+            []
+            [ Html.div 
+                [("text-align", "center")] 
+                [] 
+                ["Index: ", model]
+            , Html.div 
+                [("text-align", "center")] 
+                [] 
+                ["Nature: ", get nat model]
+            , Html.div 
+                [("text-align", "center")] 
+                [] 
+                ["Fib: ", get fib model]
+            , Html.button
+                [("color", black)
+                ,("backgouround-color", white)
+                ,("margin", 10)
+                ,("border-radius", 2)
+                ,("font-size", 14)
+                ,("font-weight", 100)
+                ]
+                [("onclick", "Left")]
+                ["Left"]
+            , Html.button
+                [("color", white)
+                ,("background-color", black)
+                ,("margin", 10)
+                ,("border-radius", 2)
+                ,("font-size", 14)
+                ,("font-weight", 100)
+                ]
+                [("onclick", "Right")]
+                ["Right"]
+            ]
+    ,
+
+    update1 = \model -> \event ->
+        case event of
+            Event "Right" [] -> model + 1 |
+            Event "Left"  [] -> 
+                case model of
+                    0 -> 0 |
+                    _ -> model - 1
+    ,
+
+
+    gui = \model -> \view -> \update -> \event ->
+        let 
+            model_ = update model event,
+            snap_  = view model_,
+            gui_   = gui model_ view update
+        in
+            Gui snap_ gui_
+    ,
+
+    initSnap = view1 initModel,
+    initGui = gui initModel view1 update1
+in
+    Gui initSnap initGui

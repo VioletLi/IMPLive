@@ -1,0 +1,259 @@
+/* TODO: Size Adaption*/
+
+#lazy-bi-eval {
+    background-color: #e7edf3;
+    width: 100%;
+    height: 100%;
+}
+
+#menu-bar {
+    background-color: #b9d7ea;
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 40px;
+}
+
+#save-delta {
+    width: 140px;
+}
+
+#title {
+    color: #07689f;
+    font-family: "Verdana";
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 0.5%;
+    margin-left: 3%;
+    width: 140px;
+}
+
+.btn {
+    background-color: #7098da;
+    font-size: medium;
+    font-weight: 500;
+    margin-top: 0.5%;
+    margin-left: 1.8%;
+    height: 27.5px;
+    width: 80px;
+    font-family: "Verdana";
+    color: white;
+    border: none;
+    border-radius: 3px;
+    box-shadow: 1px 1px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: #a2d5f2;
+}
+
+.btn:active {
+    background-color: #869cbf;
+    box-shadow: 0 1px #666;
+    transform: translateY(1px);
+}
+
+.btn-pointer-events-none {
+    background-color: #869cbf;
+    box-shadow: 0 1px #666;
+    transform: translateY(1px);
+}
+
+.text-block {
+    background-color: #878ecd;
+    font-size: medium;
+    font-weight: 500;
+    margin-top: 0.5%;
+    margin-left: 2%;
+    height: 27.5px;
+    width: 150px;
+    font-family: "Verdana";
+    color: white;
+    border: none;
+    box-shadow: 1px 1px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    line-height: 0.75cm;
+    padding-left: 1%;
+}
+
+#mode-prompt {
+    float: left;
+}
+
+#mode {
+    font-weight: 1000;
+    color: #fc85ae;
+}
+
+#event-display {
+    background-color: #e47215;
+    padding-left: 0%;
+    width: 100px;
+}
+
+.checkpoint {
+    width: 180px;
+}
+
+.back-to-checkpoint {
+    width: 180px;
+}
+
+.area-title {
+    background-color: #15b7b9;
+    font-family: "Verdana";
+    color: white;
+    border-radius: 5px 5px 0 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+table th {
+    font-family: "Verdana";
+    font-weight: 100;
+    text-align: center;
+    border-bottom: 2px solid #669999;
+}
+
+table td {
+    font-family: "Verdana";
+    font-size: 14px;
+    text-align: left;
+    border-bottom: 1px solid #669999;
+}
+
+#code-block {
+    position: absolute;
+    text-align: left;
+    background-color: white;
+    top: 4.5%;
+    left: 2.5%;
+    width: 50%;
+    height: 90%;
+    margin-top: 1%;
+    margin-left: 1%;
+    border-radius: 5px;
+    box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
+}
+
+#editor { 
+    position: absolute;
+    width: 100%;
+    height: 96.2%;
+    border-radius: 5px;
+    box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
+}
+
+#output-block {
+    position: absolute;
+    text-align: left;
+    background-color: white;
+    top: 4.5%;
+    left: 55%;
+    width: 42.5%;
+    height: 90%;
+    margin-top: 1%;
+    margin-left: 1%;
+    border-radius: 5px;
+    box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
+}
+
+#delta-block {
+    position: absolute;
+    text-align: left;
+    background-color: white;
+    top: 68%;
+    left: 55%;
+    width: 42.5%;
+    height: 26.2%;
+    margin-top: 1%;
+    margin-left: 1%;
+    border-radius: 5px;
+    box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
+}
+
+#delta-textarea {
+    width: 99%;
+    height: 85%;
+}
+
+#output-area {
+    width: 99%;
+    height: 92%;
+    margin-top: 2px;
+    overflow: auto;
+}
+
+.small {
+    width: 35px;
+}
+
+.menu {
+    position: relative;
+    top: 0;
+    left: 0;
+    background-color: #fff;
+    padding: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    cursor: pointer;
+    font-family: "Verdana";
+    font-size: 14px;
+}
+
+.menu > li {
+    list-style: none;
+    /* display: inline-block; */
+    transition: all 0.3s ease;
+    position: relative;
+    padding: 3px;
+    font-family: "Verdana";
+}
+
+.menu > li:not(:last-child) {
+    border-bottom: 2px solid rgb(176, 173, 173);
+}
+
+.sub-menu {
+    position: absolute;
+    top: 100%;
+    left: 80%;
+    background-color: #fff;
+    padding: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: none;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.menu > li:hover .sub-menu {
+    display: block;
+}
+
+.sub-menu > li {
+    list-style: none;
+    display: flex;
+    vertical-align: middle ;
+    padding: 2px;
+    transition: all 0.3s ease;
+}
+
+.sub-menu > li:not(:last-child) {
+    border-bottom: 2px solid rgb(176, 173, 173);
+}
+
+.sub-menu > li > label {
+    width: 60px;
+    text-align: center;
+}
+
+.sub-menu > li > input {
+    width: 80px;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+

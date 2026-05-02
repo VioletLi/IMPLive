@@ -1,0 +1,362 @@
+let
+    green  = 255000    ,
+    red    = 255000000 ,
+    blue   = 51133228  ,
+    white  = 255255255 ,
+    black  = 0         ,
+    gray   = 105105105 ,
+    brown  = 50050050  ,
+    yellow = 255255000 ,
+    pink   = 255204202 ,
+    lightGreen = 209243209 ,
+    lightGray  = 234234234 ,
+    
+    
+    hc = ("text-align", "center")  , 
+    hr = ("text-align", "right")   ,
+    
+    pointer = ("cursor" , "pointer") ,
+    noBord  = ("border" , "none"   ) ,
+    block   = ("display", "block"  ) ,
+
+    vm = ("vertical-align", "middle") ,
+    vb = ("vertical-align", "botom")  ,
+    
+    width  = \w -> ("width"           , w) ,
+    height = \h -> ("height"          , h) ,
+    lh     = \h -> ("line-height"     , h) ,
+    
+    margin = \m -> ("margin"          , m) ,
+    mt     = \m -> ("margin-top"      , m) ,
+    mr     = \m -> ("margin-right"    , m) ,
+    mb     = \m -> ("margin-bottom"   , m) ,
+    ml     = \m -> ("margin-left"     , m) ,
+    
+    padding = \p -> ("padding"         , p) ,  
+    pt      = \p -> ("padding-top"     , p) ,
+    pr      = \p -> ("padding-right"   , p) ,
+    pb      = \p -> ("padding-bottom"  , p) ,
+    pl      = \p -> ("padding-left"    , p) ,
+    
+    fs     = \s -> ("font-size"       , s) ,
+    fw     = \w -> ("font-weight"     , w) ,
+    bg     = \c -> ("background-color", c) ,
+    br     = \n -> ("border-radius"   , n) ,
+    color  = \c -> ("color"           , c) ,
+    
+
+    len = \xs ->
+        case xs of
+            []    -> 0            |
+            _::ys -> 1 + (len ys) ,
+    
+    nth = \xs -> \i ->
+        case xs of 
+            []    -> "error"          |         
+            x::ys -> 
+                case i of
+                    0 -> x            |
+                    _ -> nth ys (i-1) ,
+            
+    indices = \xs -> \i ->
+        case xs of
+            [] -> []                       |
+            _::ys -> i::(indices ys (i+1)) ,
+    
+    sum = \xs ->
+        case xs of
+            []    -> 0            |
+            x::ys -> x + (sum ys) ,
+            
+    map = \f -> \xs ->
+        case xs of
+            [] -> []                     |
+            x::ys -> (f x) :: (map f ys) ,
+    
+    filter = \f -> \xs ->
+        case xs of
+            []    -> []                      |
+            x::ys ->
+                case f x of
+                    True -> x::(filter f ys) |
+                    _    -> filter f ys      ,
+                    
+    zip = \xs -> \ys ->
+        case xs of
+            [] -> [] |
+            x::xs1 ->
+                case ys of 
+                    [] -> []                            |
+                    y::ys1 -> [x, y] :: (zip xs1 ys1) ,
+
+    join = \xs -> \deli ->
+        case xs of
+            []    -> ""                          |
+            x::[] -> x                           |
+            x::ys -> x ++ deli ++ (join ys deli) ,
+        
+    toString = \n ->
+        case n of
+            0 -> "0" | 1 -> "1" | 2 -> "2" | 3 -> "3" | 4 -> "4" |
+            5 -> "5" | 6 -> "6" | 7 -> "7" | 8 -> "8" | 9 -> "9" , 
+    
+    toInt    = \s ->
+        case s of
+            "0" -> 0 | "1" -> 1 | "2" -> 2 | "3" -> 3 | "4" -> 4 |
+            "5" -> 5 | "6" -> 6 | "7" -> 7 | "8" -> 8 | "9" -> 9 ,
+
+
+    partCountStyle = 
+        [ noBord, bg white, color brown
+        , padding 0, pb 9, vb, fw 700 
+        ] ,
+
+    menusHeaderStyle = 
+        [ noBord, bg blue , color white
+        , width 94, height 23, padding 10, pt 7, pb 3
+        ] ,
+
+    columnAdderStyle = 
+        [ noBord, bg blue , color white
+        , padding 10, pt 7, pb 3, ("opacity", "0.5")
+        ] ,
+
+    infoStyle = [ hc, vm, pointer, height 33, fs 13 ] ,
+    yesStyle  = infoStyle ++ [ noBord, bg lightGreen, color blue ] ,
+    noStyle   = infoStyle ++ [ noBord, bg pink      , color red  ] ,
+    unkStyle  = infoStyle ++ [ noBord, bg lightGray              ] ,
+
+    tdStyle  = [ noBord, hc ] ,
+
+    inputStyle = 
+        [ width 120, height 15, lh 17, br 0
+        , ml 20, mr 20, mt 5, mb 5
+        , padding 2, pl 9, pr 6, fs 12
+        ] ,
+    
+    inputAttr =
+        [ ("onkeypress", "AddPerson")
+        , ("type", "text")
+        , ("placeholder", "Your name")
+        ] ,
+
+    tableStyle = [ ("border-collapse", "separate"), fs 13 ]     ,
+    
+    tableAttr  = [ ("cellpadding", "0"), ("cellspacing", "0") ] ,
+
+    preStyle = [("white-space", "pre-wrap"), ("cursor", "text")] ,
+
+
+    menusHeader = \menus -> 
+        map (\meal -> Html.th menusHeaderStyle [] [meal]) menus ,
+    
+    header = \participants -> \menus ->
+        let 
+            num = len participants ,
+            participantNumber = Html.th partCountStyle [] [ num, "participants" ] ,
+            options           = menusHeader menus                                 ,    
+            columnAdder       = 
+                Html.th columnAdderStyle [] 
+                    [ Html.button [] [("onclick", "AddColumn")] ["+"] ]
+        in
+            Html.tr [] [] ((participantNumber::options) ++ [columnAdder]) ,
+        
+    find = \predicate -> \choix ->
+        case choix of 
+            []    -> [False, False]                              |
+            choose::ys ->
+                case choose of
+                    pId::mId::checked::[] ->
+                        case predicate of
+                            tPId::tMId::[] ->
+                                case (pId == tPId) && (mId == tMId) of
+                                    True  -> [True, checked]     |  
+                                    False -> (find predicate ys) ,
+            
+    wantsToEat = \pId -> \mId -> \choix ->
+        let 
+            res = find [pId, mId] choix ,
+            styles = [hc, vm, pointer, height 33, fs 13] ,
+            attrs = 
+                [ ("onclick", "SetChoice")
+                , ("arg0", toString pId)
+                , ("arg1", toString mId)
+                ]
+        in  
+            case res of
+                True ::True ::[] -> Html.td yesStyle (("title", "Yes"    )::attrs) [] |
+                True ::False::[] -> Html.td noStyle  (("title", "No"     )::attrs) [] |
+                False::_         -> Html.td unkStyle (("title", "Unknown")::attrs) [] ,
+            
+    pollInfo = \pId -> \participants -> \choix -> \menus -> 
+        let 
+            participant = nth participants pId ,
+            info = map
+                (\mId -> wantsToEat pId mId choix)
+                (indices menus 0)
+        in
+            Html.tr [] [] ((Html.td tdStyle [] [participant])::info) ,
+                 
+    pollInfos = \participants -> \choix -> \menus ->
+        map 
+            (\pId -> pollInfo pId participants choix menus) 
+            (indices participants 0) ,
+            
+    total = \menuId -> \choix ->
+        let
+            f = \choose ->
+                case choose of
+                    pId::mId::checked::[] -> 
+                        case checked && mId == menuId of
+                            True  -> 1 |
+                            False -> 0 
+        in
+            sum (map f choix) ,
+            
+    genTotals = \choix -> \menus ->
+        let 
+            rowAdder = 
+                Html.td tdStyle [] 
+                    [ Html.label [] [] [] , Html.input inputStyle inputAttr [] ] ,
+            cols = 
+                map
+                    (\mId -> Html.td tdStyle [] [total mId choix])
+                    (indices menus 0)
+        in
+            Html.tr [] [] (rowAdder::cols) ,
+        
+    page = \model ->
+        case model of
+            participants::choix::menus::[] ->
+                let 
+                    hdr    = header participants menus          , 
+                    infos  = pollInfos participants choix menus ,
+                    totals = genTotals choix menus
+                in
+                    Html.table tableStyle tableAttr 
+                        [ Html.tbody [] [] ((hdr::infos) ++ [totals]) ] ,
+        
+    view = \model ->
+        case model of
+            participants::choix::menus::[] ->
+                let 
+                    sms = "Hello Pizzaiolo,
+Always a pleaure to do business with you.
+For the lunch of " ++ date ++ ", we would like to order"++ 
+(command participants choix menus) ++".
+I'll pick up the pizzas at 1:15pm.
+Best regards,
+The Dream Team" ,
+        
+                    href = "mailto:pizzaiolo@gmail.com?subject=Pizzas for " ++ date ++ "&body=" ++ sms
+                in
+                    Html.div [margin 20] [] 
+                        [ Html.h2 [] [] ["Pizza meeting, ", date]
+                        , Html.p  [] [] ["Choose your favorite pizzas. We will order some to satisfy everyone"]
+                        , page model
+                        , Html.a  [block, mt 16] [("href", href)] ["Send this email to the pizzaiolo"]
+                        , Html.pre preStyle [] [sms]
+                        ] ,
+                    
+    changeChoix = \choix -> \tPId -> \tMId ->
+        case choix of 
+            []           -> [[tPId, tMId, True]] |
+            choose::rest ->
+                case choose of 
+                    pId::mId::checked::[] ->
+                        case pId == tPId && mId == tMId of
+                            True -> [pId, mId, !checked] :: rest           |
+                            _    -> choose :: (changeChoix rest tPId tMId) ,
+    
+    update = \model -> \event ->
+        case model of 
+            participants::choix::menus::[] ->
+                case event of
+                    Event "AddPerson" p::[] ->
+                        let 
+                            newParticipants = participants++[p] ,      
+                            newChoix        = map  
+                                (\i -> [len participants, i, False]) 
+                                (indices menus 0)
+                        in
+                            [ newParticipants, choix++newChoix, menus ] |
+                        
+                    Event "AddColumn" [] ->
+                        let
+                            newMeal  = "Meal#" ++ (toString (len menus))
+                        in
+                            [ participants, choix, menus++[newMeal] ]   |
+                    
+                    Event "SetChoice" pId::mId::[] -> 
+                        let 
+                            newChoix = changeChoix choix (toInt pId) (toInt mId)
+                        in
+                            [ participants, newChoix, menus ]           ,
+                        
+    
+    gui = \model -> \view -> \update -> \event ->
+        let 
+            model_ = update model event ,
+            snap_  = view model_        ,
+            gui_   = gui model_ view update
+        in
+            Gui snap_ gui_ ,
+    
+    command = \participants -> \choix -> \menus -> 
+        let 
+            menusWithIndex = zip (indices menus 0) menus ,
+            
+            countMenu = \mealWithIndex ->
+                case mealWithIndex of
+                    index::meal::[] ->
+                        let 
+                            n = total index choix,
+                            
+                            filterChoose   = \choose ->
+                                case choose of
+                                    pId::mId::checked::[] ->
+                                        checked && mId == index      ,
+                                        
+                            getParticipant = \choose ->
+                                case choose of
+                                    pId::_ -> nth participants pId   ,
+                            
+                            choixForMeal = filter filterChoose choix ,
+                            who = map getParticipant choixForMeal    ,
+                            
+                            pulralStr = 
+                                case n of
+                                    1 -> "s" |
+                                    _ -> "" 
+                        in
+                            case n of
+                                0 -> "" |
+                                _ -> 
+                                    " " ++ (toString n) ++ " pizza" ++ pulralStr ++ 
+                                    " " ++ meal ++ " (" ++ (join who ", ") ++ ")"
+        in
+            join (map countMenu menusWithIndex) "," ,
+
+    date = "Thursday, April 26th 2018" ,
+
+    initParticipants = [
+        "John Doe",
+        "Mam Butterfly"
+    ] ,
+    
+    initChoix = [
+        [0, 0, True ],
+        [0, 1, False],
+        [1, 1, True ]
+    ] ,
+    
+    initMenus = [
+        "Margharita",
+        "Pepperoni"
+    ] ,
+        
+    initModel = [ initParticipants, initChoix, initMenus ] ,
+    initSnap  = view initModel ,
+    initGui   = gui initModel view update
+in  
+    Gui initSnap initGui

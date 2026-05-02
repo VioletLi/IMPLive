@@ -1,0 +1,158 @@
+let
+    lightGray  = 234234234 ,
+    lightGreen = 209243209 ,
+    pink   = 255204202 ,
+    blue   = 51133228  ,
+    orange = 255160000 ,
+
+    white  = 255255255 ,
+    black  = 0         ,
+    
+    neutralBG = ("background-color", lightGray)  ,
+    incomeBG  = ("background-color", lightGreen) ,
+    expenseBG = ("background-color", pink)       ,
+    
+    neutralColor = ("color", black)  ,
+    incomeColor  = ("color", blue )  ,
+    expenseColor = ("color", white)  ,
+    
+    width  = \w -> ("width"           , w) ,
+    height = \h -> ("height"          , h) ,
+    margin = \m -> ("margin"          , m) ,
+    paddin = \p -> ("padding"         , p) ,
+    pl     = \p -> ("padding-left"    , p) ,
+    fw     = \w -> ("font-weight"     , w) ,
+    
+    noBord  = ("border" , "none")    ,
+    pointer = ("cursor" , "pointer") ,
+    
+    bold    = fw 700 ,
+    
+    textCenter  = ("text-align", "center")       ,
+    textLeft    = ("text-align", "left")         ,
+    tableCenter = ("align"     , "center")       ,
+    inlineBlock = ("display"   , "inline-block") , 
+    
+    decl = \num ->
+        case num - 1 of 
+            -1 -> 0 |
+            _  -> num - 1 ,
+    
+    genConfInfoItem = \infos ->
+        case infos of
+            []         -> [] |
+            info::rest ->
+                let infoRow = 
+                    case info of
+                        t::name::value::addE::decE::[] ->
+                            let 
+                                style = 
+                                    case t of
+                                        "neutral" -> [neutralBG, neutralColor] |
+                                        "income"  -> [incomeBG , incomeColor ] |
+                                        "expense" -> [expenseBG, expenseColor]
+                            in
+                                Html.tr style [] 
+                                    [ Html.td [noBord, height 30, pl 6] [] [name]
+                                    , Html.td [noBord, textCenter] [] [value]
+                                    , Html.td [noBord, textCenter, width 25, pointer] [("onclick", addE)] ["+"]
+                                    , Html.td [noBord, textCenter, width 25, pointer] [("onclick", decE)] ["-"]
+                                    ]
+                in
+                    infoRow :: (genConfInfoItem rest) ,
+    
+    confPage = \infoData ->
+        case infoData of
+            participants::days::fee::lunch::venuePerDay::sponsors::[] ->
+                let 
+                    confInfos = [
+                        ["neutral", "Participants" , participants, "AddParti", "DecParti"],
+                        ["neutral", "Days"         , days        , "AddDays" , "DecDays" ],
+                        ["income" , "Fee"          , fee         , "AddFee"  , "DecFee"  ],
+                        ["expense", "Lunch"        , lunch       , "AddLunch", "DecLunch"],
+                        ["expense", "Venue Per Day", venuePerDay , "AddVenue", "DecVenue"],
+                        ["income" , "Sponsors"     , sponsors    , "AddSpons", "DecSpons"]
+                    ]
+                in
+                    Html.div [textCenter] [] 
+                        [ Html.h2 [] [] ["Conference Infomation"]
+                        , Html.table  [width 300] [tableCenter] 
+                            [ Html.tbody [] [] (genConfInfoItem confInfos) ]
+                        , Html.button [margin 20, pointer] [("onclick", "Calc")] 
+                            ["Calculate Surplus"]
+                        ] ,
+        
+    surplusPage = \infoData ->
+        case infoData of 
+            participants::days::fee::lunch::venuePerDay::sponsors::[] ->
+                let 
+                    venue        = venuePerDay * days ,
+                    costPerParti = fee - lunch * days ,
+                    surplus      = participants * costPerParti + sponsors - venue
+                in
+                    Html.div [textCenter] []
+                        [ Html.h2 [] [] ["Surplus of Conference"]
+                        , Html.table [width 300] [tableCenter] 
+                            [ Html.tbody [] [] 
+                                [ Html.tr [height 30, neutralBG, neutralColor ] [] 
+                                    [ Html.td [noBord, pl 6] [] ["Cost per participant"]
+                                    , Html.td [noBord, textCenter] [] [costPerParti]
+                                    ]
+                                , Html.tr [height 30, incomeBG, incomeColor] [] 
+                                    [ Html.td [noBord, pl 6] [] ["Venue"]
+                                    , Html.td [noBord, textCenter] [] [venue]
+                                    ]
+                                ]    
+                            ]
+                    , Html.div [margin 12] []
+                        [ "Current surplus of conference: "
+                        , Html.span [bold] [] [surplus]
+                        ]
+                    , Html.button [pointer] [("onclick", "Ret")] ["Back to Info"]
+                    ] ,
+    
+    view = \model ->
+        case model of
+            0::infoData  -> confPage    infoData |
+            1::infoData  -> surplusPage infoData ,
+    
+    update = \model -> \event ->
+        case model of
+            page::participants::days::fee::lunch::venuePerDay::sponsors::[] ->
+                case event of
+                    Event "Calc"     [] -> [1   ,      participants,      days,      fee,      lunch,      venuePerDay,      sponsors] |
+                    Event "Ret"      [] -> [0   ,      participants,      days,      fee,      lunch,      venuePerDay,      sponsors] |
+                    Event "AddParti" [] -> [page,    participants+1,      days,      fee,      lunch,      venuePerDay,      sponsors] |
+                    Event "AddDays"  [] -> [page,      participants,    days+1,      fee,      lunch,      venuePerDay,      sponsors] |
+                    Event "AddFee"   [] -> [page,      participants,      days,    fee+1,      lunch,      venuePerDay,      sponsors] |
+                    Event "AddLunch" [] -> [page,      participants,      days,      fee,    lunch+1,      venuePerDay,      sponsors] |
+                    Event "AddVenue" [] -> [page,      participants,      days,      fee,      lunch,    venuePerDay+1,      sponsors] |
+                    Event "AddSpons" [] -> [page,      participants,      days,      fee,      lunch,      venuePerDay,    sponsors+1] |
+                    Event "DecParti" [] -> [page, decl participants,      days,      fee,      lunch,      venuePerDay,      sponsors] |
+                    Event "DecDays"  [] -> [page,      participants, decl days,      fee,      lunch,      venuePerDay,      sponsors] |
+                    Event "DecFee"   [] -> [page,      participants,      days, decl fee,      lunch,      venuePerDay,      sponsors] |
+                    Event "DecLunch" [] -> [page,      participants,      days,      fee, decl lunch,      venuePerDay,      sponsors] |
+                    Event "DecVenue" [] -> [page,      participants,      days,      fee,      lunch, decl venuePerDay,      sponsors] |
+                    Event "DecSpons" [] -> [page,      participants,      days,      fee,      lunch,      venuePerDay, decl sponsors] ,
+    
+    gui = \model -> \view -> \update -> \event ->
+        let 
+            model_ = update model event ,
+            snap_  = view model_        ,
+            gui_   = gui model_ view update
+        in
+            Gui snap_ gui_ ,
+            
+    initParticipants = 200 ,
+    initDays         = 3   ,
+    initFee          = 50  ,
+    initLunch        = 30  ,
+    
+    initVenuePerDay  = 10000 ,    
+    initSponsors     = 20000 ,
+    
+    initModel = [0, initParticipants, initDays, initFee, initLunch, initVenuePerDay, initSponsors] ,
+    initSnap = view initModel ,
+    initGui  = gui initModel view update
+in 
+    Gui initSnap initGui

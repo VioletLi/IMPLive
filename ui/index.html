@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html>
+
+    <head>
+        <meta charset="UTF-8">
+        <title>Bi-DynDev</title>
+        <link rel="stylesheet" href="main.css" />
+        <script type="text/javascript" src="elm.js"></script>
+    </head>
+
+    <body>
+        <div id="myapp"></div>
+    </body>
+
+    <script type="text/javascript">
+        st = document.body.style;
+        st.margin = 0;
+        st.height = "100vh";
+        var app = Elm.Ui.Main.init({
+            node: document.getElementById('myapp')
+        });
+    </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./native/global.js"></script>
+    <script type="text/javascript" src="./native/lib/ace.js"></script>
+    <script type="text/javascript" src="./native/lib/mode-elm.js"></script>
+    <script type="text/javascript" src="./native/codeBox.js"></script>
+    <script type="text/javascript" src="./native/outputBox.js"></script>
+    <script type="text/javascript" src="./native/guiEventForward.js"></script>
+    <script type="text/javascript" src="./native/deltaStyle.js"></script>
+    <script type="text/javascript" src="./native/deltaSpan.js"></script>
+    <script type="text/javascript" src="./native/deltaDelete.js"></script>
+    <script type="text/javascript" src="./native/deltaInsert.js"></script>
+    <script type="text/javascript" src="./native/deltaMenu.js"></script>
+</html>
+

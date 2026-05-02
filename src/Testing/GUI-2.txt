@@ -1,0 +1,19 @@
+let
+    state = 0,
+    view = 
+        Html.div [] []
+        [ state
+        , Html.button [] [("onClick", 1)] ["Reset"]],
+    update =
+        \state->\click->
+            case click of
+                0 -> n |
+                1 -> 0,
+    gui = \state->\click->
+        let
+            n_ = update state click
+            v_ = view n_
+        in
+        (v_, gui n_)
+in
+    gui 100 0

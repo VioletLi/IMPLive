@@ -1,0 +1,17 @@
+let
+    fst = \t ->
+        case t of
+            (e1, e2) -> e1,
+    snd = \t ->
+        case t of
+            (e1, e2) -> e2,
+    gui = \n->\click->
+        let
+            n_ = 
+                case click of
+                    1 -> 1 + n |
+                    2 -> 2 + n
+        in
+        (n_, gui n_)
+in
+    fst ((snd (gui 0 1)) 2)

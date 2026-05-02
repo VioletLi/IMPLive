@@ -1,0 +1,52 @@
+let 
+    red = 255000000,
+    green = 255000,
+    blue = 255,
+    black = 0,
+    white = 255255255,
+
+    initModel = 0,
+    
+    view1 = \model -> 
+        Html.div [] []
+            [ Html.div [] [] [model]
+            , Html.button
+                [("color", green)
+                ,("margin", 10)
+                ,("border-radius", 2)
+                ,("font-size", 14)
+                ,("font-weight", 100)
+                ]
+                [("onclick", "Increase")]
+                ["Increase"]
+            , Html.button
+                [("color", white)
+                ,("background-color", black)
+                ]
+                [("onclick", "Reset")]
+                ["Reset"]
+            ]
+    ,
+
+    update1 = \model -> \event ->
+        case event of
+            Event "Increase" [] -> model + 1 |
+            Event "Reset"    [] -> 0
+    ,
+
+
+    gui = \model -> \view -> \update -> \event ->
+        let 
+            model_ = update model event,
+            snap_  = view model_,
+            gui_   = gui model_ view update
+        in
+            Gui snap_ gui_
+    ,
+
+    initSnap = view1 initModel,
+    initGui = gui initModel view1 update1
+in
+    Gui initSnap initGui
+------
+Html.button id id (+1)::id
