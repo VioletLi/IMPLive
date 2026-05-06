@@ -1,4 +1,4 @@
-module NewParser.Exp exposing (commaSeparatedExp, exp, parse)
+module NewParser.Exp exposing (commaSeparatedExp, exp, indexedAtom, parse)
 
 import Parser exposing (Parser, (|.), (|=), symbol, keyword, end, lazy, oneOf, succeed, backtrackable, map, andThen, number, DeadEnd, run, loop, Step(..))
 import Parser.Expression exposing (..)
@@ -14,7 +14,28 @@ parse =
 
 exp : Parser Exp
 exp =
-    buildExpressionParser operators (lazy (\_ -> atom))
+    buildExpressionParser operators (lazy (\_ -> indexedAtom))
+
+
+{-| Postfix @[ i ]@ … chains (arrays as @VCons@ lists); base comes from @atom@. -}
+indexedAtom : Parser Exp
+indexedAtom =
+    atom |> andThen (\start -> loop start indexedAtomStep)
+
+
+indexedAtomStep : Exp -> Parser (Step Exp Exp)
+indexedAtomStep e =
+    oneOf
+        [ backtrackable
+            (succeed (\wsOpen idx wsClose -> Loop (EIndex [ wsOpen, wsClose ] e idx))
+                |. symbol "["
+                |= mSpaces
+                |= lazy (\_ -> exp)
+                |. symbol "]"
+                |= mSpaces
+            )
+        , succeed (Done e)
+        ]
 
 
 operators : OperatorTable Exp
@@ -23,7 +44,8 @@ operators =
       , Infix (bop "/" Div) AssocLeft
       , Infix (bop "%" Mod) AssocLeft
       ]
-    , [ Infix (bop "+" Add) AssocLeft
+    , [ Infix (bop "++" Append) AssocRight
+      , Infix (bop "+" Add) AssocLeft
       , Infix (bop "-" Sub) AssocLeft
       ]
     , [ Infix (bop "<=" Le) AssocNone
@@ -51,6 +73,7 @@ atom : Parser Exp
 atom =
     oneOf
         [ backtrackable htmlExp
+        , lenExp
         , holeExp
         , intExp
         , boolExp
@@ -59,6 +82,18 @@ atom =
         , backtrackable parensExp
         , varExp
         ]
+
+
+{-| Builtin @len(e)@ — not a user-defined @fun@. -}
+lenExp : Parser Exp
+lenExp =
+    succeed (\ws1 arg ws2 -> ELen [ ws1, ws2 ] arg)
+        |. keyword "len"
+        |. symbol "("
+        |= mSpaces
+        |= lazy (\_ -> exp)
+        |. symbol ")"
+        |= mSpaces
 
 
 htmlExp : Parser Exp
@@ -134,7 +169,28 @@ commaSeparatedExp expP =
                     ]
             )
 
-{-| @[ ]@ / @[ e1 , e2 ]@ — @EList [ ws after @[@, ws before @]@ ] payload@; payload is @ENil []@ or @ECons@ spine (cf. @CommaExp.commaSeparatedExp@). @(@ @)@ for grouping is only @EParens@. -}
+
+{-| Like @commaSeparatedExp@ but forces a nil-terminated spine: @ECons … (ECons en (ENil []))@.
+    Used only for @[ … ]@; call-form @f(es)@ keeps @commaSeparatedExp@ so unary calls stay a bare @exp@.
+-}
+commaSeparatedListSpine : Parser Exp -> Parser Exp
+commaSeparatedListSpine expP =
+    expP
+        |> andThen
+            (\first ->
+                oneOf
+                    [ succeed (\ws rest -> ECons [ ws ] first rest)
+                        |. symbol ","
+                        |= mSpaces
+                        |= lazy (\_ -> commaSeparatedListSpine expP)
+                    , succeed (ECons [] first (ENil []))
+                    ]
+            )
+
+
+{-| @[ ]@ — @EList … (ENil [])@; @[ e1 , … , en ]@ — @EList … spine@ where @spine@ is @ECons@ chain ending in @ENil []@.
+    @(@ @)@ for grouping is only @EParens@; parenthesized comma tuples use @commaSeparatedExp@ under @CAssignCall@ only.
+-}
 listExp : Parser Exp
 listExp =
     oneOf
@@ -148,7 +204,7 @@ listExp =
         , succeed (\wsOpen spine wsClose -> EList [ wsOpen, wsClose ] spine)
             |. symbol "["
             |= mSpaces
-            |= commaSeparatedExp (lazy (\_ -> exp))
+            |= commaSeparatedListSpine (lazy (\_ -> exp))
             |. symbol "]"
             |= mSpaces
         ]

@@ -3,14 +3,15 @@ module NewParser.Comp exposing (atomicComp, comp)
 import Parser exposing (..)
 import NewParser.WhiteSpace exposing (mSpaces)
 import NewParser.Utils exposing (varName)
-import NewParser.Exp exposing (exp, commaSeparatedExp)
+import NewParser.Exp exposing (exp, commaSeparatedExp, indexedAtom)
 import NewSyntax exposing (..)
 
 
-{-| After @varname@ … spaces … @=@ … spaces … : either @f(es)@ → @CAssignCall@ or @e@ → @CAssign@.
-    @eqWss@ is @[ wsBeforeEquals, wsAfterEquals ]@ from the parsed layout around @=@.
+{-| After @lhs@ … @=@ … : try @f(es)@ → @CAssignCall@, else @e@ → @CAssign@.
+    @lhs@ is an indexed atom (@EVar@ or @EIndex@ …); other shapes are rejected in the evaluator.
+    @eqWss@ is @[ wsBeforeEquals, wsAfterEquals ]@ around @=@.
 -}
-assignAfterEquals : Var -> String -> String -> Parser Comp
+assignAfterEquals : Exp -> String -> String -> Parser Comp
 assignAfterEquals lhs wsBeforeEq wsAfterEq =
     oneOf
         [ backtrackable
@@ -35,17 +36,17 @@ assignAfterEquals lhs wsBeforeEq wsAfterEq =
         ]
 
 
-{-| @varname@ @ `@ `@=@ `@ `@ … → @CAssign@ | @CAssignCall@. -}
+{-| Indexed-atom left-hand side, then @=@ … → @CAssign@ or @CAssignCall@. -}
 assign : Parser Comp
 assign =
-    varName
+    indexedAtom
         |> andThen
             (\lhs ->
                 succeed (\wsBeforeEq wsAfterEq -> ( wsBeforeEq, wsAfterEq ))
                     |= mSpaces
                     |. symbol "="
                     |= mSpaces
-                    |> andThen (\( wsBeforeEq, wsAfterEq ) -> assignAfterEquals lhs wsBeforeEq wsAfterEq)
+                    |> andThen (\( wb, wa ) -> assignAfterEquals lhs wb wa)
             )
 
 
@@ -99,7 +100,7 @@ returnComp =
 
 ifComp : Parser Comp
 ifComp =
-    succeed (\ws1 e ws2 t ws3 f -> CIf [ws1, ws2, ws3] e t f)
+    succeed (\ws1 e ws2 t ws3 f -> CIf [ ws1, ws2, ws3 ] e t f)
         |. keyword "if"
         |= mSpaces
         |= lazy (\_ -> exp)
@@ -113,12 +114,10 @@ ifComp =
 
 whileComp : Parser Comp
 whileComp =
-    succeed (\ws1 e ws2 body -> CWhile [ws1, ws2] e body)
+    succeed (\ws1 e ws2 body -> CWhile [ ws1, ws2 ] e body)
         |. keyword "while"
         |= mSpaces
         |= lazy (\_ -> exp)
         |. keyword "do"
         |= mSpaces
         |= lazy (\_ -> comp)
-
-

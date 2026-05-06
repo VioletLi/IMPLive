@@ -153,14 +153,16 @@ funDefDefaultWSS =
     [ " ", " ", " " ]
 
 
-{-| Expressions: pure values only — no calls (@CAssignCall@ lives in @Comp@).
-@EList [ wsOpen, wsClose ] payload@ — bracket whitespace; @payload@ is @ENil []@ or @ECons@ spine (never bare comma-tuples: those appear only as @CAssignCall@ args).
+{-| Expressions: pure values only — user calls use @CAssignCall@ except builtin @len(e)@ (@ELen@).
+@EList … payload@ — nil-terminated @ECons@ spine; @EIndex@ is postfix @[ … ]@ on lists (runtime @VCons@/@VNil@).
 -}
 type Exp
     = EInt WSS Int
     | EBool WSS Bool
     | EString WSS String
     | EVar WSS Var
+    | EIndex WSS Exp Exp
+    | ELen WSS Exp
     | EList WSS Exp
     | ENil WSS
     | ECons WSS Exp Exp
@@ -174,6 +176,7 @@ type Exp
 type Bop
     = Add
     | Sub
+    | Append
     | Mul
     | Div
     | Mod
@@ -194,11 +197,14 @@ type Pat
     | PCons WSS Pat Pat
 
 
-{-| @c@ — computations. -}
+{-| @c@ — computations.
+    @CAssign@ / @CAssignCall@ left-hand sides are @Exp@ (indexed atoms: @EVar@ or @EIndex@ …).
+    The evaluator rejects any other expression form on the left.
+-}
 type Comp
     = CSkip WSS
-    | CAssign WSS Var Exp
-    | CAssignCall WSS Var FunName Exp
+    | CAssign WSS Exp Exp
+    | CAssignCall WSS Exp FunName Exp
     | CSeq WSS Comp Comp
     | CIf WSS Exp Comp Comp
     | CWhile WSS Exp Comp
@@ -224,6 +230,8 @@ type Value
     | VNil
     | VCons Value Value
     | VHole HoleName Store
+    | VHtml String Value Value Value
+    | VError Info
 
 
 {-| @σ@ — store @x ↦ v@. -}

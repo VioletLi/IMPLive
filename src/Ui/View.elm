@@ -3,9 +3,8 @@ module Ui.View exposing (..)
 import Html exposing (..)
 import Html.Events as Events
 import Html.Attributes as Attr
-import Ui.Model exposing (Msg(..), Model)
-import Ui.Model exposing (Mode(..))
-import LangUtils.GUI exposing (..)
+import Ui.Model exposing (Msg(..), Model, Mode(..), defaultPreExs)
+import LangUtils.GUI exposing (makeSelectListForEvents)
 
 
 view : Model -> Html Msg
@@ -30,8 +29,8 @@ view model =
                 , select [ Events.onInput SelectPreEx
                         , Attr.style "width" "100px"
                         , Attr.class "btn"]
-                        <| List.map (\s-> option [Attr.value s] [text s]) 
-                        <| model.preExs
+                        <| List.map (\s -> option [ Attr.value s ] [ text s ])
+                        <| defaultPreExs
                 , button
                     [ Attr.class "btn fwd"
                     , Attr.id "run-program"
@@ -83,7 +82,7 @@ view model =
                     , Attr.style "width" "125px"
                     , Attr.style "display" editDisplayStr
                     ]
-                    <| makeSelectListForEvents model.eventIndex model.triggeredEvents
+                    <| makeSelectListForEvents 0 []
                 ]
             , div
                 [ Attr.id "code-block" ]

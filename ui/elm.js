@@ -5290,113 +5290,11 @@ var $elm$core$Task$perform = F2(
 	});
 var $elm$browser$Browser$element = _Browser_element;
 var $author$project$Ui$Model$defaultCode = '';
-var $author$project$Ui$Model$defaultDelta = 'id';
-var $author$project$Ui$Model$defaultEventIndex = 0;
 var $author$project$Ui$Model$NotStart = {$: 'NotStart'};
 var $author$project$Ui$Model$defaultMode = $author$project$Ui$Model$NotStart;
-var $author$project$Syntax$EChar = F2(
-	function (a, b) {
-		return {$: 'EChar', a: a, b: b};
-	});
-var $author$project$Syntax$ECons = F4(
-	function (a, b, c, d) {
-		return {$: 'ECons', a: a, b: b, c: c, d: d};
-	});
-var $author$project$Syntax$ENil = F2(
-	function (a, b) {
-		return {$: 'ENil', a: a, b: b};
-	});
-var $author$project$Syntax$StringType = {$: 'StringType'};
-var $elm$core$Basics$composeR = F3(
-	function (f, g, x) {
-		return g(
-			f(x));
-	});
-var $author$project$Syntax$eStringDefaultWSS = _List_fromArray(
-	[' ']);
-var $author$project$Parser$Utils$repWS = F2(
-	function (ws, e) {
-		switch (e.$) {
-			case 'ECons':
-				var lType = e.b;
-				var e1 = e.c;
-				var e2 = e.d;
-				return A4($author$project$Syntax$ECons, ws, lType, e1, e2);
-			case 'ENil':
-				var lType = e.b;
-				return A2($author$project$Syntax$ENil, ws, lType);
-			default:
-				return e;
-		}
-	});
-var $elm$core$String$foldr = _String_foldr;
-var $elm$core$String$toList = function (string) {
-	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
-};
-var $author$project$LangUtils$GUI$strToExpr = function (str) {
-	return A2(
-		$author$project$Parser$Utils$repWS,
-		$author$project$Syntax$eStringDefaultWSS,
-		A3(
-			$elm$core$Basics$composeR,
-			$elm$core$String$toList,
-			A2(
-				$elm$core$List$foldr,
-				F2(
-					function (c, acc) {
-						return A4(
-							$author$project$Syntax$ECons,
-							_List_fromArray(
-								[' ']),
-							$author$project$Syntax$StringType,
-							A2($author$project$Syntax$EChar, _List_Nil, c),
-							acc);
-					}),
-				A2($author$project$Syntax$ENil, _List_Nil, $author$project$Syntax$StringType)),
-			str));
-};
-var $author$project$Ui$Model$defaultOutput = $author$project$LangUtils$GUI$strToExpr('');
-var $author$project$Syntax$EError = function (a) {
-	return {$: 'EError', a: a};
-};
-var $author$project$Ui$Model$defaultRunningExp = $author$project$Syntax$EError('No Running Exp');
-var $author$project$Ui$Model$defaultRunningHeap = _List_Nil;
-var $author$project$Ui$Model$defaultRunningID = 0;
-var $author$project$Syntax$DZero = {$: 'DZero'};
-var $author$project$Syntax$ETuple = F4(
-	function (a, b, c, d) {
-		return {$: 'ETuple', a: a, b: b, c: c, d: d};
-	});
-var $author$project$Syntax$EventType = {$: 'EventType'};
-var $author$project$Syntax$SquareType = {$: 'SquareType'};
-var $author$project$Syntax$eNilDefaultWSS = _List_fromArray(
-	['', ' ']);
-var $author$project$Syntax$eTupleDefaultWSS = _List_fromArray(
-	[' ', ' ', ' ']);
-var $author$project$Ui$Model$defaultTriggeredEvents = _List_fromArray(
-	[
-		_Utils_Tuple2(
-		A4(
-			$author$project$Syntax$ETuple,
-			$author$project$Syntax$eTupleDefaultWSS,
-			$author$project$Syntax$EventType,
-			$author$project$LangUtils$GUI$strToExpr('None'),
-			A2($author$project$Syntax$ENil, $author$project$Syntax$eNilDefaultWSS, $author$project$Syntax$SquareType)),
-		$author$project$Syntax$DZero)
-	]);
-var $author$project$Ui$Model$initModel = {
-	code: $author$project$Ui$Model$defaultCode,
-	delta: $author$project$Ui$Model$defaultDelta,
-	eventIndex: $author$project$Ui$Model$defaultEventIndex,
-	mode: $author$project$Ui$Model$defaultMode,
-	output: $author$project$Ui$Model$defaultOutput,
-	preExs: _List_fromArray(
-		['New File', 'Calculator', 'Dice Game', 'Meal Ordering', 'Conference Surplus', 'House Sailing']),
-	runningExp: $author$project$Ui$Model$defaultRunningExp,
-	runningHeap: $author$project$Ui$Model$defaultRunningHeap,
-	runningID: $author$project$Ui$Model$defaultRunningID,
-	triggeredEvents: $author$project$Ui$Model$defaultTriggeredEvents
-};
+var $author$project$NewSyntax$VUnit = {$: 'VUnit'};
+var $author$project$Ui$Model$defaultOutput = $author$project$NewSyntax$VUnit;
+var $author$project$Ui$Model$initModel = {code: $author$project$Ui$Model$defaultCode, holeBindings: _List_Nil, mode: $author$project$Ui$Model$defaultMode, output: $author$project$Ui$Model$defaultOutput};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Ui$Main$init = function (_v0) {
@@ -5444,8 +5342,10 @@ var $author$project$Ui$Main$subscriptions = function (_v0) {
 				$author$project$Ui$Main$receiveGUIEvent($author$project$Ui$Model$CatchGUIEvent)
 			]));
 };
-var $author$project$Syntax$DId = {$: 'DId'};
 var $author$project$Ui$Model$RUNNING = {$: 'RUNNING'};
+var $author$project$NewSyntax$VError = function (a) {
+	return {$: 'VError', a: a};
+};
 var $elm$core$Result$andThen = F2(
 	function (callback, result) {
 		if (result.$ === 'Ok') {
@@ -5456,878 +5356,3723 @@ var $elm$core$Result$andThen = F2(
 			return $elm$core$Result$Err(msg);
 		}
 	});
-var $author$project$Syntax$Add = {$: 'Add'};
-var $author$project$Syntax$Cat = {$: 'Cat'};
-var $author$project$Syntax$ConsType = {$: 'ConsType'};
-var $author$project$Syntax$DAdd = function (a) {
-	return {$: 'DAdd', a: a};
+var $author$project$FwdEval$emptyStore = _List_Nil;
+var $author$project$FwdEval$compYieldsUnit = function (v) {
+	if (v.$ === 'VUnit') {
+		return true;
+	} else {
+		return false;
+	}
 };
-var $author$project$Syntax$DCom = F2(
-	function (a, b) {
-		return {$: 'DCom', a: a, b: b};
-	});
-var $author$project$Syntax$DLam = F2(
-	function (a, b) {
-		return {$: 'DLam', a: a, b: b};
-	});
-var $author$project$Syntax$EApp = F2(
-	function (a, b) {
-		return {$: 'EApp', a: a, b: b};
-	});
-var $author$project$Syntax$EBPrim = F4(
-	function (a, b, c, d) {
-		return {$: 'EBPrim', a: a, b: b, c: c, d: d};
-	});
-var $author$project$Syntax$ECase = F3(
+var $author$project$NewSyntax$CSeq = F3(
 	function (a, b, c) {
-		return {$: 'ECase', a: a, b: b, c: c};
+		return {$: 'CSeq', a: a, b: b, c: c};
 	});
-var $author$project$Syntax$EHtml = F5(
+var $author$project$NewSyntax$CWhile = F3(
+	function (a, b, c) {
+		return {$: 'CWhile', a: a, b: b, c: c};
+	});
+var $author$project$NewSyntax$VHole = F2(
+	function (a, b) {
+		return {$: 'VHole', a: a, b: b};
+	});
+var $author$project$NewSyntax$VInt = function (a) {
+	return {$: 'VInt', a: a};
+};
+var $author$project$NewParser$Utils$arrayLenValue = function (v) {
+	var go = F2(
+		function (n, w) {
+			go:
+			while (true) {
+				switch (w.$) {
+					case 'VNil':
+						return $elm$core$Result$Ok(n);
+					case 'VCons':
+						var t = w.b;
+						var $temp$n = n + 1,
+							$temp$w = t;
+						n = $temp$n;
+						w = $temp$w;
+						continue go;
+					default:
+						return $elm$core$Result$Err('len: expected list value');
+				}
+			}
+		});
+	return A2(go, 0, v);
+};
+var $author$project$NewParser$Utils$arrayGetAt = F2(
+	function (i, spine) {
+		if (i < 0) {
+			return $elm$core$Result$Err('array index must be non-negative');
+		} else {
+			var go = F2(
+				function (j, s) {
+					go:
+					while (true) {
+						switch (s.$) {
+							case 'VNil':
+								return $elm$core$Result$Err('array index out of bounds');
+							case 'VCons':
+								var h = s.a;
+								var t = s.b;
+								if (!j) {
+									return $elm$core$Result$Ok(h);
+								} else {
+									var $temp$j = j - 1,
+										$temp$s = t;
+									j = $temp$j;
+									s = $temp$s;
+									continue go;
+								}
+							default:
+								return $elm$core$Result$Err('indexed read: expected list value');
+						}
+					}
+				});
+			return A2(go, i, spine);
+		}
+	});
+var $author$project$NewSyntax$VCons = F2(
+	function (a, b) {
+		return {$: 'VCons', a: a, b: b};
+	});
+var $elm$core$Result$map = F2(
+	function (func, ra) {
+		if (ra.$ === 'Ok') {
+			var a = ra.a;
+			return $elm$core$Result$Ok(
+				func(a));
+		} else {
+			var e = ra.a;
+			return $elm$core$Result$Err(e);
+		}
+	});
+var $author$project$NewParser$Utils$replaceHeadAt = F3(
+	function (i, newHead, spine) {
+		if (i < 0) {
+			return $elm$core$Result$Err('array index must be non-negative');
+		} else {
+			if (!i) {
+				switch (spine.$) {
+					case 'VCons':
+						var t = spine.b;
+						return $elm$core$Result$Ok(
+							A2($author$project$NewSyntax$VCons, newHead, t));
+					case 'VNil':
+						return $elm$core$Result$Err('array index out of bounds');
+					default:
+						return $elm$core$Result$Err('array assign: expected list value');
+				}
+			} else {
+				switch (spine.$) {
+					case 'VCons':
+						var h = spine.a;
+						var t = spine.b;
+						return A2(
+							$elm$core$Result$map,
+							function (t2) {
+								return A2($author$project$NewSyntax$VCons, h, t2);
+							},
+							A3($author$project$NewParser$Utils$replaceHeadAt, i - 1, newHead, t));
+					case 'VNil':
+						return $elm$core$Result$Err('array index out of bounds');
+					default:
+						return $elm$core$Result$Err('array assign: expected list value');
+				}
+			}
+		}
+	});
+var $author$project$NewParser$Utils$arrayUpdatePath = F3(
+	function (path, newVal, spine) {
+		if (!path.b) {
+			return $elm$core$Result$Err('array assign: empty index path');
+		} else {
+			if (!path.b.b) {
+				var i = path.a;
+				return A3($author$project$NewParser$Utils$replaceHeadAt, i, newVal, spine);
+			} else {
+				var i = path.a;
+				var rest = path.b;
+				return A2(
+					$elm$core$Result$andThen,
+					function (inner) {
+						return A2(
+							$elm$core$Result$andThen,
+							function (inner2) {
+								return A3($author$project$NewParser$Utils$replaceHeadAt, i, inner2, spine);
+							},
+							A3($author$project$NewParser$Utils$arrayUpdatePath, rest, newVal, inner));
+					},
+					A2($author$project$NewParser$Utils$arrayGetAt, i, spine));
+			}
+		}
+	});
+var $author$project$NewSyntax$VBool = function (a) {
+	return {$: 'VBool', a: a};
+};
+var $author$project$NewSyntax$VHtml = F4(
+	function (a, b, c, d) {
+		return {$: 'VHtml', a: a, b: b, c: c, d: d};
+	});
+var $author$project$NewSyntax$VNil = {$: 'VNil'};
+var $author$project$NewSyntax$VString = function (a) {
+	return {$: 'VString', a: a};
+};
+var $author$project$FwdEval$appendValues = F2(
+	function (xs, ys) {
+		switch (xs.$) {
+			case 'VNil':
+				return $elm$core$Result$Ok(ys);
+			case 'VCons':
+				var h = xs.a;
+				var t = xs.b;
+				return A2(
+					$elm$core$Result$map,
+					function (rest) {
+						return A2($author$project$NewSyntax$VCons, h, rest);
+					},
+					A2($author$project$FwdEval$appendValues, t, ys));
+			default:
+				return $elm$core$Result$Err('evalBop: Append expects a list on the left');
+		}
+	});
+var $elm$core$Basics$ge = _Utils_ge;
+var $author$project$FwdEval$intCmp = F3(
+	function (rel, v1, v2) {
+		var _v0 = _Utils_Tuple2(v1, v2);
+		if ((_v0.a.$ === 'VInt') && (_v0.b.$ === 'VInt')) {
+			var a = _v0.a.a;
+			var b = _v0.b.a;
+			return $elm$core$Result$Ok(
+				$author$project$NewSyntax$VBool(
+					A2(rel, a, b)));
+		} else {
+			return $elm$core$Result$Err('intCmp: expected two integers');
+		}
+	});
+var $author$project$FwdEval$intOp2 = F3(
+	function (f, v1, v2) {
+		var _v0 = _Utils_Tuple2(v1, v2);
+		if ((_v0.a.$ === 'VInt') && (_v0.b.$ === 'VInt')) {
+			var a = _v0.a.a;
+			var b = _v0.b.a;
+			return $elm$core$Result$Ok(
+				$author$project$NewSyntax$VInt(
+					A2(f, a, b)));
+		} else {
+			return $elm$core$Result$Err('intOp2: expected two integers');
+		}
+	});
+var $elm$core$Basics$not = _Basics_not;
+var $author$project$FwdEval$valueEq = F2(
+	function (a, b) {
+		var _v0 = _Utils_Tuple2(a, b);
+		_v0$7:
+		while (true) {
+			switch (_v0.a.$) {
+				case 'VInt':
+					if (_v0.b.$ === 'VInt') {
+						var i = _v0.a.a;
+						var j = _v0.b.a;
+						return _Utils_eq(i, j);
+					} else {
+						break _v0$7;
+					}
+				case 'VBool':
+					if (_v0.b.$ === 'VBool') {
+						var p = _v0.a.a;
+						var q = _v0.b.a;
+						return _Utils_eq(p, q);
+					} else {
+						break _v0$7;
+					}
+				case 'VString':
+					if (_v0.b.$ === 'VString') {
+						var s = _v0.a.a;
+						var t = _v0.b.a;
+						return _Utils_eq(s, t);
+					} else {
+						break _v0$7;
+					}
+				case 'VUnit':
+					if (_v0.b.$ === 'VUnit') {
+						var _v1 = _v0.a;
+						var _v2 = _v0.b;
+						return true;
+					} else {
+						break _v0$7;
+					}
+				case 'VNil':
+					if (_v0.b.$ === 'VNil') {
+						var _v3 = _v0.a;
+						var _v4 = _v0.b;
+						return true;
+					} else {
+						break _v0$7;
+					}
+				case 'VCons':
+					if (_v0.b.$ === 'VCons') {
+						var _v5 = _v0.a;
+						var x = _v5.a;
+						var xs = _v5.b;
+						var _v6 = _v0.b;
+						var y = _v6.a;
+						var ys = _v6.b;
+						return A2($author$project$FwdEval$valueEq, x, y) && A2($author$project$FwdEval$valueEq, xs, ys);
+					} else {
+						break _v0$7;
+					}
+				case 'VHole':
+					if (_v0.b.$ === 'VHole') {
+						var _v7 = _v0.a;
+						var hx = _v7.a;
+						var sx = _v7.b;
+						var _v8 = _v0.b;
+						var hy = _v8.a;
+						var sy = _v8.b;
+						return _Utils_eq(hx, hy) && _Utils_eq(sx, sy);
+					} else {
+						break _v0$7;
+					}
+				default:
+					break _v0$7;
+			}
+		}
+		return false;
+	});
+var $author$project$FwdEval$evalBop = F3(
+	function (op, v1, v2) {
+		switch (op.$) {
+			case 'Add':
+				return A3(
+					$author$project$FwdEval$intOp2,
+					F2(
+						function (a, b) {
+							return a + b;
+						}),
+					v1,
+					v2);
+			case 'Sub':
+				return A3(
+					$author$project$FwdEval$intOp2,
+					F2(
+						function (a, b) {
+							return a - b;
+						}),
+					v1,
+					v2);
+			case 'Append':
+				return A2($author$project$FwdEval$appendValues, v1, v2);
+			case 'Mul':
+				return A3(
+					$author$project$FwdEval$intOp2,
+					F2(
+						function (a, b) {
+							return a * b;
+						}),
+					v1,
+					v2);
+			case 'Div':
+				var _v1 = _Utils_Tuple2(v1, v2);
+				if ((_v1.a.$ === 'VInt') && (_v1.b.$ === 'VInt')) {
+					var a = _v1.a.a;
+					var b = _v1.b.a;
+					return (!b) ? $elm$core$Result$Err('evalBop: division by zero') : $elm$core$Result$Ok(
+						$author$project$NewSyntax$VInt((a / b) | 0));
+				} else {
+					return $elm$core$Result$Err('evalBop: Div expects two integers');
+				}
+			case 'Mod':
+				var _v2 = _Utils_Tuple2(v1, v2);
+				if ((_v2.a.$ === 'VInt') && (_v2.b.$ === 'VInt')) {
+					var a = _v2.a.a;
+					var b = _v2.b.a;
+					return (!b) ? $elm$core$Result$Err('evalBop: modulo by zero') : $elm$core$Result$Ok(
+						$author$project$NewSyntax$VInt(a % b));
+				} else {
+					return $elm$core$Result$Err('evalBop: Mod expects two integers');
+				}
+			case 'Eq':
+				return $elm$core$Result$Ok(
+					$author$project$NewSyntax$VBool(
+						A2($author$project$FwdEval$valueEq, v1, v2)));
+			case 'Ne':
+				return $elm$core$Result$Ok(
+					$author$project$NewSyntax$VBool(
+						!A2($author$project$FwdEval$valueEq, v1, v2)));
+			case 'Lt':
+				return A3(
+					$author$project$FwdEval$intCmp,
+					F2(
+						function (a, b) {
+							return _Utils_cmp(a, b) < 0;
+						}),
+					v1,
+					v2);
+			case 'Gt':
+				return A3(
+					$author$project$FwdEval$intCmp,
+					F2(
+						function (a, b) {
+							return _Utils_cmp(a, b) > 0;
+						}),
+					v1,
+					v2);
+			case 'Le':
+				return A3(
+					$author$project$FwdEval$intCmp,
+					F2(
+						function (a, b) {
+							return _Utils_cmp(a, b) < 1;
+						}),
+					v1,
+					v2);
+			case 'Ge':
+				return A3(
+					$author$project$FwdEval$intCmp,
+					F2(
+						function (a, b) {
+							return _Utils_cmp(a, b) > -1;
+						}),
+					v1,
+					v2);
+			case 'And':
+				var _v3 = _Utils_Tuple2(v1, v2);
+				if ((_v3.a.$ === 'VBool') && (_v3.b.$ === 'VBool')) {
+					var a = _v3.a.a;
+					var b = _v3.b.a;
+					return $elm$core$Result$Ok(
+						$author$project$NewSyntax$VBool(a && b));
+				} else {
+					return $elm$core$Result$Err('evalBop: And expects two booleans');
+				}
+			default:
+				var _v4 = _Utils_Tuple2(v1, v2);
+				if ((_v4.a.$ === 'VBool') && (_v4.b.$ === 'VBool')) {
+					var a = _v4.a.a;
+					var b = _v4.b.a;
+					return $elm$core$Result$Ok(
+						$author$project$NewSyntax$VBool(a || b));
+				} else {
+					return $elm$core$Result$Err('evalBop: Or expects two booleans');
+				}
+		}
+	});
+var $author$project$FwdEval$lookupStore = F2(
+	function (x, sigma) {
+		lookupStore:
+		while (true) {
+			if (!sigma.b) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var _v1 = sigma.a;
+				var y = _v1.a;
+				var v = _v1.b;
+				var rest = sigma.b;
+				if (_Utils_eq(x, y)) {
+					return $elm$core$Maybe$Just(v);
+				} else {
+					var $temp$x = x,
+						$temp$sigma = rest;
+					x = $temp$x;
+					sigma = $temp$sigma;
+					continue lookupStore;
+				}
+			}
+		}
+	});
+var $author$project$FwdEval$fwdExp = F3(
+	function (gamma, sigma, e) {
+		fwdExp:
+		while (true) {
+			switch (e.$) {
+				case 'EError':
+					var info = e.a;
+					return $elm$core$Result$Err(info);
+				case 'EInt':
+					var n = e.b;
+					return $elm$core$Result$Ok(
+						$author$project$NewSyntax$VInt(n));
+				case 'EBool':
+					var b = e.b;
+					return $elm$core$Result$Ok(
+						$author$project$NewSyntax$VBool(b));
+				case 'EString':
+					var s = e.b;
+					return $elm$core$Result$Ok(
+						$author$project$NewSyntax$VString(s));
+				case 'EVar':
+					var x = e.b;
+					var _v1 = A2($author$project$FwdEval$lookupStore, x, sigma);
+					if (_v1.$ === 'Nothing') {
+						return $elm$core$Result$Err('fwdExp: unbound variable ' + x);
+					} else {
+						var v = _v1.a;
+						return $elm$core$Result$Ok(v);
+					}
+				case 'EIndex':
+					var base = e.b;
+					var idxE = e.c;
+					return A2(
+						$elm$core$Result$andThen,
+						function (spine) {
+							return A2(
+								$elm$core$Result$andThen,
+								function (iv) {
+									if (iv.$ === 'VInt') {
+										var i = iv.a;
+										return A2($author$project$NewParser$Utils$arrayGetAt, i, spine);
+									} else {
+										return $elm$core$Result$Err('array index must be integer');
+									}
+								},
+								A3($author$project$FwdEval$fwdExp, gamma, sigma, idxE));
+						},
+						A3($author$project$FwdEval$fwdExp, gamma, sigma, base));
+				case 'ELen':
+					var arg = e.b;
+					return A2(
+						$elm$core$Result$map,
+						$author$project$NewSyntax$VInt,
+						A2(
+							$elm$core$Result$andThen,
+							$author$project$NewParser$Utils$arrayLenValue,
+							A3($author$project$FwdEval$fwdExp, gamma, sigma, arg)));
+				case 'EParens':
+					var inner = e.b;
+					var $temp$gamma = gamma,
+						$temp$sigma = sigma,
+						$temp$e = inner;
+					gamma = $temp$gamma;
+					sigma = $temp$sigma;
+					e = $temp$e;
+					continue fwdExp;
+				case 'ENil':
+					return $elm$core$Result$Ok($author$project$NewSyntax$VNil);
+				case 'ECons':
+					var e1 = e.b;
+					var e2 = e.c;
+					return A2(
+						$elm$core$Result$andThen,
+						function (v1) {
+							return A2(
+								$elm$core$Result$map,
+								function (v2) {
+									return A2($author$project$NewSyntax$VCons, v1, v2);
+								},
+								A3($author$project$FwdEval$fwdExp, gamma, sigma, e2));
+						},
+						A3($author$project$FwdEval$fwdExp, gamma, sigma, e1));
+				case 'EList':
+					var payload = e.b;
+					var $temp$gamma = gamma,
+						$temp$sigma = sigma,
+						$temp$e = payload;
+					gamma = $temp$gamma;
+					sigma = $temp$sigma;
+					e = $temp$e;
+					continue fwdExp;
+				case 'EBPrim':
+					var op = e.b;
+					var e1 = e.c;
+					var e2 = e.d;
+					return A2(
+						$elm$core$Result$andThen,
+						function (v1) {
+							return A2(
+								$elm$core$Result$andThen,
+								function (v2) {
+									return A3($author$project$FwdEval$evalBop, op, v1, v2);
+								},
+								A3($author$project$FwdEval$fwdExp, gamma, sigma, e2));
+						},
+						A3($author$project$FwdEval$fwdExp, gamma, sigma, e1));
+				case 'EHole':
+					var hn = e.b;
+					return $elm$core$Result$Ok(
+						A2($author$project$NewSyntax$VHole, hn, sigma));
+				default:
+					var s = e.b;
+					var e1 = e.c;
+					var e2 = e.d;
+					var e3 = e.e;
+					var v3 = A3($author$project$FwdEval$fwdExp, gamma, sigma, e3);
+					var v2 = A3($author$project$FwdEval$fwdExp, gamma, sigma, e2);
+					var v1 = A3($author$project$FwdEval$fwdExp, gamma, sigma, e1);
+					var _v3 = _Utils_Tuple3(v1, v2, v3);
+					if (((_v3.a.$ === 'Ok') && (_v3.b.$ === 'Ok')) && (_v3.c.$ === 'Ok')) {
+						var v1_ = _v3.a.a;
+						var v2_ = _v3.b.a;
+						var v3_ = _v3.c.a;
+						return $elm$core$Result$Ok(
+							A4($author$project$NewSyntax$VHtml, s, v1_, v2_, v3_));
+					} else {
+						return $elm$core$Result$Err('fwdExp: EHtml expects three values');
+					}
+			}
+		}
+	});
+var $author$project$FwdEval$evalIndexInts = F3(
+	function (gamma, sigma, idxs) {
+		return A3(
+			$elm$core$List$foldl,
+			F2(
+				function (ie, acc) {
+					return A2(
+						$elm$core$Result$andThen,
+						function (rest) {
+							return A2(
+								$elm$core$Result$andThen,
+								function (v) {
+									if (v.$ === 'VInt') {
+										var i = v.a;
+										return (i < 0) ? $elm$core$Result$Err('array index must be non-negative') : $elm$core$Result$Ok(
+											_Utils_ap(
+												rest,
+												_List_fromArray(
+													[i])));
+									} else {
+										return $elm$core$Result$Err('array index must be integer');
+									}
+								},
+								A3($author$project$FwdEval$fwdExp, gamma, sigma, ie));
+						},
+						acc);
+				}),
+			$elm$core$Result$Ok(_List_Nil),
+			idxs);
+	});
+var $author$project$FwdEval$peelIndexedVarPath = function (e) {
+	switch (e.$) {
+		case 'EVar':
+			var x = e.b;
+			return $elm$core$Result$Ok(
+				_Utils_Tuple2(x, _List_Nil));
+		case 'EIndex':
+			var base = e.b;
+			var idx = e.c;
+			return A2(
+				$elm$core$Result$map,
+				function (_v1) {
+					var x = _v1.a;
+					var idxs = _v1.b;
+					return _Utils_Tuple2(
+						x,
+						_Utils_ap(
+							idxs,
+							_List_fromArray(
+								[idx])));
+				},
+				$author$project$FwdEval$peelIndexedVarPath(base));
+		default:
+			return $elm$core$Result$Err('fwdComp: illegal assignment target (expected a variable or indexed variable, e.g. x or x[i])');
+	}
+};
+var $author$project$FwdEval$storeSet = F3(
+	function (x, v, sigma) {
+		return A2(
+			$elm$core$List$cons,
+			_Utils_Tuple2(x, v),
+			sigma);
+	});
+var $author$project$FwdEval$assignValueToLhs = F4(
+	function (gamma, sigma, lhs, newVal) {
+		return A2(
+			$elm$core$Result$andThen,
+			function (_v0) {
+				var _var = _v0.a;
+				var idxs = _v0.b;
+				return _Utils_eq(idxs, _List_Nil) ? $elm$core$Result$Ok(
+					A3($author$project$FwdEval$storeSet, _var, newVal, sigma)) : A2(
+					$elm$core$Result$andThen,
+					function (is) {
+						var _v1 = A2($author$project$FwdEval$lookupStore, _var, sigma);
+						if (_v1.$ === 'Nothing') {
+							return $elm$core$Result$Err('fwdComp: unbound array variable ' + _var);
+						} else {
+							var spine = _v1.a;
+							return A2(
+								$elm$core$Result$map,
+								function (sp2) {
+									return A3($author$project$FwdEval$storeSet, _var, sp2, sigma);
+								},
+								A3($author$project$NewParser$Utils$arrayUpdatePath, is, newVal, spine));
+						}
+					},
+					A3($author$project$FwdEval$evalIndexInts, gamma, sigma, idxs));
+			},
+			$author$project$FwdEval$peelIndexedVarPath(lhs));
+	});
+var $author$project$NewSyntax$cSeqDefaultWSS = _List_fromArray(
+	[' ']);
+var $author$project$NewSyntax$cWhileDefaultWSS = _List_fromArray(
+	[' ', ' ']);
+var $author$project$FwdEval$evalCallArgs = F3(
+	function (gamma, sigma, e) {
+		return A3($author$project$FwdEval$fwdExp, gamma, sigma, e);
+	});
+var $author$project$FwdEval$extendStore = F2(
+	function (binds, sigma) {
+		return _Utils_ap(binds, sigma);
+	});
+var $author$project$FwdEval$lookupFun = F2(
+	function (fname, gamma) {
+		lookupFun:
+		while (true) {
+			if (!gamma.b) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var _v1 = gamma.a;
+				var g = _v1.a;
+				var pat = _v1.b;
+				var body = _v1.c;
+				var rest = gamma.b;
+				if (_Utils_eq(g, fname)) {
+					return $elm$core$Maybe$Just(
+						_Utils_Tuple2(pat, body));
+				} else {
+					var $temp$fname = fname,
+						$temp$gamma = rest;
+					fname = $temp$fname;
+					gamma = $temp$gamma;
+					continue lookupFun;
+				}
+			}
+		}
+	});
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var $elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			$elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var $author$project$FwdEval$patVars = function (pat_) {
+	switch (pat_.$) {
+		case 'PVar':
+			var x = pat_.b;
+			return _List_fromArray(
+				[x]);
+		case 'PNil':
+			return _List_Nil;
+		default:
+			var p1 = pat_.b;
+			var p2 = pat_.c;
+			return _Utils_ap(
+				$author$project$FwdEval$patVars(p1),
+				$author$project$FwdEval$patVars(p2));
+	}
+};
+var $author$project$FwdEval$uniqVars = function (xs) {
+	return A3(
+		$elm$core$List$foldr,
+		F2(
+			function (y, acc) {
+				return A2($elm$core$List$member, y, acc) ? acc : A2($elm$core$List$cons, y, acc);
+			}),
+		_List_Nil,
+		xs);
+};
+var $author$project$FwdEval$globalAssignTargetsFromComp = F3(
+	function (gamma, locals, c) {
+		globalAssignTargetsFromComp:
+		while (true) {
+			switch (c.$) {
+				case 'CSkip':
+					return _List_Nil;
+				case 'CAssign':
+					var lhs = c.b;
+					var _v1 = $author$project$FwdEval$peelIndexedVarPath(lhs);
+					if (_v1.$ === 'Ok') {
+						var _v2 = _v1.a;
+						var x = _v2.a;
+						return A2($elm$core$List$member, x, locals) ? _List_Nil : _List_fromArray(
+							[x]);
+					} else {
+						return _List_Nil;
+					}
+				case 'CAssignCall':
+					var lhs = c.b;
+					var fname = c.c;
+					var lhsTargets = function () {
+						var _v5 = $author$project$FwdEval$peelIndexedVarPath(lhs);
+						if (_v5.$ === 'Ok') {
+							var _v6 = _v5.a;
+							var x = _v6.a;
+							return A2($elm$core$List$member, x, locals) ? _List_Nil : _List_fromArray(
+								[x]);
+						} else {
+							return _List_Nil;
+						}
+					}();
+					var calleeTargets = function () {
+						if (fname === 'len') {
+							return _List_Nil;
+						} else {
+							var _v3 = A2($author$project$FwdEval$lookupFun, fname, gamma);
+							if (_v3.$ === 'Nothing') {
+								return _List_Nil;
+							} else {
+								var _v4 = _v3.a;
+								var pat = _v4.a;
+								var body = _v4.b;
+								return A3(
+									$author$project$FwdEval$globalAssignTargetsFromComp,
+									gamma,
+									$author$project$FwdEval$patVars(pat),
+									body);
+							}
+						}
+					}();
+					return $author$project$FwdEval$uniqVars(
+						_Utils_ap(lhsTargets, calleeTargets));
+				case 'CSeq':
+					var c1 = c.b;
+					var c2 = c.c;
+					return $author$project$FwdEval$uniqVars(
+						_Utils_ap(
+							A3($author$project$FwdEval$globalAssignTargetsFromComp, gamma, locals, c1),
+							A3($author$project$FwdEval$globalAssignTargetsFromComp, gamma, locals, c2)));
+				case 'CIf':
+					var th = c.c;
+					var el = c.d;
+					return $author$project$FwdEval$uniqVars(
+						_Utils_ap(
+							A3($author$project$FwdEval$globalAssignTargetsFromComp, gamma, locals, th),
+							A3($author$project$FwdEval$globalAssignTargetsFromComp, gamma, locals, el)));
+				case 'CWhile':
+					var inner = c.c;
+					var $temp$gamma = gamma,
+						$temp$locals = locals,
+						$temp$c = inner;
+					gamma = $temp$gamma;
+					locals = $temp$locals;
+					c = $temp$c;
+					continue globalAssignTargetsFromComp;
+				default:
+					return _List_Nil;
+			}
+		}
+	});
+var $author$project$FwdEval$uniqueVarNames = function (sigma) {
+	return A3(
+		$elm$core$List$foldr,
+		F2(
+			function (_v0, acc) {
+				var x = _v0.a;
+				return A2($elm$core$List$member, x, acc) ? acc : A2($elm$core$List$cons, x, acc);
+			}),
+		_List_Nil,
+		sigma);
+};
+var $author$project$FwdEval$mergeStoresHoleGuard = F3(
+	function (sigmaBefore, sigmaT, sigmaF) {
+		var names = $author$project$FwdEval$uniqueVarNames(sigmaBefore);
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, acc) {
+					return A2(
+						$elm$core$Result$andThen,
+						function (mergedRev) {
+							var _v0 = _Utils_Tuple2(
+								A2($author$project$FwdEval$lookupStore, x, sigmaT),
+								A2($author$project$FwdEval$lookupStore, x, sigmaF));
+							if ((_v0.a.$ === 'Just') && (_v0.b.$ === 'Just')) {
+								var vT = _v0.a.a;
+								var vF = _v0.b.a;
+								return $elm$core$Result$Ok(
+									A2(
+										$elm$core$List$cons,
+										_Utils_Tuple2(
+											x,
+											A2($author$project$FwdEval$valueEq, vT, vF) ? vT : A2($author$project$NewSyntax$VHole, 'if-diff:' + x, sigmaBefore)),
+										mergedRev));
+							} else {
+								return $elm$core$Result$Err('fwdComp: hole-if merge: domain mismatch (illegal program)');
+							}
+						},
+						acc);
+				}),
+			$elm$core$Result$Ok(_List_Nil),
+			names);
+	});
+var $author$project$FwdEval$patMatch = F2(
+	function (pat_, val) {
+		var _v0 = _Utils_Tuple2(pat_, val);
+		switch (_v0.a.$) {
+			case 'PVar':
+				var _v1 = _v0.a;
+				var x = _v1.b;
+				var v = _v0.b;
+				return $elm$core$Result$Ok(
+					_List_fromArray(
+						[
+							_Utils_Tuple2(x, v)
+						]));
+			case 'PNil':
+				if (_v0.b.$ === 'VNil') {
+					var _v2 = _v0.b;
+					return $elm$core$Result$Ok(_List_Nil);
+				} else {
+					return $elm$core$Result$Err('patMatch: empty pattern expects ()');
+				}
+			default:
+				if (_v0.b.$ === 'VCons') {
+					var _v3 = _v0.a;
+					var p1 = _v3.b;
+					var p2 = _v3.c;
+					var _v4 = _v0.b;
+					var v1 = _v4.a;
+					var v2 = _v4.b;
+					return A2(
+						$elm$core$Result$andThen,
+						function (b1) {
+							return A2(
+								$elm$core$Result$map,
+								function (b2) {
+									return _Utils_ap(b1, b2);
+								},
+								A2($author$project$FwdEval$patMatch, p2, v2));
+						},
+						A2($author$project$FwdEval$patMatch, p1, v1));
+				} else {
+					var _v5 = _v0.a;
+					return $elm$core$Result$Err('patMatch: cons pattern expects cons value');
+				}
+		}
+	});
+var $author$project$FwdEval$removeFirstBinding = F2(
+	function (x, sigma) {
+		if (!sigma.b) {
+			return _List_Nil;
+		} else {
+			var _v1 = sigma.a;
+			var y = _v1.a;
+			var v = _v1.b;
+			var rest = sigma.b;
+			return _Utils_eq(x, y) ? rest : A2(
+				$elm$core$List$cons,
+				_Utils_Tuple2(y, v),
+				A2($author$project$FwdEval$removeFirstBinding, x, rest));
+		}
+	});
+var $author$project$FwdEval$popParams = F2(
+	function (pat, sigma) {
+		return A3(
+			$elm$core$List$foldl,
+			$author$project$FwdEval$removeFirstBinding,
+			sigma,
+			$author$project$FwdEval$patVars(pat));
+	});
+var $author$project$FwdEval$fwdComp = F3(
+	function (gamma, sigma, c) {
+		switch (c.$) {
+			case 'CSkip':
+				return $elm$core$Result$Ok(
+					_Utils_Tuple2(sigma, $author$project$NewSyntax$VUnit));
+			case 'CAssign':
+				var lhs = c.b;
+				var rhs = c.c;
+				return A2(
+					$elm$core$Result$map,
+					function (sigma1) {
+						return _Utils_Tuple2(sigma1, $author$project$NewSyntax$VUnit);
+					},
+					A2(
+						$elm$core$Result$andThen,
+						function (newVal) {
+							return A4($author$project$FwdEval$assignValueToLhs, gamma, sigma, lhs, newVal);
+						},
+						A3($author$project$FwdEval$fwdExp, gamma, sigma, rhs)));
+			case 'CAssignCall':
+				var lhs = c.b;
+				var fname = c.c;
+				var argsExp = c.d;
+				if (fname === 'len') {
+					return A2(
+						$elm$core$Result$map,
+						function (sigma1) {
+							return _Utils_Tuple2(sigma1, $author$project$NewSyntax$VUnit);
+						},
+						A2(
+							$elm$core$Result$andThen,
+							function (n) {
+								return A4(
+									$author$project$FwdEval$assignValueToLhs,
+									gamma,
+									sigma,
+									lhs,
+									$author$project$NewSyntax$VInt(n));
+							},
+							A2(
+								$elm$core$Result$andThen,
+								$author$project$NewParser$Utils$arrayLenValue,
+								A3($author$project$FwdEval$evalCallArgs, gamma, sigma, argsExp))));
+				} else {
+					var _v1 = A2($author$project$FwdEval$lookupFun, fname, gamma);
+					if (_v1.$ === 'Nothing') {
+						return $elm$core$Result$Err('fwdComp: unknown function ' + fname);
+					} else {
+						var _v2 = _v1.a;
+						var pat = _v2.a;
+						var body = _v2.b;
+						return A2(
+							$elm$core$Result$andThen,
+							function (argVal) {
+								return A2(
+									$elm$core$Result$andThen,
+									function (binds) {
+										var sigmaCall = A2($author$project$FwdEval$extendStore, binds, sigma);
+										return A2(
+											$elm$core$Result$andThen,
+											function (_v3) {
+												var sigmaBody = _v3.a;
+												var retV = _v3.b;
+												if ($author$project$FwdEval$compYieldsUnit(retV)) {
+													return $elm$core$Result$Err('fwdComp: function fell through without return');
+												} else {
+													var sigmaPopped = A2($author$project$FwdEval$popParams, pat, sigmaBody);
+													return A2(
+														$elm$core$Result$map,
+														function (sigmaOut) {
+															return _Utils_Tuple2(sigmaOut, $author$project$NewSyntax$VUnit);
+														},
+														A4($author$project$FwdEval$assignValueToLhs, gamma, sigmaPopped, lhs, retV));
+												}
+											},
+											A3($author$project$FwdEval$fwdComp, gamma, sigmaCall, body));
+									},
+									A2($author$project$FwdEval$patMatch, pat, argVal));
+							},
+							A3($author$project$FwdEval$evalCallArgs, gamma, sigma, argsExp));
+					}
+				}
+			case 'CSeq':
+				var c1 = c.b;
+				var c2 = c.c;
+				return A2(
+					$elm$core$Result$andThen,
+					function (_v4) {
+						var s1 = _v4.a;
+						var r1 = _v4.b;
+						return $author$project$FwdEval$compYieldsUnit(r1) ? A3($author$project$FwdEval$fwdComp, gamma, s1, c2) : $elm$core$Result$Ok(
+							_Utils_Tuple2(s1, r1));
+					},
+					A3($author$project$FwdEval$fwdComp, gamma, sigma, c1));
+			case 'CIf':
+				var guard = c.b;
+				var th = c.c;
+				var el = c.d;
+				return A2(
+					$elm$core$Result$andThen,
+					function (gv) {
+						switch (gv.$) {
+							case 'VBool':
+								if (gv.a) {
+									return A3($author$project$FwdEval$fwdComp, gamma, sigma, th);
+								} else {
+									return A3($author$project$FwdEval$fwdComp, gamma, sigma, el);
+								}
+							case 'VHole':
+								return A2(
+									$elm$core$Result$andThen,
+									function (_v6) {
+										var sigmaT = _v6.a;
+										var vT = _v6.b;
+										return A2(
+											$elm$core$Result$andThen,
+											function (_v7) {
+												var sigmaF = _v7.a;
+												var vF = _v7.b;
+												return ($author$project$FwdEval$compYieldsUnit(vT) && $author$project$FwdEval$compYieldsUnit(vF)) ? A2(
+													$elm$core$Result$map,
+													function (sigmaM) {
+														return _Utils_Tuple2(sigmaM, $author$project$NewSyntax$VUnit);
+													},
+													A3($author$project$FwdEval$mergeStoresHoleGuard, sigma, sigmaT, sigmaF)) : $elm$core$Result$Err('fwdComp: hole guard requires both branches to yield VUnit');
+											},
+											A3($author$project$FwdEval$fwdComp, gamma, sigma, el));
+									},
+									A3($author$project$FwdEval$fwdComp, gamma, sigma, th));
+							default:
+								return $elm$core$Result$Err('fwdComp: if guard must be boolean or hole');
+						}
+					},
+					A3($author$project$FwdEval$fwdExp, gamma, sigma, guard));
+			case 'CWhile':
+				var guard = c.b;
+				var body = c.c;
+				return A2(
+					$elm$core$Result$andThen,
+					function (gv) {
+						switch (gv.$) {
+							case 'VBool':
+								if (!gv.a) {
+									return $elm$core$Result$Ok(
+										_Utils_Tuple2(sigma, $author$project$NewSyntax$VUnit));
+								} else {
+									return A3(
+										$author$project$FwdEval$fwdComp,
+										gamma,
+										sigma,
+										A3(
+											$author$project$NewSyntax$CSeq,
+											$author$project$NewSyntax$cSeqDefaultWSS,
+											body,
+											A3($author$project$NewSyntax$CWhile, $author$project$NewSyntax$cWhileDefaultWSS, guard, body)));
+								}
+							case 'VHole':
+								var affected = $author$project$FwdEval$uniqVars(
+									A3($author$project$FwdEval$globalAssignTargetsFromComp, gamma, _List_Nil, body));
+								var sigmaMarked = A3(
+									$elm$core$List$foldl,
+									F2(
+										function (x, acc) {
+											return A3(
+												$author$project$FwdEval$storeSet,
+												x,
+												A2($author$project$NewSyntax$VHole, 'while-hole:' + x, sigma),
+												acc);
+										}),
+									sigma,
+									affected);
+								return $elm$core$Result$Ok(
+									_Utils_Tuple2(sigmaMarked, $author$project$NewSyntax$VUnit));
+							default:
+								return $elm$core$Result$Err('fwdComp: while guard must be boolean or hole');
+						}
+					},
+					A3($author$project$FwdEval$fwdExp, gamma, sigma, guard));
+			default:
+				var rhs = c.b;
+				return A2(
+					$elm$core$Result$map,
+					function (v) {
+						return _Utils_Tuple2(sigma, v);
+					},
+					A3($author$project$FwdEval$fwdExp, gamma, sigma, rhs));
+		}
+	});
+var $author$project$FwdEval$fwdProgramStep = F2(
+	function (stmt, acc) {
+		if (acc.$ === 'Err') {
+			var e = acc.a;
+			return $elm$core$Result$Err(e);
+		} else {
+			var _v1 = acc.a;
+			var gamma = _v1.a;
+			var sigma = _v1.b;
+			if (stmt.$ === 'StmtFun') {
+				var fname = stmt.b;
+				var pat = stmt.c;
+				var body = stmt.d;
+				return $elm$core$Result$Ok(
+					_Utils_Tuple2(
+						A2(
+							$elm$core$List$cons,
+							_Utils_Tuple3(fname, pat, body),
+							gamma),
+						sigma));
+			} else {
+				var c = stmt.a;
+				return A2(
+					$elm$core$Result$andThen,
+					function (_v3) {
+						var sigma1 = _v3.a;
+						var out = _v3.b;
+						return $author$project$FwdEval$compYieldsUnit(out) ? $elm$core$Result$Ok(
+							_Utils_Tuple2(gamma, sigma1)) : $elm$core$Result$Err('fwdProgram: return outside of function body');
+					},
+					A3($author$project$FwdEval$fwdComp, gamma, sigma, c));
+			}
+		}
+	});
+var $author$project$FwdEval$fwdProgram = function (stmts) {
+	return A2(
+		$elm$core$Result$andThen,
+		function (_v0) {
+			var sigma = _v0.b;
+			return $elm$core$Result$Ok(sigma);
+		},
+		A3(
+			$elm$core$List$foldl,
+			$author$project$FwdEval$fwdProgramStep,
+			$elm$core$Result$Ok(
+				_Utils_Tuple2(_List_Nil, $author$project$FwdEval$emptyStore)),
+			stmts));
+};
+var $elm$parser$Parser$ExpectingEnd = {$: 'ExpectingEnd'};
+var $elm$parser$Parser$Advanced$Bad = F2(
+	function (a, b) {
+		return {$: 'Bad', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$Good = F3(
+	function (a, b, c) {
+		return {$: 'Good', a: a, b: b, c: c};
+	});
+var $elm$parser$Parser$Advanced$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var $elm$parser$Parser$Advanced$AddRight = F2(
+	function (a, b) {
+		return {$: 'AddRight', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$DeadEnd = F4(
+	function (row, col, problem, contextStack) {
+		return {col: col, contextStack: contextStack, problem: problem, row: row};
+	});
+var $elm$parser$Parser$Advanced$Empty = {$: 'Empty'};
+var $elm$parser$Parser$Advanced$fromState = F2(
+	function (s, x) {
+		return A2(
+			$elm$parser$Parser$Advanced$AddRight,
+			$elm$parser$Parser$Advanced$Empty,
+			A4($elm$parser$Parser$Advanced$DeadEnd, s.row, s.col, x, s.context));
+	});
+var $elm$parser$Parser$Advanced$end = function (x) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return _Utils_eq(
+				$elm$core$String$length(s.src),
+				s.offset) ? A3($elm$parser$Parser$Advanced$Good, false, _Utils_Tuple0, s) : A2(
+				$elm$parser$Parser$Advanced$Bad,
+				false,
+				A2($elm$parser$Parser$Advanced$fromState, s, x));
+		});
+};
+var $elm$parser$Parser$end = $elm$parser$Parser$Advanced$end($elm$parser$Parser$ExpectingEnd);
+var $elm$core$Basics$always = F2(
+	function (a, _v0) {
+		return a;
+	});
+var $elm$parser$Parser$Advanced$map2 = F3(
+	function (func, _v0, _v1) {
+		var parseA = _v0.a;
+		var parseB = _v1.a;
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s0) {
+				var _v2 = parseA(s0);
+				if (_v2.$ === 'Bad') {
+					var p = _v2.a;
+					var x = _v2.b;
+					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+				} else {
+					var p1 = _v2.a;
+					var a = _v2.b;
+					var s1 = _v2.c;
+					var _v3 = parseB(s1);
+					if (_v3.$ === 'Bad') {
+						var p2 = _v3.a;
+						var x = _v3.b;
+						return A2($elm$parser$Parser$Advanced$Bad, p1 || p2, x);
+					} else {
+						var p2 = _v3.a;
+						var b = _v3.b;
+						var s2 = _v3.c;
+						return A3(
+							$elm$parser$Parser$Advanced$Good,
+							p1 || p2,
+							A2(func, a, b),
+							s2);
+					}
+				}
+			});
+	});
+var $elm$parser$Parser$Advanced$ignorer = F2(
+	function (keepParser, ignoreParser) {
+		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$always, keepParser, ignoreParser);
+	});
+var $elm$parser$Parser$ignorer = $elm$parser$Parser$Advanced$ignorer;
+var $elm$parser$Parser$Advanced$loopHelp = F4(
+	function (p, state, callback, s0) {
+		loopHelp:
+		while (true) {
+			var _v0 = callback(state);
+			var parse = _v0.a;
+			var _v1 = parse(s0);
+			if (_v1.$ === 'Good') {
+				var p1 = _v1.a;
+				var step = _v1.b;
+				var s1 = _v1.c;
+				if (step.$ === 'Loop') {
+					var newState = step.a;
+					var $temp$p = p || p1,
+						$temp$state = newState,
+						$temp$callback = callback,
+						$temp$s0 = s1;
+					p = $temp$p;
+					state = $temp$state;
+					callback = $temp$callback;
+					s0 = $temp$s0;
+					continue loopHelp;
+				} else {
+					var result = step.a;
+					return A3($elm$parser$Parser$Advanced$Good, p || p1, result, s1);
+				}
+			} else {
+				var p1 = _v1.a;
+				var x = _v1.b;
+				return A2($elm$parser$Parser$Advanced$Bad, p || p1, x);
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$loop = F2(
+	function (state, callback) {
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s) {
+				return A4($elm$parser$Parser$Advanced$loopHelp, false, state, callback, s);
+			});
+	});
+var $elm$parser$Parser$Advanced$map = F2(
+	function (func, _v0) {
+		var parse = _v0.a;
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s0) {
+				var _v1 = parse(s0);
+				if (_v1.$ === 'Good') {
+					var p = _v1.a;
+					var a = _v1.b;
+					var s1 = _v1.c;
+					return A3(
+						$elm$parser$Parser$Advanced$Good,
+						p,
+						func(a),
+						s1);
+				} else {
+					var p = _v1.a;
+					var x = _v1.b;
+					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+				}
+			});
+	});
+var $elm$parser$Parser$map = $elm$parser$Parser$Advanced$map;
+var $elm$parser$Parser$Advanced$Done = function (a) {
+	return {$: 'Done', a: a};
+};
+var $elm$parser$Parser$Advanced$Loop = function (a) {
+	return {$: 'Loop', a: a};
+};
+var $elm$parser$Parser$toAdvancedStep = function (step) {
+	if (step.$ === 'Loop') {
+		var s = step.a;
+		return $elm$parser$Parser$Advanced$Loop(s);
+	} else {
+		var a = step.a;
+		return $elm$parser$Parser$Advanced$Done(a);
+	}
+};
+var $elm$parser$Parser$loop = F2(
+	function (state, callback) {
+		return A2(
+			$elm$parser$Parser$Advanced$loop,
+			state,
+			function (s) {
+				return A2(
+					$elm$parser$Parser$map,
+					$elm$parser$Parser$toAdvancedStep,
+					callback(s));
+			});
+	});
+var $elm$parser$Parser$Done = function (a) {
+	return {$: 'Done', a: a};
+};
+var $elm$parser$Parser$Loop = function (a) {
+	return {$: 'Loop', a: a};
+};
+var $elm$parser$Parser$Advanced$keeper = F2(
+	function (parseFunc, parseArg) {
+		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$apL, parseFunc, parseArg);
+	});
+var $elm$parser$Parser$keeper = $elm$parser$Parser$Advanced$keeper;
+var $elm$parser$Parser$Advanced$Append = F2(
+	function (a, b) {
+		return {$: 'Append', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$oneOfHelp = F3(
+	function (s0, bag, parsers) {
+		oneOfHelp:
+		while (true) {
+			if (!parsers.b) {
+				return A2($elm$parser$Parser$Advanced$Bad, false, bag);
+			} else {
+				var parse = parsers.a.a;
+				var remainingParsers = parsers.b;
+				var _v1 = parse(s0);
+				if (_v1.$ === 'Good') {
+					var step = _v1;
+					return step;
+				} else {
+					var step = _v1;
+					var p = step.a;
+					var x = step.b;
+					if (p) {
+						return step;
+					} else {
+						var $temp$s0 = s0,
+							$temp$bag = A2($elm$parser$Parser$Advanced$Append, bag, x),
+							$temp$parsers = remainingParsers;
+						s0 = $temp$s0;
+						bag = $temp$bag;
+						parsers = $temp$parsers;
+						continue oneOfHelp;
+					}
+				}
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$oneOf = function (parsers) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return A3($elm$parser$Parser$Advanced$oneOfHelp, s, $elm$parser$Parser$Advanced$Empty, parsers);
+		});
+};
+var $elm$parser$Parser$oneOf = $elm$parser$Parser$Advanced$oneOf;
+var $author$project$NewSyntax$StmtComp = function (a) {
+	return {$: 'StmtComp', a: a};
+};
+var $elm$parser$Parser$Advanced$backtrackable = function (_v0) {
+	var parse = _v0.a;
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s0) {
+			var _v1 = parse(s0);
+			if (_v1.$ === 'Bad') {
+				var x = _v1.b;
+				return A2($elm$parser$Parser$Advanced$Bad, false, x);
+			} else {
+				var a = _v1.b;
+				var s1 = _v1.c;
+				return A3($elm$parser$Parser$Advanced$Good, false, a, s1);
+			}
+		});
+};
+var $elm$parser$Parser$backtrackable = $elm$parser$Parser$Advanced$backtrackable;
+var $author$project$NewSyntax$CIf = F4(
+	function (a, b, c, d) {
+		return {$: 'CIf', a: a, b: b, c: c, d: d};
+	});
+var $elm$parser$Parser$Advanced$andThen = F2(
+	function (callback, _v0) {
+		var parseA = _v0.a;
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s0) {
+				var _v1 = parseA(s0);
+				if (_v1.$ === 'Bad') {
+					var p = _v1.a;
+					var x = _v1.b;
+					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+				} else {
+					var p1 = _v1.a;
+					var a = _v1.b;
+					var s1 = _v1.c;
+					var _v2 = callback(a);
+					var parseB = _v2.a;
+					var _v3 = parseB(s1);
+					if (_v3.$ === 'Bad') {
+						var p2 = _v3.a;
+						var x = _v3.b;
+						return A2($elm$parser$Parser$Advanced$Bad, p1 || p2, x);
+					} else {
+						var p2 = _v3.a;
+						var b = _v3.b;
+						var s2 = _v3.c;
+						return A3($elm$parser$Parser$Advanced$Good, p1 || p2, b, s2);
+					}
+				}
+			});
+	});
+var $elm$parser$Parser$andThen = $elm$parser$Parser$Advanced$andThen;
+var $author$project$NewSyntax$CAssign = F3(
+	function (a, b, c) {
+		return {$: 'CAssign', a: a, b: b, c: c};
+	});
+var $author$project$NewSyntax$CAssignCall = F4(
+	function (a, b, c, d) {
+		return {$: 'CAssignCall', a: a, b: b, c: c, d: d};
+	});
+var $author$project$NewSyntax$ENil = function (a) {
+	return {$: 'ENil', a: a};
+};
+var $author$project$NewSyntax$ECons = F3(
+	function (a, b, c) {
+		return {$: 'ECons', a: a, b: b, c: c};
+	});
+var $elm$parser$Parser$Advanced$lazy = function (thunk) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var _v0 = thunk(_Utils_Tuple0);
+			var parse = _v0.a;
+			return parse(s);
+		});
+};
+var $elm$parser$Parser$lazy = $elm$parser$Parser$Advanced$lazy;
+var $elm$parser$Parser$Advanced$isSubChar = _Parser_isSubChar;
+var $elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var $elm$parser$Parser$Advanced$chompWhileHelp = F5(
+	function (isGood, offset, row, col, s0) {
+		chompWhileHelp:
+		while (true) {
+			var newOffset = A3($elm$parser$Parser$Advanced$isSubChar, isGood, offset, s0.src);
+			if (_Utils_eq(newOffset, -1)) {
+				return A3(
+					$elm$parser$Parser$Advanced$Good,
+					_Utils_cmp(s0.offset, offset) < 0,
+					_Utils_Tuple0,
+					{col: col, context: s0.context, indent: s0.indent, offset: offset, row: row, src: s0.src});
+			} else {
+				if (_Utils_eq(newOffset, -2)) {
+					var $temp$isGood = isGood,
+						$temp$offset = offset + 1,
+						$temp$row = row + 1,
+						$temp$col = 1,
+						$temp$s0 = s0;
+					isGood = $temp$isGood;
+					offset = $temp$offset;
+					row = $temp$row;
+					col = $temp$col;
+					s0 = $temp$s0;
+					continue chompWhileHelp;
+				} else {
+					var $temp$isGood = isGood,
+						$temp$offset = newOffset,
+						$temp$row = row,
+						$temp$col = col + 1,
+						$temp$s0 = s0;
+					isGood = $temp$isGood;
+					offset = $temp$offset;
+					row = $temp$row;
+					col = $temp$col;
+					s0 = $temp$s0;
+					continue chompWhileHelp;
+				}
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$chompWhile = function (isGood) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return A5($elm$parser$Parser$Advanced$chompWhileHelp, isGood, s.offset, s.row, s.col, s);
+		});
+};
+var $elm$parser$Parser$chompWhile = $elm$parser$Parser$Advanced$chompWhile;
+var $elm$parser$Parser$Advanced$mapChompedString = F2(
+	function (func, _v0) {
+		var parse = _v0.a;
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s0) {
+				var _v1 = parse(s0);
+				if (_v1.$ === 'Bad') {
+					var p = _v1.a;
+					var x = _v1.b;
+					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+				} else {
+					var p = _v1.a;
+					var a = _v1.b;
+					var s1 = _v1.c;
+					return A3(
+						$elm$parser$Parser$Advanced$Good,
+						p,
+						A2(
+							func,
+							A3($elm$core$String$slice, s0.offset, s1.offset, s0.src),
+							a),
+						s1);
+				}
+			});
+	});
+var $elm$parser$Parser$Advanced$getChompedString = function (parser) {
+	return A2($elm$parser$Parser$Advanced$mapChompedString, $elm$core$Basics$always, parser);
+};
+var $elm$parser$Parser$getChompedString = $elm$parser$Parser$Advanced$getChompedString;
+var $author$project$NewParser$WhiteSpace$isWhiteSpace = function (c) {
+	return _Utils_eq(
+		c,
+		_Utils_chr(' ')) || (_Utils_eq(
+		c,
+		_Utils_chr('\n')) || (_Utils_eq(
+		c,
+		_Utils_chr('\r')) || _Utils_eq(
+		c,
+		_Utils_chr('\t'))));
+};
+var $author$project$NewParser$WhiteSpace$mSpaces = $elm$parser$Parser$getChompedString(
+	$elm$parser$Parser$chompWhile($author$project$NewParser$WhiteSpace$isWhiteSpace));
+var $elm$parser$Parser$Advanced$succeed = function (a) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return A3($elm$parser$Parser$Advanced$Good, false, a, s);
+		});
+};
+var $elm$parser$Parser$succeed = $elm$parser$Parser$Advanced$succeed;
+var $elm$parser$Parser$ExpectingSymbol = function (a) {
+	return {$: 'ExpectingSymbol', a: a};
+};
+var $elm$parser$Parser$Advanced$Token = F2(
+	function (a, b) {
+		return {$: 'Token', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$isSubString = _Parser_isSubString;
+var $elm$parser$Parser$Advanced$token = function (_v0) {
+	var str = _v0.a;
+	var expecting = _v0.b;
+	var progress = !$elm$core$String$isEmpty(str);
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var _v1 = A5($elm$parser$Parser$Advanced$isSubString, str, s.offset, s.row, s.col, s.src);
+			var newOffset = _v1.a;
+			var newRow = _v1.b;
+			var newCol = _v1.c;
+			return _Utils_eq(newOffset, -1) ? A2(
+				$elm$parser$Parser$Advanced$Bad,
+				false,
+				A2($elm$parser$Parser$Advanced$fromState, s, expecting)) : A3(
+				$elm$parser$Parser$Advanced$Good,
+				progress,
+				_Utils_Tuple0,
+				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
+		});
+};
+var $elm$parser$Parser$Advanced$symbol = $elm$parser$Parser$Advanced$token;
+var $elm$parser$Parser$symbol = function (str) {
+	return $elm$parser$Parser$Advanced$symbol(
+		A2(
+			$elm$parser$Parser$Advanced$Token,
+			str,
+			$elm$parser$Parser$ExpectingSymbol(str)));
+};
+var $author$project$NewParser$Exp$commaSeparatedExp = function (expP) {
+	return A2(
+		$elm$parser$Parser$andThen,
+		function (first) {
+			return $elm$parser$Parser$oneOf(
+				_List_fromArray(
+					[
+						A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$ignorer,
+								$elm$parser$Parser$succeed(
+									F2(
+										function (ws, rest) {
+											return A3(
+												$author$project$NewSyntax$ECons,
+												_List_fromArray(
+													[ws]),
+												first,
+												rest);
+										})),
+								$elm$parser$Parser$symbol(',')),
+							$author$project$NewParser$WhiteSpace$mSpaces),
+						$elm$parser$Parser$lazy(
+							function (_v0) {
+								return $author$project$NewParser$Exp$commaSeparatedExp(expP);
+							})),
+						$elm$parser$Parser$succeed(first)
+					]));
+		},
+		expP);
+};
+var $author$project$NewSyntax$EHtml = F5(
 	function (a, b, c, d, e) {
 		return {$: 'EHtml', a: a, b: b, c: c, d: d, e: e};
 	});
-var $author$project$Syntax$EInt = F2(
+var $author$project$NewSyntax$EIndex = F3(
+	function (a, b, c) {
+		return {$: 'EIndex', a: a, b: b, c: c};
+	});
+var $author$project$NewSyntax$ELen = F2(
 	function (a, b) {
-		return {$: 'EInt', a: a, b: b};
+		return {$: 'ELen', a: a, b: b};
 	});
-var $author$project$Syntax$ELam = F3(
-	function (a, b, c) {
-		return {$: 'ELam', a: a, b: b, c: c};
+var $author$project$NewSyntax$EList = F2(
+	function (a, b) {
+		return {$: 'EList', a: a, b: b};
 	});
-var $author$project$Syntax$ELet = F3(
-	function (a, b, c) {
-		return {$: 'ELet', a: a, b: b, c: c};
-	});
-var $author$project$Syntax$EParens = F2(
+var $author$project$NewSyntax$EParens = F2(
 	function (a, b) {
 		return {$: 'EParens', a: a, b: b};
 	});
-var $author$project$Syntax$EUPrim = F3(
-	function (a, b, c) {
-		return {$: 'EUPrim', a: a, b: b, c: c};
-	});
-var $author$project$Syntax$EVar = F3(
-	function (a, b, c) {
-		return {$: 'EVar', a: a, b: b, c: c};
-	});
-var $author$project$Syntax$Mul = {$: 'Mul'};
-var $author$project$Syntax$Neg = {$: 'Neg'};
-var $author$project$Syntax$Not = {$: 'Not'};
-var $author$project$Syntax$DCons = F3(
-	function (a, b, c) {
-		return {$: 'DCons', a: a, b: b, c: c};
-	});
-var $author$project$Syntax$DHtml = F4(
-	function (a, b, c, d) {
-		return {$: 'DHtml', a: a, b: b, c: c, d: d};
-	});
-var $author$project$Syntax$DTuple = F2(
+var $author$project$NewSyntax$EBool = F2(
 	function (a, b) {
-		return {$: 'DTuple', a: a, b: b};
+		return {$: 'EBool', a: a, b: b};
 	});
-var $author$project$Utils$lookup = F2(
-	function (s, ls) {
-		lookup:
-		while (true) {
-			if (!ls.b) {
-				return $elm$core$Maybe$Nothing;
+var $elm$parser$Parser$ExpectingKeyword = function (a) {
+	return {$: 'ExpectingKeyword', a: a};
+};
+var $elm$parser$Parser$Advanced$keyword = function (_v0) {
+	var kwd = _v0.a;
+	var expecting = _v0.b;
+	var progress = !$elm$core$String$isEmpty(kwd);
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var _v1 = A5($elm$parser$Parser$Advanced$isSubString, kwd, s.offset, s.row, s.col, s.src);
+			var newOffset = _v1.a;
+			var newRow = _v1.b;
+			var newCol = _v1.c;
+			return (_Utils_eq(newOffset, -1) || (0 <= A3(
+				$elm$parser$Parser$Advanced$isSubChar,
+				function (c) {
+					return $elm$core$Char$isAlphaNum(c) || _Utils_eq(
+						c,
+						_Utils_chr('_'));
+				},
+				newOffset,
+				s.src))) ? A2(
+				$elm$parser$Parser$Advanced$Bad,
+				false,
+				A2($elm$parser$Parser$Advanced$fromState, s, expecting)) : A3(
+				$elm$parser$Parser$Advanced$Good,
+				progress,
+				_Utils_Tuple0,
+				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
+		});
+};
+var $elm$parser$Parser$keyword = function (kwd) {
+	return $elm$parser$Parser$Advanced$keyword(
+		A2(
+			$elm$parser$Parser$Advanced$Token,
+			kwd,
+			$elm$parser$Parser$ExpectingKeyword(kwd)));
+};
+var $author$project$NewParser$Exp$boolExp = $elm$parser$Parser$oneOf(
+	_List_fromArray(
+		[
+			A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$succeed(
+					function (ws) {
+						return A2(
+							$author$project$NewSyntax$EBool,
+							_List_fromArray(
+								[ws]),
+							true);
+					}),
+				$elm$parser$Parser$keyword('True')),
+			$author$project$NewParser$WhiteSpace$mSpaces),
+			A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$succeed(
+					function (ws) {
+						return A2(
+							$author$project$NewSyntax$EBool,
+							_List_fromArray(
+								[ws]),
+							false);
+					}),
+				$elm$parser$Parser$keyword('False')),
+			$author$project$NewParser$WhiteSpace$mSpaces),
+			A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$succeed(
+					function (ws) {
+						return A2(
+							$author$project$NewSyntax$EBool,
+							_List_fromArray(
+								[ws]),
+							true);
+					}),
+				$elm$parser$Parser$keyword('true')),
+			$author$project$NewParser$WhiteSpace$mSpaces),
+			A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$succeed(
+					function (ws) {
+						return A2(
+							$author$project$NewSyntax$EBool,
+							_List_fromArray(
+								[ws]),
+							false);
+					}),
+				$elm$parser$Parser$keyword('false')),
+			$author$project$NewParser$WhiteSpace$mSpaces)
+		]));
+var $Punie$elm_parser_extras$Parser$Expression$initOps = {lassoc: _List_Nil, nassoc: _List_Nil, postfix: _List_Nil, prefix: _List_Nil, rassoc: _List_Nil};
+var $elm$core$Tuple$pair = F2(
+	function (a, b) {
+		return _Utils_Tuple2(a, b);
+	});
+var $elm$parser$Parser$Problem = function (a) {
+	return {$: 'Problem', a: a};
+};
+var $elm$parser$Parser$Advanced$problem = function (x) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return A2(
+				$elm$parser$Parser$Advanced$Bad,
+				false,
+				A2($elm$parser$Parser$Advanced$fromState, s, x));
+		});
+};
+var $elm$parser$Parser$problem = function (msg) {
+	return $elm$parser$Parser$Advanced$problem(
+		$elm$parser$Parser$Problem(msg));
+};
+var $Punie$elm_parser_extras$Parser$Expression$splitOp = F2(
+	function (operator, ops) {
+		var rassoc = ops.rassoc;
+		var lassoc = ops.lassoc;
+		var nassoc = ops.nassoc;
+		var prefix = ops.prefix;
+		var postfix = ops.postfix;
+		switch (operator.$) {
+			case 'Infix':
+				switch (operator.b.$) {
+					case 'AssocNone':
+						var op = operator.a;
+						var _v1 = operator.b;
+						return _Utils_update(
+							ops,
+							{
+								nassoc: A2($elm$core$List$cons, op, ops.nassoc)
+							});
+					case 'AssocLeft':
+						var op = operator.a;
+						var _v2 = operator.b;
+						return _Utils_update(
+							ops,
+							{
+								lassoc: A2($elm$core$List$cons, op, ops.lassoc)
+							});
+					default:
+						var op = operator.a;
+						var _v3 = operator.b;
+						return _Utils_update(
+							ops,
+							{
+								rassoc: A2($elm$core$List$cons, op, ops.rassoc)
+							});
+				}
+			case 'Prefix':
+				var op = operator.a;
+				return _Utils_update(
+					ops,
+					{
+						prefix: A2($elm$core$List$cons, op, ops.prefix)
+					});
+			default:
+				var op = operator.a;
+				return _Utils_update(
+					ops,
+					{
+						postfix: A2($elm$core$List$cons, op, ops.postfix)
+					});
+		}
+	});
+var $Punie$elm_parser_extras$Parser$Expression$makeParser = F2(
+	function (ops, term) {
+		var ambiguous = F2(
+			function (assoc, op) {
+				return $elm$parser$Parser$backtrackable(
+					A2(
+						$elm$parser$Parser$andThen,
+						function (_v3) {
+							return $elm$parser$Parser$problem('ambiguous use of a ' + (assoc + ' associative operator'));
+						},
+						op));
+			});
+		var _v0 = A3($elm$core$List$foldr, $Punie$elm_parser_extras$Parser$Expression$splitOp, $Punie$elm_parser_extras$Parser$Expression$initOps, ops);
+		var rassoc = _v0.rassoc;
+		var lassoc = _v0.lassoc;
+		var nassoc = _v0.nassoc;
+		var prefix = _v0.prefix;
+		var postfix = _v0.postfix;
+		var lassocOp = $elm$parser$Parser$oneOf(lassoc);
+		var ambiguousLeft = A2(ambiguous, 'left', lassocOp);
+		var nassocOp = $elm$parser$Parser$oneOf(nassoc);
+		var ambiguousNon = A2(ambiguous, 'non', nassocOp);
+		var postfixOp = $elm$parser$Parser$oneOf(postfix);
+		var postfixP = $elm$parser$Parser$oneOf(
+			_List_fromArray(
+				[
+					postfixOp,
+					$elm$parser$Parser$succeed($elm$core$Basics$identity)
+				]));
+		var prefixOp = $elm$parser$Parser$oneOf(prefix);
+		var prefixP = $elm$parser$Parser$oneOf(
+			_List_fromArray(
+				[
+					prefixOp,
+					$elm$parser$Parser$succeed($elm$core$Basics$identity)
+				]));
+		var termP = A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$keeper,
+					$elm$parser$Parser$succeed(
+						F3(
+							function (pre, x, post) {
+								return post(
+									pre(x));
+							})),
+					prefixP),
+				term),
+			postfixP);
+		var rassocOp = $elm$parser$Parser$oneOf(rassoc);
+		var ambiguousRight = A2(ambiguous, 'right', rassocOp);
+		var lassocP = function (x) {
+			return $elm$parser$Parser$oneOf(
+				_List_fromArray(
+					[
+						A2(
+						$elm$parser$Parser$andThen,
+						function (_v2) {
+							var f = _v2.a;
+							var y = _v2.b;
+							return lassocP1(
+								A2(f, x, y));
+						},
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$keeper,
+								$elm$parser$Parser$succeed($elm$core$Tuple$pair),
+								lassocOp),
+							termP)),
+						ambiguousRight,
+						ambiguousNon
+					]));
+		};
+		var lassocP1 = function (x) {
+			return $elm$parser$Parser$oneOf(
+				_List_fromArray(
+					[
+						lassocP(x),
+						$elm$parser$Parser$succeed(x)
+					]));
+		};
+		var nassocP = function (x) {
+			return A2(
+				$elm$parser$Parser$andThen,
+				function (_v1) {
+					var f = _v1.a;
+					var y = _v1.b;
+					return $elm$parser$Parser$oneOf(
+						_List_fromArray(
+							[
+								ambiguousRight,
+								ambiguousLeft,
+								ambiguousNon,
+								$elm$parser$Parser$succeed(
+								A2(f, x, y))
+							]));
+				},
+				A2(
+					$elm$parser$Parser$keeper,
+					A2(
+						$elm$parser$Parser$keeper,
+						$elm$parser$Parser$succeed($elm$core$Tuple$pair),
+						nassocOp),
+					termP));
+		};
+		var rassocP = function (x) {
+			return $elm$parser$Parser$oneOf(
+				_List_fromArray(
+					[
+						A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							$elm$parser$Parser$succeed(
+								F2(
+									function (f, y) {
+										return A2(f, x, y);
+									})),
+							rassocOp),
+						A2($elm$parser$Parser$andThen, rassocP1, termP)),
+						ambiguousLeft,
+						ambiguousNon
+					]));
+		};
+		var rassocP1 = function (x) {
+			return $elm$parser$Parser$oneOf(
+				_List_fromArray(
+					[
+						rassocP(x),
+						$elm$parser$Parser$succeed(x)
+					]));
+		};
+		return A2(
+			$elm$parser$Parser$andThen,
+			function (x) {
+				return $elm$parser$Parser$oneOf(
+					_List_fromArray(
+						[
+							rassocP(x),
+							lassocP(x),
+							nassocP(x),
+							$elm$parser$Parser$succeed(x)
+						]));
+			},
+			termP);
+	});
+var $Punie$elm_parser_extras$Parser$Expression$buildExpressionParser = F2(
+	function (operators, simpleExpr) {
+		return A3($elm$core$List$foldl, $Punie$elm_parser_extras$Parser$Expression$makeParser, simpleExpr, operators);
+	});
+var $author$project$NewParser$Exp$commaSeparatedListSpine = function (expP) {
+	return A2(
+		$elm$parser$Parser$andThen,
+		function (first) {
+			return $elm$parser$Parser$oneOf(
+				_List_fromArray(
+					[
+						A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$ignorer,
+								$elm$parser$Parser$succeed(
+									F2(
+										function (ws, rest) {
+											return A3(
+												$author$project$NewSyntax$ECons,
+												_List_fromArray(
+													[ws]),
+												first,
+												rest);
+										})),
+								$elm$parser$Parser$symbol(',')),
+							$author$project$NewParser$WhiteSpace$mSpaces),
+						$elm$parser$Parser$lazy(
+							function (_v0) {
+								return $author$project$NewParser$Exp$commaSeparatedListSpine(expP);
+							})),
+						$elm$parser$Parser$succeed(
+						A3(
+							$author$project$NewSyntax$ECons,
+							_List_Nil,
+							first,
+							$author$project$NewSyntax$ENil(_List_Nil)))
+					]));
+		},
+		expP);
+};
+var $author$project$NewSyntax$EHole = F2(
+	function (a, b) {
+		return {$: 'EHole', a: a, b: b};
+	});
+var $author$project$NewSyntax$defaultHoleName = '-1';
+var $author$project$NewParser$Exp$holeExp = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$ignorer,
+		$elm$parser$Parser$succeed(
+			function (ws) {
+				return A2(
+					$author$project$NewSyntax$EHole,
+					_List_fromArray(
+						[ws]),
+					$author$project$NewSyntax$defaultHoleName);
+			}),
+		$elm$parser$Parser$symbol('_')),
+	$author$project$NewParser$WhiteSpace$mSpaces);
+var $author$project$NewSyntax$EInt = F2(
+	function (a, b) {
+		return {$: 'EInt', a: a, b: b};
+	});
+var $elm$parser$Parser$ExpectingBinary = {$: 'ExpectingBinary'};
+var $elm$parser$Parser$ExpectingFloat = {$: 'ExpectingFloat'};
+var $elm$parser$Parser$ExpectingHex = {$: 'ExpectingHex'};
+var $elm$parser$Parser$ExpectingInt = {$: 'ExpectingInt'};
+var $elm$parser$Parser$ExpectingNumber = {$: 'ExpectingNumber'};
+var $elm$parser$Parser$ExpectingOctal = {$: 'ExpectingOctal'};
+var $elm$core$Result$fromMaybe = F2(
+	function (err, maybe) {
+		if (maybe.$ === 'Just') {
+			var v = maybe.a;
+			return $elm$core$Result$Ok(v);
+		} else {
+			return $elm$core$Result$Err(err);
+		}
+	});
+var $elm$parser$Parser$Advanced$consumeBase = _Parser_consumeBase;
+var $elm$parser$Parser$Advanced$consumeBase16 = _Parser_consumeBase16;
+var $elm$parser$Parser$Advanced$bumpOffset = F2(
+	function (newOffset, s) {
+		return {col: s.col + (newOffset - s.offset), context: s.context, indent: s.indent, offset: newOffset, row: s.row, src: s.src};
+	});
+var $elm$parser$Parser$Advanced$chompBase10 = _Parser_chompBase10;
+var $elm$parser$Parser$Advanced$isAsciiCode = _Parser_isAsciiCode;
+var $elm$parser$Parser$Advanced$consumeExp = F2(
+	function (offset, src) {
+		if (A3($elm$parser$Parser$Advanced$isAsciiCode, 101, offset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 69, offset, src)) {
+			var eOffset = offset + 1;
+			var expOffset = (A3($elm$parser$Parser$Advanced$isAsciiCode, 43, eOffset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 45, eOffset, src)) ? (eOffset + 1) : eOffset;
+			var newOffset = A2($elm$parser$Parser$Advanced$chompBase10, expOffset, src);
+			return _Utils_eq(expOffset, newOffset) ? (-newOffset) : newOffset;
+		} else {
+			return offset;
+		}
+	});
+var $elm$parser$Parser$Advanced$consumeDotAndExp = F2(
+	function (offset, src) {
+		return A3($elm$parser$Parser$Advanced$isAsciiCode, 46, offset, src) ? A2(
+			$elm$parser$Parser$Advanced$consumeExp,
+			A2($elm$parser$Parser$Advanced$chompBase10, offset + 1, src),
+			src) : A2($elm$parser$Parser$Advanced$consumeExp, offset, src);
+	});
+var $elm$parser$Parser$Advanced$finalizeInt = F5(
+	function (invalid, handler, startOffset, _v0, s) {
+		var endOffset = _v0.a;
+		var n = _v0.b;
+		if (handler.$ === 'Err') {
+			var x = handler.a;
+			return A2(
+				$elm$parser$Parser$Advanced$Bad,
+				true,
+				A2($elm$parser$Parser$Advanced$fromState, s, x));
+		} else {
+			var toValue = handler.a;
+			return _Utils_eq(startOffset, endOffset) ? A2(
+				$elm$parser$Parser$Advanced$Bad,
+				_Utils_cmp(s.offset, startOffset) < 0,
+				A2($elm$parser$Parser$Advanced$fromState, s, invalid)) : A3(
+				$elm$parser$Parser$Advanced$Good,
+				true,
+				toValue(n),
+				A2($elm$parser$Parser$Advanced$bumpOffset, endOffset, s));
+		}
+	});
+var $elm$parser$Parser$Advanced$fromInfo = F4(
+	function (row, col, x, context) {
+		return A2(
+			$elm$parser$Parser$Advanced$AddRight,
+			$elm$parser$Parser$Advanced$Empty,
+			A4($elm$parser$Parser$Advanced$DeadEnd, row, col, x, context));
+	});
+var $elm$core$String$toFloat = _String_toFloat;
+var $elm$parser$Parser$Advanced$finalizeFloat = F6(
+	function (invalid, expecting, intSettings, floatSettings, intPair, s) {
+		var intOffset = intPair.a;
+		var floatOffset = A2($elm$parser$Parser$Advanced$consumeDotAndExp, intOffset, s.src);
+		if (floatOffset < 0) {
+			return A2(
+				$elm$parser$Parser$Advanced$Bad,
+				true,
+				A4($elm$parser$Parser$Advanced$fromInfo, s.row, s.col - (floatOffset + s.offset), invalid, s.context));
+		} else {
+			if (_Utils_eq(s.offset, floatOffset)) {
+				return A2(
+					$elm$parser$Parser$Advanced$Bad,
+					false,
+					A2($elm$parser$Parser$Advanced$fromState, s, expecting));
 			} else {
-				var _v1 = ls.a;
-				var s1 = _v1.a;
-				var v1 = _v1.b;
-				var ls_ = ls.b;
-				if (_Utils_eq(s1, s)) {
-					return $elm$core$Maybe$Just(v1);
+				if (_Utils_eq(intOffset, floatOffset)) {
+					return A5($elm$parser$Parser$Advanced$finalizeInt, invalid, intSettings, s.offset, intPair, s);
 				} else {
-					var $temp$s = s,
-						$temp$ls = ls_;
-					s = $temp$s;
-					ls = $temp$ls;
-					continue lookup;
+					if (floatSettings.$ === 'Err') {
+						var x = floatSettings.a;
+						return A2(
+							$elm$parser$Parser$Advanced$Bad,
+							true,
+							A2($elm$parser$Parser$Advanced$fromState, s, invalid));
+					} else {
+						var toValue = floatSettings.a;
+						var _v1 = $elm$core$String$toFloat(
+							A3($elm$core$String$slice, s.offset, floatOffset, s.src));
+						if (_v1.$ === 'Nothing') {
+							return A2(
+								$elm$parser$Parser$Advanced$Bad,
+								true,
+								A2($elm$parser$Parser$Advanced$fromState, s, invalid));
+						} else {
+							var n = _v1.a;
+							return A3(
+								$elm$parser$Parser$Advanced$Good,
+								true,
+								toValue(n),
+								A2($elm$parser$Parser$Advanced$bumpOffset, floatOffset, s));
+						}
+					}
 				}
 			}
 		}
 	});
-var $author$project$Eval$collectDvForGuard = F2(
-	function (h, pi) {
-		switch (pi.$) {
-			case 'PVar':
-				var x = pi.b;
-				var _v1 = A2($author$project$Utils$lookup, x, h);
-				if (_v1.$ === 'Just') {
-					var _v2 = _v1.a;
-					var dv = _v2.b;
-					return dv;
-				} else {
-					return $author$project$Syntax$DZero;
-				}
-			case 'PCons':
-				var p1 = pi.c;
-				var p2 = pi.d;
-				return A3(
-					$author$project$Syntax$DCons,
-					$elm$core$Maybe$Nothing,
-					A2($author$project$Eval$collectDvForGuard, h, p1),
-					A2($author$project$Eval$collectDvForGuard, h, p2));
-			case 'PTuple':
-				var p1 = pi.c;
-				var p2 = pi.d;
-				return A2(
-					$author$project$Syntax$DTuple,
-					A2($author$project$Eval$collectDvForGuard, h, p1),
-					A2($author$project$Eval$collectDvForGuard, h, p2));
-			case 'PHtml':
-				var s = pi.b;
-				var p1 = pi.c;
-				var p2 = pi.d;
-				var p3 = pi.e;
-				return A4(
-					$author$project$Syntax$DHtml,
-					s,
-					A2($author$project$Eval$collectDvForGuard, h, p1),
-					A2($author$project$Eval$collectDvForGuard, h, p2),
-					A2($author$project$Eval$collectDvForGuard, h, p3));
-			case 'PInt':
-				return $author$project$Syntax$DId;
-			case 'PNil':
-				return $author$project$Syntax$DId;
-			case 'PBool':
-				return $author$project$Syntax$DId;
-			case 'PChar':
-				return $author$project$Syntax$DId;
-			default:
-				return $author$project$Syntax$DZero;
+var $elm$parser$Parser$Advanced$number = function (c) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			if (A3($elm$parser$Parser$Advanced$isAsciiCode, 48, s.offset, s.src)) {
+				var zeroOffset = s.offset + 1;
+				var baseOffset = zeroOffset + 1;
+				return A3($elm$parser$Parser$Advanced$isAsciiCode, 120, zeroOffset, s.src) ? A5(
+					$elm$parser$Parser$Advanced$finalizeInt,
+					c.invalid,
+					c.hex,
+					baseOffset,
+					A2($elm$parser$Parser$Advanced$consumeBase16, baseOffset, s.src),
+					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 111, zeroOffset, s.src) ? A5(
+					$elm$parser$Parser$Advanced$finalizeInt,
+					c.invalid,
+					c.octal,
+					baseOffset,
+					A3($elm$parser$Parser$Advanced$consumeBase, 8, baseOffset, s.src),
+					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 98, zeroOffset, s.src) ? A5(
+					$elm$parser$Parser$Advanced$finalizeInt,
+					c.invalid,
+					c.binary,
+					baseOffset,
+					A3($elm$parser$Parser$Advanced$consumeBase, 2, baseOffset, s.src),
+					s) : A6(
+					$elm$parser$Parser$Advanced$finalizeFloat,
+					c.invalid,
+					c.expecting,
+					c._int,
+					c._float,
+					_Utils_Tuple2(zeroOffset, 0),
+					s)));
+			} else {
+				return A6(
+					$elm$parser$Parser$Advanced$finalizeFloat,
+					c.invalid,
+					c.expecting,
+					c._int,
+					c._float,
+					A3($elm$parser$Parser$Advanced$consumeBase, 10, s.offset, s.src),
+					s);
+			}
+		});
+};
+var $elm$parser$Parser$number = function (i) {
+	return $elm$parser$Parser$Advanced$number(
+		{
+			binary: A2($elm$core$Result$fromMaybe, $elm$parser$Parser$ExpectingBinary, i.binary),
+			expecting: $elm$parser$Parser$ExpectingNumber,
+			_float: A2($elm$core$Result$fromMaybe, $elm$parser$Parser$ExpectingFloat, i._float),
+			hex: A2($elm$core$Result$fromMaybe, $elm$parser$Parser$ExpectingHex, i.hex),
+			_int: A2($elm$core$Result$fromMaybe, $elm$parser$Parser$ExpectingInt, i._int),
+			invalid: $elm$parser$Parser$ExpectingNumber,
+			octal: A2($elm$core$Result$fromMaybe, $elm$parser$Parser$ExpectingOctal, i.octal)
+		});
+};
+var $author$project$NewParser$Exp$intExp = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$keeper,
+		$elm$parser$Parser$succeed(
+			F2(
+				function (n, ws) {
+					return A2(
+						$author$project$NewSyntax$EInt,
+						_List_fromArray(
+							[ws]),
+						n);
+				})),
+		$elm$parser$Parser$number(
+			{
+				binary: $elm$core$Maybe$Nothing,
+				_float: $elm$core$Maybe$Nothing,
+				hex: $elm$core$Maybe$Nothing,
+				_int: $elm$core$Maybe$Just($elm$core$Basics$identity),
+				octal: $elm$core$Maybe$Nothing
+			})),
+	$author$project$NewParser$WhiteSpace$mSpaces);
+var $author$project$NewSyntax$Add = {$: 'Add'};
+var $author$project$NewSyntax$And = {$: 'And'};
+var $author$project$NewSyntax$Append = {$: 'Append'};
+var $Punie$elm_parser_extras$Parser$Expression$AssocLeft = {$: 'AssocLeft'};
+var $Punie$elm_parser_extras$Parser$Expression$AssocNone = {$: 'AssocNone'};
+var $Punie$elm_parser_extras$Parser$Expression$AssocRight = {$: 'AssocRight'};
+var $author$project$NewSyntax$Div = {$: 'Div'};
+var $author$project$NewSyntax$Eq = {$: 'Eq'};
+var $author$project$NewSyntax$Ge = {$: 'Ge'};
+var $author$project$NewSyntax$Gt = {$: 'Gt'};
+var $Punie$elm_parser_extras$Parser$Expression$Infix = F2(
+	function (a, b) {
+		return {$: 'Infix', a: a, b: b};
+	});
+var $author$project$NewSyntax$Le = {$: 'Le'};
+var $author$project$NewSyntax$Lt = {$: 'Lt'};
+var $author$project$NewSyntax$Mod = {$: 'Mod'};
+var $author$project$NewSyntax$Mul = {$: 'Mul'};
+var $author$project$NewSyntax$Ne = {$: 'Ne'};
+var $author$project$NewSyntax$Or = {$: 'Or'};
+var $author$project$NewSyntax$Sub = {$: 'Sub'};
+var $author$project$NewSyntax$EBPrim = F4(
+	function (a, b, c, d) {
+		return {$: 'EBPrim', a: a, b: b, c: c, d: d};
+	});
+var $author$project$NewParser$Exp$bop = F2(
+	function (s, op) {
+		return A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$succeed(
+					F3(
+						function (ws, e1, e2) {
+							return A4(
+								$author$project$NewSyntax$EBPrim,
+								_List_fromArray(
+									[ws]),
+								op,
+								e1,
+								e2);
+						})),
+				$elm$parser$Parser$symbol(s)),
+			$author$project$NewParser$WhiteSpace$mSpaces);
+	});
+var $author$project$NewParser$Exp$operators = _List_fromArray(
+	[
+		_List_fromArray(
+		[
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '*', $author$project$NewSyntax$Mul),
+			$Punie$elm_parser_extras$Parser$Expression$AssocLeft),
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '/', $author$project$NewSyntax$Div),
+			$Punie$elm_parser_extras$Parser$Expression$AssocLeft),
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '%', $author$project$NewSyntax$Mod),
+			$Punie$elm_parser_extras$Parser$Expression$AssocLeft)
+		]),
+		_List_fromArray(
+		[
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '++', $author$project$NewSyntax$Append),
+			$Punie$elm_parser_extras$Parser$Expression$AssocRight),
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '+', $author$project$NewSyntax$Add),
+			$Punie$elm_parser_extras$Parser$Expression$AssocLeft),
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '-', $author$project$NewSyntax$Sub),
+			$Punie$elm_parser_extras$Parser$Expression$AssocLeft)
+		]),
+		_List_fromArray(
+		[
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '<=', $author$project$NewSyntax$Le),
+			$Punie$elm_parser_extras$Parser$Expression$AssocNone),
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '>=', $author$project$NewSyntax$Ge),
+			$Punie$elm_parser_extras$Parser$Expression$AssocNone),
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '<', $author$project$NewSyntax$Lt),
+			$Punie$elm_parser_extras$Parser$Expression$AssocNone),
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '>', $author$project$NewSyntax$Gt),
+			$Punie$elm_parser_extras$Parser$Expression$AssocNone)
+		]),
+		_List_fromArray(
+		[
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '==', $author$project$NewSyntax$Eq),
+			$Punie$elm_parser_extras$Parser$Expression$AssocNone),
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '!=', $author$project$NewSyntax$Ne),
+			$Punie$elm_parser_extras$Parser$Expression$AssocNone)
+		]),
+		_List_fromArray(
+		[
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '&&', $author$project$NewSyntax$And),
+			$Punie$elm_parser_extras$Parser$Expression$AssocLeft)
+		]),
+		_List_fromArray(
+		[
+			A2(
+			$Punie$elm_parser_extras$Parser$Expression$Infix,
+			A2($author$project$NewParser$Exp$bop, '||', $author$project$NewSyntax$Or),
+			$Punie$elm_parser_extras$Parser$Expression$AssocLeft)
+		])
+	]);
+var $author$project$NewSyntax$EString = F2(
+	function (a, b) {
+		return {$: 'EString', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$findSubString = _Parser_findSubString;
+var $elm$parser$Parser$Advanced$chompUntil = function (_v0) {
+	var str = _v0.a;
+	var expecting = _v0.b;
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var _v1 = A5($elm$parser$Parser$Advanced$findSubString, str, s.offset, s.row, s.col, s.src);
+			var newOffset = _v1.a;
+			var newRow = _v1.b;
+			var newCol = _v1.c;
+			return _Utils_eq(newOffset, -1) ? A2(
+				$elm$parser$Parser$Advanced$Bad,
+				false,
+				A4($elm$parser$Parser$Advanced$fromInfo, newRow, newCol, expecting, s.context)) : A3(
+				$elm$parser$Parser$Advanced$Good,
+				_Utils_cmp(s.offset, newOffset) < 0,
+				_Utils_Tuple0,
+				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
+		});
+};
+var $elm$parser$Parser$Expecting = function (a) {
+	return {$: 'Expecting', a: a};
+};
+var $elm$parser$Parser$toToken = function (str) {
+	return A2(
+		$elm$parser$Parser$Advanced$Token,
+		str,
+		$elm$parser$Parser$Expecting(str));
+};
+var $elm$parser$Parser$chompUntil = function (str) {
+	return $elm$parser$Parser$Advanced$chompUntil(
+		$elm$parser$Parser$toToken(str));
+};
+var $author$project$NewParser$Utils$mstring = $elm$parser$Parser$getChompedString(
+	$elm$parser$Parser$chompUntil('\"'));
+var $author$project$NewParser$Exp$stringExp = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$ignorer,
+			$elm$parser$Parser$succeed(
+				F2(
+					function (s, ws) {
+						return A2(
+							$author$project$NewSyntax$EString,
+							_List_fromArray(
+								[ws]),
+							s);
+					})),
+			$elm$parser$Parser$symbol('\"')),
+		A2(
+			$elm$parser$Parser$ignorer,
+			$author$project$NewParser$Utils$mstring,
+			$elm$parser$Parser$symbol('\"'))),
+	$author$project$NewParser$WhiteSpace$mSpaces);
+var $author$project$NewSyntax$EVar = F2(
+	function (a, b) {
+		return {$: 'EVar', a: a, b: b};
+	});
+var $elm$core$Set$Set_elm_builtin = function (a) {
+	return {$: 'Set_elm_builtin', a: a};
+};
+var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
+var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
+var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
+var $elm$core$Dict$Black = {$: 'Black'};
+var $elm$core$Dict$RBNode_elm_builtin = F5(
+	function (a, b, c, d, e) {
+		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
+	});
+var $elm$core$Dict$Red = {$: 'Red'};
+var $elm$core$Dict$balance = F5(
+	function (color, key, value, left, right) {
+		if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Red')) {
+			var _v1 = right.a;
+			var rK = right.b;
+			var rV = right.c;
+			var rLeft = right.d;
+			var rRight = right.e;
+			if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
+				var _v3 = left.a;
+				var lK = left.b;
+				var lV = left.c;
+				var lLeft = left.d;
+				var lRight = left.e;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Red,
+					key,
+					value,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, lK, lV, lLeft, lRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rLeft, rRight));
+			} else {
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					color,
+					rK,
+					rV,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, left, rLeft),
+					rRight);
+			}
+		} else {
+			if ((((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) && (left.d.$ === 'RBNode_elm_builtin')) && (left.d.a.$ === 'Red')) {
+				var _v5 = left.a;
+				var lK = left.b;
+				var lV = left.c;
+				var _v6 = left.d;
+				var _v7 = _v6.a;
+				var llK = _v6.b;
+				var llV = _v6.c;
+				var llLeft = _v6.d;
+				var llRight = _v6.e;
+				var lRight = left.e;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Red,
+					lK,
+					lV,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, lRight, right));
+			} else {
+				return A5($elm$core$Dict$RBNode_elm_builtin, color, key, value, left, right);
+			}
 		}
 	});
-var $author$project$Syntax$BSin = F3(
+var $elm$core$Basics$compare = _Utils_compare;
+var $elm$core$Dict$insertHelp = F3(
+	function (key, value, dict) {
+		if (dict.$ === 'RBEmpty_elm_builtin') {
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
+		} else {
+			var nColor = dict.a;
+			var nKey = dict.b;
+			var nValue = dict.c;
+			var nLeft = dict.d;
+			var nRight = dict.e;
+			var _v1 = A2($elm$core$Basics$compare, key, nKey);
+			switch (_v1.$) {
+				case 'LT':
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						A3($elm$core$Dict$insertHelp, key, value, nLeft),
+						nRight);
+				case 'EQ':
+					return A5($elm$core$Dict$RBNode_elm_builtin, nColor, nKey, value, nLeft, nRight);
+				default:
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						nLeft,
+						A3($elm$core$Dict$insertHelp, key, value, nRight));
+			}
+		}
+	});
+var $elm$core$Dict$insert = F3(
+	function (key, value, dict) {
+		var _v0 = A3($elm$core$Dict$insertHelp, key, value, dict);
+		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
+			var _v1 = _v0.a;
+			var k = _v0.b;
+			var v = _v0.c;
+			var l = _v0.d;
+			var r = _v0.e;
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
+		} else {
+			var x = _v0;
+			return x;
+		}
+	});
+var $elm$core$Set$insert = F2(
+	function (key, _v0) {
+		var dict = _v0.a;
+		return $elm$core$Set$Set_elm_builtin(
+			A3($elm$core$Dict$insert, key, _Utils_Tuple0, dict));
+	});
+var $elm$core$Set$fromList = function (list) {
+	return A3($elm$core$List$foldl, $elm$core$Set$insert, $elm$core$Set$empty, list);
+};
+var $author$project$NewParser$Utils$reservedNames = $elm$core$Set$fromList(
+	_List_fromArray(
+		['fun', 'if', 'then', 'else', 'while', 'do', 'skip', 'return', 'True', 'False', 'true', 'false', 'Html', 'skip', 'len']));
+var $elm$parser$Parser$ExpectingVariable = {$: 'ExpectingVariable'};
+var $elm$core$Dict$get = F2(
+	function (targetKey, dict) {
+		get:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
+				switch (_v1.$) {
+					case 'LT':
+						var $temp$targetKey = targetKey,
+							$temp$dict = left;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+					case 'EQ':
+						return $elm$core$Maybe$Just(value);
+					default:
+						var $temp$targetKey = targetKey,
+							$temp$dict = right;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+				}
+			}
+		}
+	});
+var $elm$core$Dict$member = F2(
+	function (key, dict) {
+		var _v0 = A2($elm$core$Dict$get, key, dict);
+		if (_v0.$ === 'Just') {
+			return true;
+		} else {
+			return false;
+		}
+	});
+var $elm$core$Set$member = F2(
+	function (key, _v0) {
+		var dict = _v0.a;
+		return A2($elm$core$Dict$member, key, dict);
+	});
+var $elm$parser$Parser$Advanced$varHelp = F7(
+	function (isGood, offset, row, col, src, indent, context) {
+		varHelp:
+		while (true) {
+			var newOffset = A3($elm$parser$Parser$Advanced$isSubChar, isGood, offset, src);
+			if (_Utils_eq(newOffset, -1)) {
+				return {col: col, context: context, indent: indent, offset: offset, row: row, src: src};
+			} else {
+				if (_Utils_eq(newOffset, -2)) {
+					var $temp$isGood = isGood,
+						$temp$offset = offset + 1,
+						$temp$row = row + 1,
+						$temp$col = 1,
+						$temp$src = src,
+						$temp$indent = indent,
+						$temp$context = context;
+					isGood = $temp$isGood;
+					offset = $temp$offset;
+					row = $temp$row;
+					col = $temp$col;
+					src = $temp$src;
+					indent = $temp$indent;
+					context = $temp$context;
+					continue varHelp;
+				} else {
+					var $temp$isGood = isGood,
+						$temp$offset = newOffset,
+						$temp$row = row,
+						$temp$col = col + 1,
+						$temp$src = src,
+						$temp$indent = indent,
+						$temp$context = context;
+					isGood = $temp$isGood;
+					offset = $temp$offset;
+					row = $temp$row;
+					col = $temp$col;
+					src = $temp$src;
+					indent = $temp$indent;
+					context = $temp$context;
+					continue varHelp;
+				}
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$variable = function (i) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var firstOffset = A3($elm$parser$Parser$Advanced$isSubChar, i.start, s.offset, s.src);
+			if (_Utils_eq(firstOffset, -1)) {
+				return A2(
+					$elm$parser$Parser$Advanced$Bad,
+					false,
+					A2($elm$parser$Parser$Advanced$fromState, s, i.expecting));
+			} else {
+				var s1 = _Utils_eq(firstOffset, -2) ? A7($elm$parser$Parser$Advanced$varHelp, i.inner, s.offset + 1, s.row + 1, 1, s.src, s.indent, s.context) : A7($elm$parser$Parser$Advanced$varHelp, i.inner, firstOffset, s.row, s.col + 1, s.src, s.indent, s.context);
+				var name = A3($elm$core$String$slice, s.offset, s1.offset, s.src);
+				return A2($elm$core$Set$member, name, i.reserved) ? A2(
+					$elm$parser$Parser$Advanced$Bad,
+					false,
+					A2($elm$parser$Parser$Advanced$fromState, s, i.expecting)) : A3($elm$parser$Parser$Advanced$Good, true, name, s1);
+			}
+		});
+};
+var $elm$parser$Parser$variable = function (i) {
+	return $elm$parser$Parser$Advanced$variable(
+		{expecting: $elm$parser$Parser$ExpectingVariable, inner: i.inner, reserved: i.reserved, start: i.start});
+};
+var $author$project$NewParser$Utils$varName = $elm$parser$Parser$variable(
+	{
+		inner: function (c) {
+			return $elm$core$Char$isAlphaNum(c) || _Utils_eq(
+				c,
+				_Utils_chr('_'));
+		},
+		reserved: $author$project$NewParser$Utils$reservedNames,
+		start: $elm$core$Char$isAlpha
+	});
+var $author$project$NewParser$Exp$varExp = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$keeper,
+		$elm$parser$Parser$succeed(
+			F2(
+				function (v, ws) {
+					return A2(
+						$author$project$NewSyntax$EVar,
+						_List_fromArray(
+							[ws]),
+						v);
+				})),
+		$author$project$NewParser$Utils$varName),
+	$author$project$NewParser$WhiteSpace$mSpaces);
+var $author$project$NewParser$Exp$indexedAtomStep = function (e) {
+	return $elm$parser$Parser$oneOf(
+		_List_fromArray(
+			[
+				$elm$parser$Parser$backtrackable(
+				A2(
+					$elm$parser$Parser$keeper,
+					A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$ignorer,
+								$elm$parser$Parser$succeed(
+									F3(
+										function (wsOpen, idx, wsClose) {
+											return $elm$parser$Parser$Loop(
+												A3(
+													$author$project$NewSyntax$EIndex,
+													_List_fromArray(
+														[wsOpen, wsClose]),
+													e,
+													idx));
+										})),
+								$elm$parser$Parser$symbol('[')),
+							$author$project$NewParser$WhiteSpace$mSpaces),
+						A2(
+							$elm$parser$Parser$ignorer,
+							$elm$parser$Parser$lazy(
+								function (_v3) {
+									return $author$project$NewParser$Exp$cyclic$exp();
+								}),
+							$elm$parser$Parser$symbol(']'))),
+					$author$project$NewParser$WhiteSpace$mSpaces)),
+				$elm$parser$Parser$succeed(
+				$elm$parser$Parser$Done(e))
+			]));
+};
+function $author$project$NewParser$Exp$cyclic$indexedAtom() {
+	return A2(
+		$elm$parser$Parser$andThen,
+		function (start) {
+			return A2($elm$parser$Parser$loop, start, $author$project$NewParser$Exp$indexedAtomStep);
+		},
+		$author$project$NewParser$Exp$cyclic$atom());
+}
+function $author$project$NewParser$Exp$cyclic$atom() {
+	return $elm$parser$Parser$oneOf(
+		_List_fromArray(
+			[
+				$elm$parser$Parser$backtrackable(
+				$author$project$NewParser$Exp$cyclic$htmlExp()),
+				$author$project$NewParser$Exp$cyclic$lenExp(),
+				$author$project$NewParser$Exp$holeExp,
+				$author$project$NewParser$Exp$intExp,
+				$author$project$NewParser$Exp$boolExp,
+				$elm$parser$Parser$backtrackable($author$project$NewParser$Exp$stringExp),
+				$elm$parser$Parser$backtrackable(
+				$author$project$NewParser$Exp$cyclic$listExp()),
+				$elm$parser$Parser$backtrackable(
+				$author$project$NewParser$Exp$cyclic$parensExp()),
+				$author$project$NewParser$Exp$varExp
+			]));
+}
+function $author$project$NewParser$Exp$cyclic$exp() {
+	return A2(
+		$Punie$elm_parser_extras$Parser$Expression$buildExpressionParser,
+		$author$project$NewParser$Exp$operators,
+		$elm$parser$Parser$lazy(
+			function (_v7) {
+				return $author$project$NewParser$Exp$cyclic$indexedAtom();
+			}));
+}
+function $author$project$NewParser$Exp$cyclic$htmlExp() {
+	return A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$keeper,
+					A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$ignorer,
+							A2(
+								$elm$parser$Parser$ignorer,
+								$elm$parser$Parser$succeed(
+									F5(
+										function (tag, ws, a1, a2, a3) {
+											return A5(
+												$author$project$NewSyntax$EHtml,
+												_List_fromArray(
+													[ws]),
+												tag,
+												a1,
+												a2,
+												a3);
+										})),
+								$elm$parser$Parser$keyword('Html')),
+							$elm$parser$Parser$symbol('.')),
+						$author$project$NewParser$Utils$varName),
+					$author$project$NewParser$WhiteSpace$mSpaces),
+				$elm$parser$Parser$lazy(
+					function (_v4) {
+						return $author$project$NewParser$Exp$cyclic$exp();
+					})),
+			$elm$parser$Parser$lazy(
+				function (_v5) {
+					return $author$project$NewParser$Exp$cyclic$exp();
+				})),
+		$elm$parser$Parser$lazy(
+			function (_v6) {
+				return $author$project$NewParser$Exp$cyclic$exp();
+			}));
+}
+function $author$project$NewParser$Exp$cyclic$lenExp() {
+	return A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$ignorer,
+					A2(
+						$elm$parser$Parser$ignorer,
+						$elm$parser$Parser$succeed(
+							F3(
+								function (ws1, arg, ws2) {
+									return A2(
+										$author$project$NewSyntax$ELen,
+										_List_fromArray(
+											[ws1, ws2]),
+										arg);
+								})),
+						$elm$parser$Parser$keyword('len')),
+					$elm$parser$Parser$symbol('(')),
+				$author$project$NewParser$WhiteSpace$mSpaces),
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$lazy(
+					function (_v2) {
+						return $author$project$NewParser$Exp$cyclic$exp();
+					}),
+				$elm$parser$Parser$symbol(')'))),
+		$author$project$NewParser$WhiteSpace$mSpaces);
+}
+function $author$project$NewParser$Exp$cyclic$listExp() {
+	return $elm$parser$Parser$oneOf(
+		_List_fromArray(
+			[
+				$elm$parser$Parser$backtrackable(
+				A2(
+					$elm$parser$Parser$keeper,
+					A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$ignorer,
+							$elm$parser$Parser$succeed(
+								F2(
+									function (wsOpen, wsClose) {
+										return A2(
+											$author$project$NewSyntax$EList,
+											_List_fromArray(
+												[wsOpen, wsClose]),
+											$author$project$NewSyntax$ENil(_List_Nil));
+									})),
+							$elm$parser$Parser$symbol('[')),
+						A2(
+							$elm$parser$Parser$ignorer,
+							$author$project$NewParser$WhiteSpace$mSpaces,
+							$elm$parser$Parser$symbol(']'))),
+					$author$project$NewParser$WhiteSpace$mSpaces)),
+				A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$keeper,
+					A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$ignorer,
+							$elm$parser$Parser$succeed(
+								F3(
+									function (wsOpen, spine, wsClose) {
+										return A2(
+											$author$project$NewSyntax$EList,
+											_List_fromArray(
+												[wsOpen, wsClose]),
+											spine);
+									})),
+							$elm$parser$Parser$symbol('[')),
+						$author$project$NewParser$WhiteSpace$mSpaces),
+					A2(
+						$elm$parser$Parser$ignorer,
+						$author$project$NewParser$Exp$commaSeparatedListSpine(
+							$elm$parser$Parser$lazy(
+								function (_v1) {
+									return $author$project$NewParser$Exp$cyclic$exp();
+								})),
+						$elm$parser$Parser$symbol(']'))),
+				$author$project$NewParser$WhiteSpace$mSpaces)
+			]));
+}
+function $author$project$NewParser$Exp$cyclic$parensExp() {
+	return A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$ignorer,
+					$elm$parser$Parser$succeed(
+						F3(
+							function (ws1, e, ws2) {
+								return A2(
+									$author$project$NewSyntax$EParens,
+									_List_fromArray(
+										[ws1, ws2]),
+									e);
+							})),
+					$elm$parser$Parser$symbol('(')),
+				$author$project$NewParser$WhiteSpace$mSpaces),
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$lazy(
+					function (_v0) {
+						return $author$project$NewParser$Exp$cyclic$exp();
+					}),
+				$elm$parser$Parser$symbol(')'))),
+		$author$project$NewParser$WhiteSpace$mSpaces);
+}
+try {
+	var $author$project$NewParser$Exp$indexedAtom = $author$project$NewParser$Exp$cyclic$indexedAtom();
+	$author$project$NewParser$Exp$cyclic$indexedAtom = function () {
+		return $author$project$NewParser$Exp$indexedAtom;
+	};
+	var $author$project$NewParser$Exp$atom = $author$project$NewParser$Exp$cyclic$atom();
+	$author$project$NewParser$Exp$cyclic$atom = function () {
+		return $author$project$NewParser$Exp$atom;
+	};
+	var $author$project$NewParser$Exp$exp = $author$project$NewParser$Exp$cyclic$exp();
+	$author$project$NewParser$Exp$cyclic$exp = function () {
+		return $author$project$NewParser$Exp$exp;
+	};
+	var $author$project$NewParser$Exp$htmlExp = $author$project$NewParser$Exp$cyclic$htmlExp();
+	$author$project$NewParser$Exp$cyclic$htmlExp = function () {
+		return $author$project$NewParser$Exp$htmlExp;
+	};
+	var $author$project$NewParser$Exp$lenExp = $author$project$NewParser$Exp$cyclic$lenExp();
+	$author$project$NewParser$Exp$cyclic$lenExp = function () {
+		return $author$project$NewParser$Exp$lenExp;
+	};
+	var $author$project$NewParser$Exp$listExp = $author$project$NewParser$Exp$cyclic$listExp();
+	$author$project$NewParser$Exp$cyclic$listExp = function () {
+		return $author$project$NewParser$Exp$listExp;
+	};
+	var $author$project$NewParser$Exp$parensExp = $author$project$NewParser$Exp$cyclic$parensExp();
+	$author$project$NewParser$Exp$cyclic$parensExp = function () {
+		return $author$project$NewParser$Exp$parensExp;
+	};
+} catch ($) {
+	throw 'Some top-level definitions from `NewParser.Exp` are causing infinite recursion:\n\n  ┌─────┐\n  │    indexedAtom\n  │     ↓\n  │    atom\n  │     ↓\n  │    exp\n  │     ↓\n  │    htmlExp\n  │     ↓\n  │    indexedAtomStep\n  │     ↓\n  │    lenExp\n  │     ↓\n  │    listExp\n  │     ↓\n  │    parensExp\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
+var $author$project$NewParser$Comp$assignAfterEquals = F3(
+	function (lhs, wsBeforeEq, wsAfterEq) {
+		return $elm$parser$Parser$oneOf(
+			_List_fromArray(
+				[
+					$elm$parser$Parser$backtrackable(
+					A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$keeper,
+								$elm$parser$Parser$succeed(
+									F3(
+										function (f, ws1, ws2) {
+											return A4(
+												$author$project$NewSyntax$CAssignCall,
+												_List_fromArray(
+													[wsBeforeEq, wsAfterEq, ws1, ws2]),
+												lhs,
+												f,
+												$author$project$NewSyntax$ENil(_List_Nil));
+										})),
+								A2(
+									$elm$parser$Parser$ignorer,
+									$author$project$NewParser$Utils$varName,
+									$elm$parser$Parser$symbol('('))),
+							A2(
+								$elm$parser$Parser$ignorer,
+								$author$project$NewParser$WhiteSpace$mSpaces,
+								$elm$parser$Parser$symbol(')'))),
+						$author$project$NewParser$WhiteSpace$mSpaces)),
+					$elm$parser$Parser$backtrackable(
+					A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$keeper,
+								A2(
+									$elm$parser$Parser$keeper,
+									$elm$parser$Parser$succeed(
+										F4(
+											function (f, ws1, args, ws2) {
+												return A4(
+													$author$project$NewSyntax$CAssignCall,
+													_List_fromArray(
+														[wsBeforeEq, wsAfterEq, ws1, ws2]),
+													lhs,
+													f,
+													args);
+											})),
+									A2(
+										$elm$parser$Parser$ignorer,
+										$author$project$NewParser$Utils$varName,
+										$elm$parser$Parser$symbol('('))),
+								$author$project$NewParser$WhiteSpace$mSpaces),
+							A2(
+								$elm$parser$Parser$ignorer,
+								$author$project$NewParser$Exp$commaSeparatedExp(
+									$elm$parser$Parser$lazy(
+										function (_v0) {
+											return $author$project$NewParser$Exp$exp;
+										})),
+								$elm$parser$Parser$symbol(')'))),
+						$author$project$NewParser$WhiteSpace$mSpaces)),
+					A2(
+					$elm$parser$Parser$keeper,
+					$elm$parser$Parser$succeed(
+						A2(
+							$author$project$NewSyntax$CAssign,
+							_List_fromArray(
+								[wsBeforeEq, wsAfterEq]),
+							lhs)),
+					$elm$parser$Parser$lazy(
+						function (_v1) {
+							return $author$project$NewParser$Exp$exp;
+						}))
+				]));
+	});
+var $author$project$NewParser$Comp$assign = A2(
+	$elm$parser$Parser$andThen,
+	function (lhs) {
+		return A2(
+			$elm$parser$Parser$andThen,
+			function (_v0) {
+				var wb = _v0.a;
+				var wa = _v0.b;
+				return A3($author$project$NewParser$Comp$assignAfterEquals, lhs, wb, wa);
+			},
+			A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$keeper,
+					$elm$parser$Parser$succeed(
+						F2(
+							function (wsBeforeEq, wsAfterEq) {
+								return _Utils_Tuple2(wsBeforeEq, wsAfterEq);
+							})),
+					A2(
+						$elm$parser$Parser$ignorer,
+						$author$project$NewParser$WhiteSpace$mSpaces,
+						$elm$parser$Parser$symbol('='))),
+				$author$project$NewParser$WhiteSpace$mSpaces));
+	},
+	$author$project$NewParser$Exp$indexedAtom);
+var $author$project$NewSyntax$CReturn = F2(
+	function (a, b) {
+		return {$: 'CReturn', a: a, b: b};
+	});
+var $author$project$NewParser$Comp$returnComp = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$ignorer,
+			$elm$parser$Parser$succeed(
+				F2(
+					function (ws, e) {
+						return A2(
+							$author$project$NewSyntax$CReturn,
+							_List_fromArray(
+								[ws]),
+							e);
+					})),
+			$elm$parser$Parser$keyword('return')),
+		$author$project$NewParser$WhiteSpace$mSpaces),
+	$elm$parser$Parser$lazy(
+		function (_v0) {
+			return $author$project$NewParser$Exp$exp;
+		}));
+var $author$project$NewParser$Comp$seq = function (compP) {
+	return A2(
+		$elm$parser$Parser$andThen,
+		function (first) {
+			return $elm$parser$Parser$oneOf(
+				_List_fromArray(
+					[
+						A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$ignorer,
+								$elm$parser$Parser$succeed(
+									F2(
+										function (ws, rest) {
+											return A3(
+												$author$project$NewSyntax$CSeq,
+												_List_fromArray(
+													[ws]),
+												first,
+												rest);
+										})),
+								$elm$parser$Parser$symbol(';')),
+							$author$project$NewParser$WhiteSpace$mSpaces),
+						$elm$parser$Parser$lazy(
+							function (_v0) {
+								return $author$project$NewParser$Comp$seq(compP);
+							})),
+						$elm$parser$Parser$succeed(first)
+					]));
+		},
+		compP);
+};
+var $author$project$NewSyntax$CSkip = function (a) {
+	return {$: 'CSkip', a: a};
+};
+var $author$project$NewParser$Comp$skipComp = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$ignorer,
+		$elm$parser$Parser$succeed(
+			function (ws) {
+				return $author$project$NewSyntax$CSkip(
+					_List_fromArray(
+						[ws]));
+			}),
+		$elm$parser$Parser$keyword('skip')),
+	$author$project$NewParser$WhiteSpace$mSpaces);
+function $author$project$NewParser$Comp$cyclic$atomicComp() {
+	return $elm$parser$Parser$oneOf(
+		_List_fromArray(
+			[
+				$elm$parser$Parser$backtrackable($author$project$NewParser$Comp$skipComp),
+				$elm$parser$Parser$backtrackable($author$project$NewParser$Comp$returnComp),
+				$elm$parser$Parser$backtrackable(
+				$author$project$NewParser$Comp$cyclic$ifComp()),
+				$elm$parser$Parser$backtrackable(
+				$author$project$NewParser$Comp$cyclic$whileComp()),
+				$elm$parser$Parser$backtrackable($author$project$NewParser$Comp$assign)
+			]));
+}
+function $author$project$NewParser$Comp$cyclic$comp() {
+	return $elm$parser$Parser$lazy(
+		function (_v5) {
+			return $author$project$NewParser$Comp$seq(
+				$author$project$NewParser$Comp$cyclic$atomicComp());
+		});
+}
+function $author$project$NewParser$Comp$cyclic$ifComp() {
+	return A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$keeper,
+					A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$ignorer,
+								$elm$parser$Parser$succeed(
+									F6(
+										function (ws1, e, ws2, t, ws3, f) {
+											return A4(
+												$author$project$NewSyntax$CIf,
+												_List_fromArray(
+													[ws1, ws2, ws3]),
+												e,
+												t,
+												f);
+										})),
+								$elm$parser$Parser$keyword('if')),
+							$author$project$NewParser$WhiteSpace$mSpaces),
+						A2(
+							$elm$parser$Parser$ignorer,
+							$elm$parser$Parser$lazy(
+								function (_v2) {
+									return $author$project$NewParser$Exp$exp;
+								}),
+							$elm$parser$Parser$keyword('then'))),
+					$author$project$NewParser$WhiteSpace$mSpaces),
+				A2(
+					$elm$parser$Parser$ignorer,
+					$elm$parser$Parser$lazy(
+						function (_v3) {
+							return $author$project$NewParser$Comp$cyclic$comp();
+						}),
+					$elm$parser$Parser$keyword('else'))),
+			$author$project$NewParser$WhiteSpace$mSpaces),
+		$elm$parser$Parser$lazy(
+			function (_v4) {
+				return $author$project$NewParser$Comp$cyclic$comp();
+			}));
+}
+function $author$project$NewParser$Comp$cyclic$whileComp() {
+	return A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$keeper,
+					A2(
+						$elm$parser$Parser$ignorer,
+						$elm$parser$Parser$succeed(
+							F4(
+								function (ws1, e, ws2, body) {
+									return A3(
+										$author$project$NewSyntax$CWhile,
+										_List_fromArray(
+											[ws1, ws2]),
+										e,
+										body);
+								})),
+						$elm$parser$Parser$keyword('while')),
+					$author$project$NewParser$WhiteSpace$mSpaces),
+				A2(
+					$elm$parser$Parser$ignorer,
+					$elm$parser$Parser$lazy(
+						function (_v0) {
+							return $author$project$NewParser$Exp$exp;
+						}),
+					$elm$parser$Parser$keyword('do'))),
+			$author$project$NewParser$WhiteSpace$mSpaces),
+		$elm$parser$Parser$lazy(
+			function (_v1) {
+				return $author$project$NewParser$Comp$cyclic$comp();
+			}));
+}
+try {
+	var $author$project$NewParser$Comp$atomicComp = $author$project$NewParser$Comp$cyclic$atomicComp();
+	$author$project$NewParser$Comp$cyclic$atomicComp = function () {
+		return $author$project$NewParser$Comp$atomicComp;
+	};
+	var $author$project$NewParser$Comp$comp = $author$project$NewParser$Comp$cyclic$comp();
+	$author$project$NewParser$Comp$cyclic$comp = function () {
+		return $author$project$NewParser$Comp$comp;
+	};
+	var $author$project$NewParser$Comp$ifComp = $author$project$NewParser$Comp$cyclic$ifComp();
+	$author$project$NewParser$Comp$cyclic$ifComp = function () {
+		return $author$project$NewParser$Comp$ifComp;
+	};
+	var $author$project$NewParser$Comp$whileComp = $author$project$NewParser$Comp$cyclic$whileComp();
+	$author$project$NewParser$Comp$cyclic$whileComp = function () {
+		return $author$project$NewParser$Comp$whileComp;
+	};
+} catch ($) {
+	throw 'Some top-level definitions from `NewParser.Comp` are causing infinite recursion:\n\n  ┌─────┐\n  │    atomicComp\n  │     ↓\n  │    comp\n  │     ↓\n  │    ifComp\n  │     ↓\n  │    whileComp\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
+var $author$project$NewSyntax$StmtFun = F4(
+	function (a, b, c, d) {
+		return {$: 'StmtFun', a: a, b: b, c: c, d: d};
+	});
+var $author$project$NewSyntax$PNil = function (a) {
+	return {$: 'PNil', a: a};
+};
+var $elm$parser$Parser$Advanced$getOffset = $elm$parser$Parser$Advanced$Parser(
+	function (s) {
+		return A3($elm$parser$Parser$Advanced$Good, false, s.offset, s);
+	});
+var $elm$parser$Parser$getOffset = $elm$parser$Parser$Advanced$getOffset;
+var $elm$parser$Parser$Advanced$getSource = $elm$parser$Parser$Advanced$Parser(
+	function (s) {
+		return A3($elm$parser$Parser$Advanced$Good, false, s.src, s);
+	});
+var $elm$parser$Parser$getSource = $elm$parser$Parser$Advanced$getSource;
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var $author$project$NewParser$Pattern$nextCharIsCloseParen = F2(
+	function (offset, src) {
+		return A2(
+			$elm$core$Maybe$withDefault,
+			false,
+			A2(
+				$elm$core$Maybe$map,
+				function (_v0) {
+					var c = _v0.a;
+					return _Utils_eq(
+						c,
+						_Utils_chr(')'));
+				},
+				$elm$core$String$uncons(
+					A2($elm$core$String$dropLeft, offset, src))));
+	});
+var $author$project$NewParser$Pattern$emptyPatParams = A2(
+	$elm$parser$Parser$andThen,
+	function (_v0) {
+		var wsOnly = _v0.a;
+		var offset = _v0.b;
+		var src = _v0.c;
+		return A2($author$project$NewParser$Pattern$nextCharIsCloseParen, offset, src) ? $elm$parser$Parser$succeed(
+			$author$project$NewSyntax$PNil(
+				_List_fromArray(
+					[wsOnly]))) : $elm$parser$Parser$problem('Expected \')\' or a parameter name after \'(\'');
+	},
+	A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				$elm$parser$Parser$succeed(
+					F3(
+						function (wsOnly, offset, src) {
+							return _Utils_Tuple3(wsOnly, offset, src);
+						})),
+				$author$project$NewParser$WhiteSpace$mSpaces),
+			$elm$parser$Parser$getOffset),
+		$elm$parser$Parser$getSource));
+var $author$project$NewSyntax$PCons = F3(
 	function (a, b, c) {
-		return {$: 'BSin', a: a, b: b, c: c};
+		return {$: 'PCons', a: a, b: b, c: c};
 	});
-var $author$project$Syntax$DRem = {$: 'DRem'};
-var $author$project$Syntax$PCons = F4(
-	function (a, b, c, d) {
-		return {$: 'PCons', a: a, b: b, c: c, d: d};
-	});
-var $author$project$Syntax$PHtml = F5(
-	function (a, b, c, d, e) {
-		return {$: 'PHtml', a: a, b: b, c: c, d: d, e: e};
-	});
-var $author$project$Syntax$PTuple = F4(
-	function (a, b, c, d) {
-		return {$: 'PTuple', a: a, b: b, c: c, d: d};
-	});
-var $author$project$Syntax$TupleType = {$: 'TupleType'};
-var $author$project$Syntax$bSinDefaultWSS = _List_fromArray(
-	[' ']);
-var $author$project$Syntax$eBPrimDefaultWSS = _List_fromArray(
-	[' ']);
-var $author$project$Syntax$eCaseDefaultWSS = _List_fromArray(
-	[' ', ' ']);
-var $author$project$Syntax$eConsDefaultWSS = _List_fromArray(
-	[' ']);
-var $author$project$Syntax$eHtmlDefaultWSS = _List_fromArray(
-	[' ']);
-var $author$project$Syntax$eIntDefaultWSS = _List_fromArray(
-	[' ']);
-var $author$project$Syntax$eLamDefaultWSS = _List_fromArray(
-	['', ' ', ' ']);
-var $author$project$Syntax$eParensDefaultWSS = _List_fromArray(
-	['', ' ']);
-var $author$project$Syntax$eVarDefaultWSS = _List_fromArray(
-	[' ']);
-var $elm$core$Tuple$mapFirst = F2(
-	function (func, _v0) {
-		var x = _v0.a;
-		var y = _v0.b;
-		return _Utils_Tuple2(
-			func(x),
-			y);
-	});
-var $author$project$Syntax$pConsDefaultWSS = _List_fromArray(
-	[' ']);
-var $author$project$Syntax$pHtmlDefaultWS = _List_fromArray(
-	[' ', ' ', ' ', ' ']);
-var $author$project$Syntax$pTupleDefaultWSS = _List_fromArray(
-	['', ' ', ' ']);
-var $author$project$Syntax$PVar = F2(
+var $author$project$NewSyntax$PVar = F2(
 	function (a, b) {
 		return {$: 'PVar', a: a, b: b};
 	});
-var $author$project$Syntax$pVarDefaultWSS = _List_fromArray(
-	[' ']);
-var $author$project$LangUtils$Fuse$pV = function (v) {
-	return A2($author$project$Syntax$PVar, $author$project$Syntax$pVarDefaultWSS, v);
-};
-var $elm$core$Debug$toString = _Debug_toString;
-var $author$project$LangUtils$Fuse$deltaToFun = F2(
-	function (dv, id) {
-		return A2(
-			$elm$core$Tuple$mapFirst,
-			$author$project$Syntax$EParens($author$project$Syntax$eParensDefaultWSS),
-			function () {
-				switch (dv.$) {
-					case 'DZero':
-						return _Utils_Tuple2(
-							A3(
-								$author$project$Syntax$ELam,
-								$author$project$Syntax$eLamDefaultWSS,
-								'x',
-								A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, 'x', 0)),
-							id);
-					case 'DId':
-						return _Utils_Tuple2(
-							A3(
-								$author$project$Syntax$ELam,
-								$author$project$Syntax$eLamDefaultWSS,
-								'x',
-								A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, 'x', 0)),
-							id);
-					case 'DAdd':
-						var n = dv.a;
-						return _Utils_Tuple2(
-							A3(
-								$author$project$Syntax$ELam,
-								$author$project$Syntax$eLamDefaultWSS,
-								'x',
-								A4(
-									$author$project$Syntax$EBPrim,
-									$author$project$Syntax$eBPrimDefaultWSS,
-									$author$project$Syntax$Add,
-									A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, 'x', 0),
-									A2($author$project$Syntax$EInt, $author$project$Syntax$eIntDefaultWSS, n))),
-							id);
-					case 'DTuple':
-						var dv1 = dv.a;
-						var dv2 = dv.b;
-						var _v3 = A3($author$project$LangUtils$Fuse$deltaToFun_, dv1, id, 'fst');
-						var fst = _v3.a;
-						var id1 = _v3.b;
-						var _v4 = A3($author$project$LangUtils$Fuse$deltaToFun_, dv2, id1, 'snd');
-						var snd = _v4.a;
-						var id2 = _v4.b;
-						return _Utils_Tuple2(
-							A3(
-								$author$project$Syntax$ELam,
-								$author$project$Syntax$eLamDefaultWSS,
-								'x',
-								A3(
-									$author$project$Syntax$ECase,
-									$author$project$Syntax$eCaseDefaultWSS,
-									A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, 'x', 0),
-									A3(
-										$author$project$Syntax$BSin,
-										$author$project$Syntax$bSinDefaultWSS,
-										A4(
-											$author$project$Syntax$PTuple,
-											$author$project$Syntax$pTupleDefaultWSS,
-											$author$project$Syntax$TupleType,
-											$author$project$LangUtils$Fuse$pV('fst'),
-											$author$project$LangUtils$Fuse$pV('snd')),
-										A4($author$project$Syntax$ETuple, $author$project$Syntax$eTupleDefaultWSS, $author$project$Syntax$TupleType, fst, snd)))),
-							id2);
-					case 'DCons':
-						var mv = dv.a;
-						var dv1 = dv.b;
-						var dv2 = dv.c;
-						if (mv.$ === 'Just') {
-							var e = mv.a;
-							var _v6 = A3($author$project$LangUtils$Fuse$deltaToFun_, dv2, id, 'x');
-							var tl = _v6.a;
-							var id2 = _v6.b;
-							return _Utils_Tuple2(
-								A3(
-									$author$project$Syntax$ELam,
-									$author$project$Syntax$eLamDefaultWSS,
-									'x',
-									A4($author$project$Syntax$ECons, $author$project$Syntax$eConsDefaultWSS, $author$project$Syntax$ConsType, e, tl)),
-								id2);
-						} else {
-							var _v7 = A3($author$project$LangUtils$Fuse$deltaToFun_, dv1, id, 'hd');
-							var hd = _v7.a;
-							var id1 = _v7.b;
-							var _v8 = A3($author$project$LangUtils$Fuse$deltaToFun_, dv2, id1, 'tl');
-							var tl = _v8.a;
-							var id2 = _v8.b;
-							return _Utils_eq(dv1, $author$project$Syntax$DRem) ? _Utils_Tuple2(
-								A3(
-									$author$project$Syntax$ELam,
-									$author$project$Syntax$eLamDefaultWSS,
-									'x',
-									A3(
-										$author$project$Syntax$ECase,
-										$author$project$Syntax$eCaseDefaultWSS,
-										A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, 'x', 0),
-										A3(
-											$author$project$Syntax$BSin,
-											$author$project$Syntax$bSinDefaultWSS,
-											A4(
-												$author$project$Syntax$PCons,
-												$author$project$Syntax$pConsDefaultWSS,
-												$author$project$Syntax$ConsType,
-												$author$project$LangUtils$Fuse$pV('hd'),
-												$author$project$LangUtils$Fuse$pV('tl')),
-											tl))),
-								id2) : _Utils_Tuple2(
-								A3(
-									$author$project$Syntax$ELam,
-									$author$project$Syntax$eLamDefaultWSS,
-									'x',
-									A3(
-										$author$project$Syntax$ECase,
-										$author$project$Syntax$eCaseDefaultWSS,
-										A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, 'x', 0),
-										A3(
-											$author$project$Syntax$BSin,
-											$author$project$Syntax$bSinDefaultWSS,
-											A4(
-												$author$project$Syntax$PCons,
-												$author$project$Syntax$pConsDefaultWSS,
-												$author$project$Syntax$ConsType,
-												$author$project$LangUtils$Fuse$pV('hd'),
-												$author$project$LangUtils$Fuse$pV('tl')),
-											A4($author$project$Syntax$ECons, $author$project$Syntax$eConsDefaultWSS, $author$project$Syntax$ConsType, hd, tl)))),
-								id2);
-						}
-					case 'DHtml':
-						var s = dv.a;
-						var dv1 = dv.b;
-						var dv2 = dv.c;
-						var dv3 = dv.d;
-						var _v9 = A3($author$project$LangUtils$Fuse$deltaToFun_, dv1, id, 'style');
-						var style = _v9.a;
-						var id1 = _v9.b;
-						var _v10 = A3($author$project$LangUtils$Fuse$deltaToFun_, dv2, id1, 'attr');
-						var attr = _v10.a;
-						var id2 = _v10.b;
-						var _v11 = A3($author$project$LangUtils$Fuse$deltaToFun_, dv3, id2, 'child');
-						var child = _v11.a;
-						var id3 = _v11.b;
-						return _Utils_Tuple2(
-							A3(
-								$author$project$Syntax$ELam,
-								$author$project$Syntax$eLamDefaultWSS,
-								'x',
-								A3(
-									$author$project$Syntax$ECase,
-									$author$project$Syntax$eCaseDefaultWSS,
-									A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, 'x', 0),
-									A3(
-										$author$project$Syntax$BSin,
-										$author$project$Syntax$bSinDefaultWSS,
-										A5(
-											$author$project$Syntax$PHtml,
-											$author$project$Syntax$pHtmlDefaultWS,
-											s,
-											$author$project$LangUtils$Fuse$pV('style'),
-											$author$project$LangUtils$Fuse$pV('attr'),
-											$author$project$LangUtils$Fuse$pV('child')),
-										A5($author$project$Syntax$EHtml, $author$project$Syntax$eHtmlDefaultWSS, s, style, attr, child)))),
-							id3);
-					case 'DCom':
-						var dv1 = dv.a;
-						var dv2 = dv.b;
-						var _v12 = A3($author$project$LangUtils$Fuse$deltaToFun_, dv1, id, 'x');
-						var f1 = _v12.a;
-						var id1 = _v12.b;
-						var _v13 = A3($author$project$LangUtils$Fuse$deltaToFun_, dv2, id1, 'x');
-						var f2 = _v13.a;
-						var id2 = _v13.b;
-						var e1 = function () {
-							if (f2.$ === 'ELam') {
-								return A2(
-									$author$project$Syntax$EApp,
-									f2,
-									A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, 'x', 0));
-							} else {
-								return f2;
-							}
-						}();
-						switch (f1.$) {
-							case 'EVar':
-								return _Utils_Tuple2(
-									A3($author$project$Syntax$ELam, $author$project$Syntax$eLamDefaultWSS, 'x', e1),
-									id2);
-							case 'ELam':
-								return _Utils_Tuple2(
-									A3(
-										$author$project$Syntax$ELam,
-										$author$project$Syntax$eLamDefaultWSS,
-										'x',
-										A2($author$project$Syntax$EApp, f1, e1)),
-									id2);
-							case 'EBPrim':
-								var wss = f1.a;
-								var op = f1.b;
-								var e2 = f1.d;
-								return _Utils_Tuple2(
-									A3(
-										$author$project$Syntax$ELam,
-										$author$project$Syntax$eLamDefaultWSS,
-										'x',
-										A4($author$project$Syntax$EBPrim, wss, op, e1, e2)),
-									id2);
-							case 'EApp':
-								return _Utils_Tuple2(
-									A3(
-										$author$project$Syntax$ELam,
-										$author$project$Syntax$eLamDefaultWSS,
-										'x',
-										A2($author$project$Syntax$EApp, f1, e1)),
-									id2);
-							default:
-								return _Utils_Tuple2(
-									$author$project$Syntax$EError(
-										'(666transFun-error on ' + ($elm$core$Debug$toString(dv) + ('777) ' + $elm$core$Debug$toString(f1)))),
-									id);
-						}
-					default:
-						return _Utils_Tuple2(
-							$author$project$Syntax$EError(
-								'(transFun-error on ' + ($elm$core$Debug$toString(dv) + ')')),
-							id);
-				}
-			}());
-	});
-var $author$project$LangUtils$Fuse$deltaToFun_ = F3(
-	function (dv, id, _var) {
-		switch (dv.$) {
-			case 'DZero':
-				return _Utils_Tuple2(
-					A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, _var, 0),
-					id);
-			case 'DId':
-				return _Utils_Tuple2(
-					A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, _var, 0),
-					id);
-			case 'DAdd':
-				var n = dv.a;
-				return _Utils_Tuple2(
-					A4(
-						$author$project$Syntax$EBPrim,
-						$author$project$Syntax$eBPrimDefaultWSS,
-						$author$project$Syntax$Add,
-						A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, _var, 0),
-						A2($author$project$Syntax$EInt, $author$project$Syntax$eIntDefaultWSS, n)),
-					id);
-			default:
-				var _v1 = A2($author$project$LangUtils$Fuse$deltaToFun, dv, id);
-				var fun = _v1.a;
-				var id1 = _v1.b;
-				return _Utils_Tuple2(
+var $author$project$NewParser$Pattern$pVarSegment = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$keeper,
+		$elm$parser$Parser$succeed(
+			F2(
+				function (name, ws) {
+					return A2(
+						$author$project$NewSyntax$PVar,
+						_List_fromArray(
+							[ws]),
+						name);
+				})),
+		$author$project$NewParser$Utils$varName),
+	$author$project$NewParser$WhiteSpace$mSpaces);
+function $author$project$NewParser$Pattern$cyclic$patChain() {
+	return A2(
+		$elm$parser$Parser$andThen,
+		function (first) {
+			return $elm$parser$Parser$oneOf(
+				_List_fromArray(
+					[
+						A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$ignorer,
+								$elm$parser$Parser$succeed(
+									F2(
+										function (wsAfterComma, rest) {
+											return A3(
+												$author$project$NewSyntax$PCons,
+												_List_fromArray(
+													[wsAfterComma]),
+												first,
+												rest);
+										})),
+								$elm$parser$Parser$symbol(',')),
+							$author$project$NewParser$WhiteSpace$mSpaces),
+						$elm$parser$Parser$lazy(
+							function (_v0) {
+								return $author$project$NewParser$Pattern$cyclic$patChain();
+							})),
+						$elm$parser$Parser$succeed(first)
+					]));
+		},
+		$author$project$NewParser$Pattern$pVarSegment);
+}
+try {
+	var $author$project$NewParser$Pattern$patChain = $author$project$NewParser$Pattern$cyclic$patChain();
+	$author$project$NewParser$Pattern$cyclic$patChain = function () {
+		return $author$project$NewParser$Pattern$patChain;
+	};
+} catch ($) {
+	throw 'Some top-level definitions from `NewParser.Pattern` are causing infinite recursion:\n\n  ┌─────┐\n  │    patChain\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
+var $author$project$NewParser$Pattern$pat = $elm$parser$Parser$oneOf(
+	_List_fromArray(
+		[
+			$elm$parser$Parser$backtrackable($author$project$NewParser$Pattern$patChain),
+			$author$project$NewParser$Pattern$emptyPatParams
+		]));
+var $author$project$NewParser$Stmt$funDef = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$keeper,
 					A2(
-						$author$project$Syntax$EApp,
-						fun,
-						A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, _var, 0)),
-					id1);
-		}
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$ignorer,
+								$elm$parser$Parser$succeed(
+									F7(
+										function (ws1, fn, ws2, ps, ws3, ws4, body) {
+											return A4(
+												$author$project$NewSyntax$StmtFun,
+												_List_fromArray(
+													[ws1, ws2, ws3, ws4]),
+												fn,
+												ps,
+												body);
+										})),
+								$elm$parser$Parser$keyword('fun')),
+							$author$project$NewParser$WhiteSpace$mSpaces),
+						A2(
+							$elm$parser$Parser$ignorer,
+							$author$project$NewParser$Utils$varName,
+							$elm$parser$Parser$symbol('('))),
+					$author$project$NewParser$WhiteSpace$mSpaces),
+				A2(
+					$elm$parser$Parser$ignorer,
+					$author$project$NewParser$Pattern$pat,
+					$elm$parser$Parser$symbol(')'))),
+			A2(
+				$elm$parser$Parser$ignorer,
+				$author$project$NewParser$WhiteSpace$mSpaces,
+				$elm$parser$Parser$symbol('='))),
+		$author$project$NewParser$WhiteSpace$mSpaces),
+	$elm$parser$Parser$lazy(
+		function (_v0) {
+			return $author$project$NewParser$Comp$atomicComp;
+		}));
+var $author$project$NewParser$Stmt$stmt = $elm$parser$Parser$oneOf(
+	_List_fromArray(
+		[
+			$elm$parser$Parser$backtrackable($author$project$NewParser$Stmt$funDef),
+			A2($elm$parser$Parser$map, $author$project$NewSyntax$StmtComp, $author$project$NewParser$Comp$comp)
+		]));
+var $author$project$NewParser$Program$stmtsStep = function (rev) {
+	return $elm$parser$Parser$oneOf(
+		_List_fromArray(
+			[
+				A2(
+				$elm$parser$Parser$keeper,
+				$elm$parser$Parser$succeed(
+					function (s) {
+						return $elm$parser$Parser$Loop(
+							A2($elm$core$List$cons, s, rev));
+					}),
+				$author$project$NewParser$Stmt$stmt),
+				$elm$parser$Parser$succeed(
+				$elm$parser$Parser$Done(
+					$elm$core$List$reverse(rev)))
+			]));
+};
+var $author$project$NewParser$Program$stmts = A2($elm$parser$Parser$loop, _List_Nil, $author$project$NewParser$Program$stmtsStep);
+var $author$project$NewParser$Program$program = $author$project$NewParser$Program$stmts;
+var $elm$parser$Parser$DeadEnd = F3(
+	function (row, col, problem) {
+		return {col: col, problem: problem, row: row};
 	});
-var $author$project$Eval$diffDeltas = F2(
-	function (dz1, dz2) {
-		diffDeltas:
+var $elm$parser$Parser$problemToDeadEnd = function (p) {
+	return A3($elm$parser$Parser$DeadEnd, p.row, p.col, p.problem);
+};
+var $elm$parser$Parser$Advanced$bagToList = F2(
+	function (bag, list) {
+		bagToList:
 		while (true) {
-			var _v0 = _Utils_Tuple2(dz1, dz2);
-			_v0$1:
-			while (true) {
-				_v0$2:
-				while (true) {
-					_v0$3:
-					while (true) {
-						_v0$4:
-						while (true) {
-							_v0$11:
-							while (true) {
-								_v0$13:
-								while (true) {
-									_v0$22:
-									while (true) {
-										switch (_v0.b.$) {
-											case 'DId':
-												var _v1 = _v0.b;
-												return $elm$core$Result$Ok(dz1);
-											case 'DZero':
-												switch (_v0.a.$) {
-													case 'DZero':
-														break _v0$1;
-													case 'DRem':
-														break _v0$2;
-													case 'DCom':
-														break _v0$2;
-													default:
-														break _v0$2;
-												}
-											case 'DRem':
-												switch (_v0.a.$) {
-													case 'DZero':
-														break _v0$1;
-													case 'DRem':
-														break _v0$3;
-													case 'DCom':
-														break _v0$4;
-													default:
-														break _v0$4;
-												}
-											case 'DCom':
-												switch (_v0.a.$) {
-													case 'DZero':
-														break _v0$1;
-													case 'DRem':
-														break _v0$3;
-													case 'DCom':
-														var _v13 = _v0.a;
-														var dz1a = _v13.a;
-														var dz1b = _v13.b;
-														var _v14 = _v0.b;
-														var dz2a = _v14.a;
-														var dz2b = _v14.b;
-														return A2(
-															$elm$core$Result$andThen,
-															function (dza) {
-																return A2(
-																	$elm$core$Result$andThen,
-																	function (dzb) {
-																		return $elm$core$Result$Ok(
-																			A2($author$project$Syntax$DCom, dza, dzb));
-																	},
-																	A2($author$project$Eval$diffDeltas, dz1b, dz2b));
-															},
-															A2($author$project$Eval$diffDeltas, dz1a, dz2a));
-													default:
-														if (_v0.b.b.$ === 'DZero') {
-															var _v15 = _v0.b;
-															var dz2a = _v15.a;
-															var _v16 = _v15.b;
-															var $temp$dz1 = dz1,
-																$temp$dz2 = dz2a;
-															dz1 = $temp$dz1;
-															dz2 = $temp$dz2;
-															continue diffDeltas;
-														} else {
-															var _v19 = _v0.b;
-															var dz2a = _v19.a;
-															var dz2b = _v19.b;
-															return A2(
-																$elm$core$Result$andThen,
-																function (dzb) {
-																	return A2(
-																		$elm$core$Result$andThen,
-																		function (dza) {
-																			return $elm$core$Result$Ok(
-																				A2($author$project$Syntax$DCom, dza, dzb));
-																		},
-																		A2($author$project$Eval$diffDeltas, $author$project$Syntax$DId, dz2a));
-																},
-																A2($author$project$Eval$diffDeltas, dz1, dz2b));
-														}
-												}
-											case 'DAdd':
-												switch (_v0.a.$) {
-													case 'DZero':
-														break _v0$1;
-													case 'DRem':
-														break _v0$3;
-													case 'DId':
-														var _v6 = _v0.a;
-														var $temp$dz1 = $author$project$Syntax$DAdd(0),
-															$temp$dz2 = dz2;
-														dz1 = $temp$dz1;
-														dz2 = $temp$dz2;
-														continue diffDeltas;
-													case 'DCom':
-														if (_v0.a.b.$ === 'DZero') {
-															break _v0$11;
-														} else {
-															break _v0$13;
-														}
-													case 'DAdd':
-														var dzn1 = _v0.a.a;
-														var dzn2 = _v0.b.a;
-														return (!(dzn1 - dzn2)) ? $elm$core$Result$Ok($author$project$Syntax$DZero) : $elm$core$Result$Ok(
-															$author$project$Syntax$DAdd(dzn1 - dzn2));
-													default:
-														break _v0$22;
-												}
-											case 'DTuple':
-												switch (_v0.a.$) {
-													case 'DZero':
-														break _v0$1;
-													case 'DRem':
-														break _v0$3;
-													case 'DId':
-														var _v9 = _v0.a;
-														var _v10 = _v0.b;
-														var $temp$dz1 = A2($author$project$Syntax$DTuple, $author$project$Syntax$DId, $author$project$Syntax$DId),
-															$temp$dz2 = dz2;
-														dz1 = $temp$dz1;
-														dz2 = $temp$dz2;
-														continue diffDeltas;
-													case 'DCom':
-														if (_v0.a.b.$ === 'DZero') {
-															break _v0$11;
-														} else {
-															break _v0$13;
-														}
-													case 'DTuple':
-														var _v21 = _v0.a;
-														var dz1a = _v21.a;
-														var dz1b = _v21.b;
-														var _v22 = _v0.b;
-														var dz2a = _v22.a;
-														var dz2b = _v22.b;
-														return A2(
-															$elm$core$Result$andThen,
-															function (dza) {
-																return A2(
-																	$elm$core$Result$andThen,
-																	function (dzb) {
-																		return $elm$core$Result$Ok(
-																			A2($author$project$Syntax$DTuple, dza, dzb));
-																	},
-																	A2($author$project$Eval$diffDeltas, dz1b, dz2b));
-															},
-															A2($author$project$Eval$diffDeltas, dz1a, dz2a));
-													default:
-														break _v0$22;
-												}
-											case 'DHtml':
-												switch (_v0.a.$) {
-													case 'DZero':
-														break _v0$1;
-													case 'DRem':
-														break _v0$3;
-													case 'DId':
-														var _v11 = _v0.a;
-														var _v12 = _v0.b;
-														var s = _v12.a;
-														var $temp$dz1 = A4($author$project$Syntax$DHtml, s, $author$project$Syntax$DId, $author$project$Syntax$DId, $author$project$Syntax$DId),
-															$temp$dz2 = dz2;
-														dz1 = $temp$dz1;
-														dz2 = $temp$dz2;
-														continue diffDeltas;
-													case 'DCom':
-														if (_v0.a.b.$ === 'DZero') {
-															break _v0$11;
-														} else {
-															break _v0$13;
-														}
-													case 'DHtml':
-														var _v23 = _v0.a;
-														var s1 = _v23.a;
-														var dz1a = _v23.b;
-														var dz1b = _v23.c;
-														var dz1c = _v23.d;
-														var _v24 = _v0.b;
-														var s2 = _v24.a;
-														var dz2a = _v24.b;
-														var dz2b = _v24.c;
-														var dz2c = _v24.d;
-														return _Utils_eq(s1, s2) ? A2(
-															$elm$core$Result$andThen,
-															function (dza) {
-																return A2(
-																	$elm$core$Result$andThen,
-																	function (dzb) {
-																		return A2(
-																			$elm$core$Result$andThen,
-																			function (dzc) {
-																				return $elm$core$Result$Ok(
-																					A4($author$project$Syntax$DHtml, s1, dza, dzb, dzc));
-																			},
-																			A2($author$project$Eval$diffDeltas, dz1c, dz2c));
-																	},
-																	A2($author$project$Eval$diffDeltas, dz1b, dz2b));
-															},
-															A2($author$project$Eval$diffDeltas, dz1a, dz2a)) : $elm$core$Result$Err('HTML delta diff error.');
-													default:
-														break _v0$22;
-												}
-											case 'DCons':
-												switch (_v0.a.$) {
-													case 'DZero':
-														break _v0$1;
-													case 'DRem':
-														break _v0$3;
-													case 'DId':
-														var _v7 = _v0.a;
-														var _v8 = _v0.b;
-														var $temp$dz1 = A3($author$project$Syntax$DCons, $elm$core$Maybe$Nothing, $author$project$Syntax$DId, $author$project$Syntax$DId),
-															$temp$dz2 = dz2;
-														dz1 = $temp$dz1;
-														dz2 = $temp$dz2;
-														continue diffDeltas;
-													case 'DCom':
-														if (_v0.a.b.$ === 'DZero') {
-															break _v0$11;
-														} else {
-															break _v0$13;
-														}
-													case 'DCons':
-														if (_v0.a.a.$ === 'Nothing') {
-															if (_v0.b.a.$ === 'Nothing') {
-																var _v25 = _v0.a;
-																var _v26 = _v25.a;
-																var dzx1 = _v25.b;
-																var dzxs1 = _v25.c;
-																var _v27 = _v0.b;
-																var _v28 = _v27.a;
-																var dzx2 = _v27.b;
-																var dzxs2 = _v27.c;
-																return A2(
-																	$elm$core$Result$andThen,
-																	function (dzx) {
-																		return A2(
-																			$elm$core$Result$andThen,
-																			function (dzxs) {
-																				return $elm$core$Result$Ok(
-																					A3($author$project$Syntax$DCons, $elm$core$Maybe$Nothing, dzx, dzxs));
-																			},
-																			A2($author$project$Eval$diffDeltas, dzxs1, dzxs2));
-																	},
-																	A2($author$project$Eval$diffDeltas, dzx1, dzx2));
-															} else {
-																var _v29 = _v0.a;
-																var _v30 = _v29.a;
-																var _v31 = _v0.b;
-																var dzxs2 = _v31.c;
-																return A2(
-																	$elm$core$Result$andThen,
-																	function (dzxs) {
-																		return $elm$core$Result$Ok(
-																			A3($author$project$Syntax$DCons, $elm$core$Maybe$Nothing, $author$project$Syntax$DRem, dzxs));
-																	},
-																	A2($author$project$Eval$diffDeltas, dz1, dzxs2));
-															}
-														} else {
-															if (_v0.b.a.$ === 'Nothing') {
-																var _v32 = _v0.a;
-																var x = _v32.a.a;
-																var dzx1 = _v32.b;
-																var dzxs1 = _v32.c;
-																var _v33 = _v0.b;
-																var _v34 = _v33.a;
-																return A2(
-																	$elm$core$Result$andThen,
-																	function (dzxs) {
-																		return $elm$core$Result$Ok(
-																			A3(
-																				$author$project$Syntax$DCons,
-																				$elm$core$Maybe$Just(x),
-																				dzx1,
-																				dzxs));
-																	},
-																	A2($author$project$Eval$diffDeltas, dzxs1, dz2));
-															} else {
-																var _v35 = _v0.a;
-																var x = _v35.a.a;
-																var dzx1 = _v35.b;
-																var dzxs1 = _v35.c;
-																var _v36 = _v0.b;
-																var y = _v36.a.a;
-																var dzx2 = _v36.b;
-																var dzxs2 = _v36.c;
-																return _Utils_eq(x, y) ? A2(
-																	$elm$core$Result$andThen,
-																	function (dzx) {
-																		return A2(
-																			$elm$core$Result$andThen,
-																			function (dzxs) {
-																				return $elm$core$Result$Ok(
-																					A3(
-																						$author$project$Syntax$DCons,
-																						$elm$core$Maybe$Just(x),
-																						dzx,
-																						dzxs));
-																			},
-																			A2($author$project$Eval$diffDeltas, dzxs1, dzxs2));
-																	},
-																	A2($author$project$Eval$diffDeltas, dzx1, dzx2)) : A2(
-																	$elm$core$Result$andThen,
-																	function (dzxs) {
-																		return $elm$core$Result$Ok(
-																			A3(
-																				$author$project$Syntax$DCons,
-																				$elm$core$Maybe$Just(x),
-																				dzx1,
-																				A3($author$project$Syntax$DCons, $elm$core$Maybe$Nothing, $author$project$Syntax$DRem, dzxs)));
-																	},
-																	A2($author$project$Eval$diffDeltas, dzxs1, dzxs2));
-															}
-														}
-													default:
-														break _v0$22;
-												}
-											case 'DLam':
-												switch (_v0.a.$) {
-													case 'DZero':
-														break _v0$1;
-													case 'DRem':
-														break _v0$3;
-													case 'DCom':
-														if (_v0.a.b.$ === 'DZero') {
-															break _v0$11;
-														} else {
-															break _v0$13;
-														}
-													case 'DLam':
-														var _v37 = _v0.a;
-														var _v38 = _v0.b;
-														return $elm$core$Result$Err('diffDeltas: Not defined for DLam');
-													default:
-														break _v0$22;
-												}
-											default:
-												switch (_v0.a.$) {
-													case 'DZero':
-														break _v0$1;
-													case 'DRem':
-														break _v0$3;
-													case 'DCom':
-														if (_v0.a.b.$ === 'DZero') {
-															break _v0$11;
-														} else {
-															break _v0$13;
-														}
-													default:
-														break _v0$22;
-												}
-										}
-									}
-									return $elm$core$Result$Err(
-										'diffDeltas: Non-matching deltas ' + $elm$core$Debug$toString(
-											_Utils_Tuple2(dz1, dz2)));
-								}
-								var _v20 = _v0.a;
-								var dz1a = _v20.a;
-								var dz1b = _v20.b;
-								return A2(
-									$elm$core$Result$andThen,
-									function (dzb) {
-										return $elm$core$Result$Ok(
-											A2($author$project$Syntax$DCom, dz1a, dzb));
-									},
-									A2($author$project$Eval$diffDeltas, dz1b, dz2));
-							}
-							var _v17 = _v0.a;
-							var dz2a = _v17.a;
-							var _v18 = _v17.b;
-							var $temp$dz1 = dz2a,
-								$temp$dz2 = dz2;
-							dz1 = $temp$dz1;
-							dz2 = $temp$dz2;
-							continue diffDeltas;
-						}
-						var _v5 = _v0.b;
-						return $elm$core$Result$Ok(dz1);
-					}
-					var _v4 = _v0.a;
-					return $elm$core$Result$Ok($author$project$Syntax$DRem);
-				}
-				var _v3 = _v0.b;
-				return $elm$core$Result$Ok(dz1);
+			switch (bag.$) {
+				case 'Empty':
+					return list;
+				case 'AddRight':
+					var bag1 = bag.a;
+					var x = bag.b;
+					var $temp$bag = bag1,
+						$temp$list = A2($elm$core$List$cons, x, list);
+					bag = $temp$bag;
+					list = $temp$list;
+					continue bagToList;
+				default:
+					var bag1 = bag.a;
+					var bag2 = bag.b;
+					var $temp$bag = bag1,
+						$temp$list = A2($elm$parser$Parser$Advanced$bagToList, bag2, list);
+					bag = $temp$bag;
+					list = $temp$list;
+					continue bagToList;
 			}
-			var _v2 = _v0.a;
-			return $elm$core$Result$Ok($author$project$Syntax$DZero);
 		}
 	});
+var $elm$parser$Parser$Advanced$run = F2(
+	function (_v0, src) {
+		var parse = _v0.a;
+		var _v1 = parse(
+			{col: 1, context: _List_Nil, indent: 1, offset: 0, row: 1, src: src});
+		if (_v1.$ === 'Good') {
+			var value = _v1.b;
+			return $elm$core$Result$Ok(value);
+		} else {
+			var bag = _v1.b;
+			return $elm$core$Result$Err(
+				A2($elm$parser$Parser$Advanced$bagToList, bag, _List_Nil));
+		}
+	});
+var $elm$parser$Parser$run = F2(
+	function (parser, source) {
+		var _v0 = A2($elm$parser$Parser$Advanced$run, parser, source);
+		if (_v0.$ === 'Ok') {
+			var a = _v0.a;
+			return $elm$core$Result$Ok(a);
+		} else {
+			var problems = _v0.a;
+			return $elm$core$Result$Err(
+				A2($elm$core$List$map, $elm$parser$Parser$problemToDeadEnd, problems));
+		}
+	});
+var $author$project$NewParser$Program$parse = $elm$parser$Parser$run(
+	A2($elm$parser$Parser$ignorer, $author$project$NewParser$Program$program, $elm$parser$Parser$end));
+var $author$project$NewPrinter$printListSpine = F2(
+	function (h, t) {
+		switch (t.$) {
+			case 'VNil':
+				return $author$project$NewPrinter$printValue(h);
+			case 'VCons':
+				var h2 = t.a;
+				var t2 = t.b;
+				return $author$project$NewPrinter$printValue(h) + (', ' + A2($author$project$NewPrinter$printListSpine, h2, t2));
+			default:
+				return 'Error in printListSpine: tail after list cell must be VNil or VCons';
+		}
+	});
+var $author$project$NewPrinter$printValue = function (v) {
+	switch (v.$) {
+		case 'VInt':
+			var n = v.a;
+			return $elm$core$String$fromInt(n);
+		case 'VBool':
+			if (v.a) {
+				return 'True';
+			} else {
+				return 'False';
+			}
+		case 'VString':
+			var s = v.a;
+			return '\"' + (s + '\"');
+		case 'VUnit':
+			return '';
+		case 'VNil':
+			return '[]';
+		case 'VCons':
+			var h = v.a;
+			var t = v.b;
+			return '[' + (A2($author$project$NewPrinter$printListSpine, h, t) + ']');
+		case 'VHole':
+			var u = v.a;
+			return '⟨hole ' + (u + '⟩');
+		case 'VHtml':
+			var tag = v.a;
+			var av = v.b;
+			var pv = v.c;
+			var cv = v.d;
+			return 'Html.' + (tag + (' ' + ($author$project$NewPrinter$printValue(av) + (' ' + ($author$project$NewPrinter$printValue(pv) + (' ' + $author$project$NewPrinter$printValue(cv)))))));
+		default:
+			var msg = v.a;
+			return msg;
+	}
+};
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $author$project$Ui$Main$sendAlert = _Platform_outgoingPort('sendAlert', $elm$json$Json$Encode$string);
+var $author$project$Ui$Main$sendCode = _Platform_outgoingPort('sendCode', $elm$json$Json$Encode$string);
+var $author$project$Ui$Main$sendDelta = _Platform_outgoingPort('sendDelta', $elm$json$Json$Encode$string);
+var $author$project$Ui$Main$sendFileName = _Platform_outgoingPort('sendFileName', $elm$json$Json$Encode$string);
+var $author$project$Ui$Main$sendOutput = _Platform_outgoingPort('sendOutput', $elm$json$Json$Encode$string);
+var $elm$core$Debug$toString = _Debug_toString;
+var $author$project$Ui$Main$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'SaveCode':
+				var newCode = msg.a;
+				var _v1 = $author$project$NewParser$Program$parse(newCode);
+				if (_v1.$ === 'Ok') {
+					var prog = _v1.a;
+					var outVal = function () {
+						var _v2 = $author$project$FwdEval$fwdProgram(prog);
+						if (_v2.$ === 'Ok') {
+							var store = _v2.a;
+							return $author$project$NewSyntax$VUnit;
+						} else {
+							var e = _v2.a;
+							return $author$project$NewSyntax$VError('Runtime error:\n' + e);
+						}
+					}();
+					var outStr = $author$project$NewPrinter$printValue(outVal);
+					var model1 = _Utils_update(
+						model,
+						{code: newCode, holeBindings: _List_Nil, mode: $author$project$Ui$Model$RUNNING, output: outVal});
+					return _Utils_Tuple2(
+						model1,
+						$author$project$Ui$Main$sendOutput(outStr + 'success'));
+				} else {
+					var deadEnds = _v1.a;
+					var errVal = $author$project$NewSyntax$VError(
+						'Parse error:\n' + $elm$core$Debug$toString(deadEnds));
+					var model1 = _Utils_update(
+						model,
+						{code: newCode, output: errVal});
+					var errStr = $author$project$NewPrinter$printValue(errVal);
+					return _Utils_Tuple2(
+						model1,
+						$author$project$Ui$Main$sendOutput(errStr));
+				}
+			case 'Backward':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Ui$Main$sendOutput('Backward disabled (NewParser shell).'));
+			case 'BackwardPreview':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Ui$Main$sendCode(model.code));
+			case 'BackwardPreviewRevert':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Ui$Main$sendCode(model.code));
+			case 'SetDelta':
+				var delta = msg.a;
+				return _Utils_Tuple2(
+					model,
+					$author$project$Ui$Main$sendDelta(delta));
+			case 'SelectPreEx':
+				var f = msg.a;
+				return _Utils_Tuple2(
+					model,
+					$author$project$Ui$Main$sendFileName(f));
+			case 'CatchGUIEvent':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Ui$Main$sendOutput('GUI events not wired to NewParser yet.'));
+			case 'ChangeMode':
+				var mode = msg.a;
+				var model1 = _Utils_update(
+					model,
+					{mode: mode});
+				return _Utils_Tuple2(
+					model1,
+					$author$project$Ui$Main$sendOutput(
+						$author$project$NewPrinter$printValue(model1.output)));
+			default:
+				return _Utils_Tuple2(
+					model,
+					$author$project$Ui$Main$sendAlert('Event index UI disabled in NewParser shell.'));
+		}
+	});
+var $author$project$Ui$Model$Backward = {$: 'Backward'};
+var $author$project$Ui$Model$BackwardPreview = {$: 'BackwardPreview'};
+var $author$project$Ui$Model$BackwardPreviewRevert = {$: 'BackwardPreviewRevert'};
+var $author$project$Ui$Model$ChangeEventIndex = function (a) {
+	return {$: 'ChangeEventIndex', a: a};
+};
+var $author$project$Ui$Model$ChangeMode = function (a) {
+	return {$: 'ChangeMode', a: a};
+};
+var $author$project$Ui$Model$EDITING = {$: 'EDITING'};
+var $author$project$Ui$Model$SelectPreEx = function (a) {
+	return {$: 'SelectPreEx', a: a};
+};
+var $elm$virtual_dom$VirtualDom$attribute = F2(
+	function (key, value) {
+		return A2(
+			_VirtualDom_attribute,
+			_VirtualDom_noOnOrFormAction(key),
+			_VirtualDom_noJavaScriptOrHtmlUri(value));
+	});
+var $elm$html$Html$Attributes$attribute = $elm$virtual_dom$VirtualDom$attribute;
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
+var $author$project$Ui$Model$defaultPreExs = _List_fromArray(
+	['New File', 'Calculator', 'Dice Game', 'Meal Ordering', 'Conference Surplus', 'House Sailing']);
+var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $elm$core$String$cons = _String_cons;
 var $elm$core$String$fromChar = function (_char) {
 	return A2($elm$core$String$cons, _char, '');
@@ -7103,7522 +9848,6 @@ var $author$project$Printer$Exp$printDecls = F2(
 		}
 		return 'ERROR #15: Print Let Exp Declaration Error, declarations=' + ($elm$core$Debug$toString(declarations) + (' wss=' + $elm$core$Debug$toString(wss)));
 	});
-var $author$project$Printer$Delta$print = function (dv) {
-	switch (dv.$) {
-		case 'DZero':
-			return '??';
-		case 'DId':
-			return 'id';
-		case 'DRem':
-			return 'remove';
-		case 'DAdd':
-			var n = dv.a;
-			return '+' + $elm$core$Debug$toString(n);
-		case 'DTuple':
-			var dv1 = dv.a;
-			var dv2 = dv.b;
-			return '(' + ($author$project$Printer$Delta$print(dv1) + (', ' + ($author$project$Printer$Delta$print(dv2) + ')')));
-		case 'DInsert':
-			var n = dv.a;
-			var e = dv.b;
-			return 'insert ' + ($elm$core$Debug$toString(n) + (' ' + $author$project$Printer$Exp$print(e)));
-		case 'DDelete':
-			var n = dv.a;
-			return 'delete ' + $elm$core$Debug$toString(n);
-		case 'DCons':
-			var dv1 = dv.b;
-			var dv2 = dv.c;
-			return $author$project$Printer$Delta$print(dv1) + ('::' + $author$project$Printer$Delta$print(dv2));
-		case 'DHtml':
-			var s = dv.a;
-			var dv1 = dv.b;
-			var dv2 = dv.c;
-			var dv3 = dv.d;
-			return 'html ' + (s + (' ' + ($author$project$Printer$Delta$print(dv1) + (' ' + ($author$project$Printer$Delta$print(dv2) + (' ' + $author$project$Printer$Delta$print(dv3)))))));
-		case 'DLam':
-			var e = dv.a;
-			var dv1 = dv.b;
-			return '\\' + ($author$project$Printer$Exp$print(e) + ('->' + $author$project$Printer$Delta$print(dv1)));
-		default:
-			var dv1 = dv.a;
-			var dv2 = dv.b;
-			return '(' + ($author$project$Printer$Delta$print(dv1) + ('.' + ($author$project$Printer$Delta$print(dv2) + ')')));
-	}
-};
-var $author$project$LangUtils$Delta$drop = F2(
-	function (n, dv) {
-		var _v0 = _Utils_Tuple2(n, dv);
-		_v0$0:
-		while (true) {
-			if (_v0.b.$ === 'DCom') {
-				if (!_v0.a) {
-					break _v0$0;
-				} else {
-					if (_v0.b.b.$ === 'DZero') {
-						var _v1 = _v0.b;
-						var _v2 = _v1.b;
-						return $elm$core$Result$Ok(
-							_Utils_Tuple2($author$project$Syntax$DZero, n - 1));
-					} else {
-						var _v3 = _v0.b;
-						var dv1 = _v3.a;
-						var dv2 = _v3.b;
-						return A2(
-							$elm$core$Result$andThen,
-							function (_v4) {
-								var n_ = _v4.b;
-								return (!n_) ? $elm$core$Result$Ok(
-									_Utils_Tuple2(dv1, 0)) : $elm$core$Result$Ok(
-									_Utils_Tuple2($author$project$Syntax$DZero, n - 1));
-							},
-							A2($author$project$LangUtils$Delta$drop, n, dv2));
-					}
-				}
-			} else {
-				if (!_v0.a) {
-					break _v0$0;
-				} else {
-					return $elm$core$Result$Err(
-						'Tried to drop n > 0 from non-compositional delta: ' + $author$project$Printer$Delta$print(dv));
-				}
-			}
-		}
-		return $elm$core$Result$Ok(
-			_Utils_Tuple2(dv, 0));
-	});
-var $author$project$LangUtils$Equality$eqBranch = F2(
-	function (br1, br2) {
-		var _v40 = _Utils_Tuple2(br1, br2);
-		_v40$2:
-		while (true) {
-			if (_v40.a.$ === 'BSin') {
-				if (_v40.b.$ === 'BSin') {
-					var _v41 = _v40.a;
-					var p1 = _v41.b;
-					var e1 = _v41.c;
-					var _v42 = _v40.b;
-					var p2 = _v42.b;
-					var e2 = _v42.c;
-					return _Utils_eq(p1, p2) && A2($author$project$LangUtils$Equality$eqExp, e1, e2);
-				} else {
-					break _v40$2;
-				}
-			} else {
-				if (_v40.b.$ === 'BCom') {
-					var _v43 = _v40.a;
-					var br1a = _v43.b;
-					var br1b = _v43.c;
-					var _v44 = _v40.b;
-					var br2a = _v44.b;
-					var br2b = _v44.c;
-					return A2($author$project$LangUtils$Equality$eqBranch, br1a, br2a) && A2($author$project$LangUtils$Equality$eqBranch, br1b, br2b);
-				} else {
-					break _v40$2;
-				}
-			}
-		}
-		return false;
-	});
-var $author$project$LangUtils$Equality$eqDecls = F2(
-	function (decls1, decls2) {
-		var _v31 = _Utils_Tuple2(decls1, decls2);
-		_v31$2:
-		while (true) {
-			if (_v31.a.b) {
-				if (_v31.b.b) {
-					var _v32 = _v31.a;
-					var _v33 = _v32.a;
-					var var1 = _v33.a;
-					var _v34 = _v33.b;
-					var _v35 = _v34.a;
-					var nE1 = _v35.b;
-					var decls1_ = _v32.b;
-					var _v36 = _v31.b;
-					var _v37 = _v36.a;
-					var var2 = _v37.a;
-					var _v38 = _v37.b;
-					var _v39 = _v38.a;
-					var nE2 = _v39.b;
-					var decls2_ = _v36.b;
-					return _Utils_eq(var1, var2) && (A2($author$project$LangUtils$Equality$eqExp, nE1, nE2) && A2($author$project$LangUtils$Equality$eqDecls, decls1_, decls2_));
-				} else {
-					break _v31$2;
-				}
-			} else {
-				if (!_v31.b.b) {
-					return true;
-				} else {
-					break _v31$2;
-				}
-			}
-		}
-		return false;
-	});
-var $author$project$LangUtils$Equality$eqExp = F2(
-	function (exp1, exp2) {
-		eqExp:
-		while (true) {
-			var _v0 = _Utils_Tuple2(exp1, exp2);
-			_v0$1:
-			while (true) {
-				_v0$16:
-				while (true) {
-					switch (_v0.a.$) {
-						case 'EParens':
-							var _v1 = _v0.a;
-							var e1 = _v1.b;
-							var e2 = _v0.b;
-							var $temp$exp1 = e1,
-								$temp$exp2 = e2;
-							exp1 = $temp$exp1;
-							exp2 = $temp$exp2;
-							continue eqExp;
-						case 'EInt':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'EInt':
-									var _v3 = _v0.a;
-									var n1 = _v3.b;
-									var _v4 = _v0.b;
-									var n2 = _v4.b;
-									return _Utils_eq(n1, n2);
-								default:
-									break _v0$16;
-							}
-						case 'EBool':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'EBool':
-									var _v5 = _v0.a;
-									var b1 = _v5.b;
-									var _v6 = _v0.b;
-									var b2 = _v6.b;
-									return _Utils_eq(b1, b2);
-								default:
-									break _v0$16;
-							}
-						case 'EChar':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'EChar':
-									var _v7 = _v0.a;
-									var c1 = _v7.b;
-									var _v8 = _v0.b;
-									var c2 = _v8.b;
-									return _Utils_eq(c1, c2);
-								default:
-									break _v0$16;
-							}
-						case 'EVar':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'EVar':
-									var _v9 = _v0.a;
-									var x = _v9.b;
-									var _v10 = _v0.b;
-									var y = _v10.b;
-									return _Utils_eq(x, y);
-								default:
-									break _v0$16;
-							}
-						case 'ELam':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'ELam':
-									var _v11 = _v0.a;
-									var e1 = _v11.c;
-									var _v12 = _v0.b;
-									var e2 = _v12.c;
-									var $temp$exp1 = e1,
-										$temp$exp2 = e2;
-									exp1 = $temp$exp1;
-									exp2 = $temp$exp2;
-									continue eqExp;
-								default:
-									break _v0$16;
-							}
-						case 'EApp':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'EApp':
-									var _v13 = _v0.a;
-									var ef1 = _v13.a;
-									var e1 = _v13.b;
-									var _v14 = _v0.b;
-									var ef2 = _v14.a;
-									var e2 = _v14.b;
-									return A2($author$project$LangUtils$Equality$eqExp, ef1, ef2) && A2($author$project$LangUtils$Equality$eqExp, e1, e2);
-								default:
-									break _v0$16;
-							}
-						case 'ELet':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'ELet':
-									var _v15 = _v0.a;
-									var decls1 = _v15.b;
-									var e1 = _v15.c;
-									var _v16 = _v0.b;
-									var decls2 = _v16.b;
-									var e2 = _v16.c;
-									return A2($author$project$LangUtils$Equality$eqDecls, decls1, decls2) && A2($author$project$LangUtils$Equality$eqExp, e1, e2);
-								default:
-									break _v0$16;
-							}
-						case 'ECons':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'ECons':
-									var _v17 = _v0.a;
-									var ehd1 = _v17.c;
-									var etl1 = _v17.d;
-									var _v18 = _v0.b;
-									var ehd2 = _v18.c;
-									var etl2 = _v18.d;
-									return A2($author$project$LangUtils$Equality$eqExp, ehd1, ehd2) && A2($author$project$LangUtils$Equality$eqExp, etl1, etl2);
-								default:
-									break _v0$16;
-							}
-						case 'ENil':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'ENil':
-									var _v19 = _v0.a;
-									var _v20 = _v0.b;
-									return true;
-								default:
-									break _v0$16;
-							}
-						case 'EHtml':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'EHtml':
-									var _v21 = _v0.a;
-									var s1 = _v21.b;
-									var e1 = _v21.c;
-									var e2 = _v21.d;
-									var e3 = _v21.e;
-									var _v22 = _v0.b;
-									var s2 = _v22.b;
-									var e4 = _v22.c;
-									var e5 = _v22.d;
-									var e6 = _v22.e;
-									return _Utils_eq(s1, s2) && (A2($author$project$LangUtils$Equality$eqExp, e1, e4) && (A2($author$project$LangUtils$Equality$eqExp, e2, e5) && A2($author$project$LangUtils$Equality$eqExp, e3, e6)));
-								default:
-									break _v0$16;
-							}
-						case 'ETuple':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'ETuple':
-									var _v23 = _v0.a;
-									var e1a = _v23.c;
-									var e1b = _v23.d;
-									var _v24 = _v0.b;
-									var e2a = _v24.c;
-									var e2b = _v24.d;
-									return A2($author$project$LangUtils$Equality$eqExp, e1a, e2a) && A2($author$project$LangUtils$Equality$eqExp, e1b, e2b);
-								default:
-									break _v0$16;
-							}
-						case 'ECase':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'ECase':
-									var _v25 = _v0.a;
-									var e1 = _v25.b;
-									var br1 = _v25.c;
-									var _v26 = _v0.b;
-									var e2 = _v26.b;
-									var br2 = _v26.c;
-									return A2($author$project$LangUtils$Equality$eqExp, e1, e2) && A2($author$project$LangUtils$Equality$eqBranch, br1, br2);
-								default:
-									break _v0$16;
-							}
-						case 'EUPrim':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'EUPrim':
-									var _v27 = _v0.a;
-									var op1 = _v27.b;
-									var e1 = _v27.c;
-									var _v28 = _v0.b;
-									var op2 = _v28.b;
-									var e2 = _v28.c;
-									return _Utils_eq(op2, op1) && A2($author$project$LangUtils$Equality$eqExp, e1, e2);
-								default:
-									break _v0$16;
-							}
-						case 'EBPrim':
-							switch (_v0.b.$) {
-								case 'EParens':
-									break _v0$1;
-								case 'EBPrim':
-									var _v29 = _v0.a;
-									var bop1 = _v29.b;
-									var e1a = _v29.c;
-									var e1b = _v29.d;
-									var _v30 = _v0.b;
-									var bop2 = _v30.b;
-									var e2a = _v30.c;
-									var e2b = _v30.d;
-									return _Utils_eq(bop2, bop1) && (A2($author$project$LangUtils$Equality$eqExp, e1a, e2a) && A2($author$project$LangUtils$Equality$eqExp, e1b, e2b));
-								default:
-									break _v0$16;
-							}
-						default:
-							if (_v0.b.$ === 'EParens') {
-								break _v0$1;
-							} else {
-								break _v0$16;
-							}
-					}
-				}
-				return false;
-			}
-			var e1 = _v0.a;
-			var _v2 = _v0.b;
-			var e2 = _v2.b;
-			var $temp$exp1 = e1,
-				$temp$exp2 = e2;
-			exp1 = $temp$exp1;
-			exp2 = $temp$exp2;
-			continue eqExp;
-		}
-	});
-var $author$project$LangUtils$Rename$freshName = F2(
-	function (x, id) {
-		return _Utils_Tuple2(
-			_Utils_ap(
-				x,
-				$elm$core$Debug$toString(id)),
-			id + 1);
-	});
-var $author$project$Syntax$EBool = F2(
-	function (a, b) {
-		return {$: 'EBool', a: a, b: b};
-	});
-var $author$project$Utils$delete = F2(
-	function (x, xvs) {
-		if (!xvs.b) {
-			return _List_Nil;
-		} else {
-			var _v1 = xvs.a;
-			var x1 = _v1.a;
-			var v1 = _v1.b;
-			var xvs_ = xvs.b;
-			if (_Utils_eq(x1, x)) {
-				return xvs_;
-			} else {
-				var ls1 = A2($author$project$Utils$delete, x, xvs_);
-				return A2(
-					$elm$core$List$cons,
-					_Utils_Tuple2(x1, v1),
-					ls1);
-			}
-		}
-	});
-var $author$project$Syntax$eBoolDefaultWSS = _List_fromArray(
-	[' ']);
-var $author$project$Eval$expToResult = function (e) {
-	if (e.$ === 'EError') {
-		var s = e.a;
-		return $elm$core$Result$Err(s);
-	} else {
-		return $elm$core$Result$Ok(e);
-	}
-};
-var $elm$core$Basics$ge = _Utils_ge;
-var $author$project$LangUtils$WHNF$isWHNF = function (exp) {
-	switch (exp.$) {
-		case 'EInt':
-			return true;
-		case 'EBool':
-			return true;
-		case 'EChar':
-			return true;
-		case 'ELam':
-			return true;
-		case 'ECons':
-			return true;
-		case 'ENil':
-			return true;
-		case 'ETuple':
-			return true;
-		case 'EHtml':
-			return true;
-		case 'EError':
-			return true;
-		default:
-			return false;
-	}
-};
-var $elm$core$Basics$modBy = _Basics_modBy;
-var $elm$core$Basics$negate = function (n) {
-	return -n;
-};
-var $elm$core$Basics$neq = _Utils_notEqual;
-var $elm$core$Basics$not = _Basics_not;
-var $author$project$Syntax$BCom = F3(
-	function (a, b, c) {
-		return {$: 'BCom', a: a, b: b, c: c};
-	});
-var $author$project$LangUtils$Rename$renameDecls = F2(
-	function (declarations, id) {
-		if (declarations.b) {
-			var _v1 = declarations.a;
-			var _var = _v1.a;
-			var _v2 = _v1.b;
-			var binding = _v2.a;
-			var dv = _v2.b;
-			var flag = _v2.c;
-			var decls = declarations.b;
-			var _v3 = A2($author$project$LangUtils$Rename$freshName, 'i', id);
-			var y = _v3.a;
-			var id1 = _v3.b;
-			var _v4 = A2($author$project$LangUtils$Rename$renameDecls, decls, id1);
-			var decls_ = _v4.a;
-			var id_ = _v4.b;
-			var renameSet1 = _v4.c;
-			var declarations_ = A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(
-					y,
-					_Utils_Tuple3(binding, dv, flag)),
-				decls_);
-			return _Utils_Tuple3(
-				declarations_,
-				id_,
-				A2(
-					$elm$core$List$cons,
-					_Utils_Tuple2(_var, y),
-					renameSet1));
-		} else {
-			return _Utils_Tuple3(_List_Nil, id, _List_Nil);
-		}
-	});
-var $author$project$LangUtils$Substitute$containsVar = F2(
-	function (s1, p) {
-		switch (p.$) {
-			case 'PVar':
-				var s = p.b;
-				return _Utils_eq(s, s1);
-			case 'PTuple':
-				var p1 = p.c;
-				var p2 = p.d;
-				return A2($author$project$LangUtils$Substitute$containsVar, s1, p1) || A2($author$project$LangUtils$Substitute$containsVar, s1, p2);
-			case 'PCons':
-				var p1 = p.c;
-				var p2 = p.d;
-				return A2($author$project$LangUtils$Substitute$containsVar, s1, p1) || A2($author$project$LangUtils$Substitute$containsVar, s1, p2);
-			default:
-				return false;
-		}
-	});
-var $author$project$LangUtils$Substitute$substBranch = F3(
-	function (branch, s1, s2) {
-		if (branch.$ === 'BSin') {
-			var wss = branch.a;
-			var p = branch.b;
-			var exp = branch.c;
-			return A2($author$project$LangUtils$Substitute$containsVar, s1, p) ? branch : A3(
-				$author$project$Syntax$BSin,
-				wss,
-				p,
-				A3($author$project$LangUtils$Substitute$substExp, exp, s1, s2));
-		} else {
-			var wss = branch.a;
-			var b1 = branch.b;
-			var b2 = branch.c;
-			return A3(
-				$author$project$Syntax$BCom,
-				wss,
-				A3($author$project$LangUtils$Substitute$substBranch, b1, s1, s2),
-				A3($author$project$LangUtils$Substitute$substBranch, b2, s1, s2));
-		}
-	});
-var $author$project$LangUtils$Substitute$substDecls = F3(
-	function (declarations, s1, s2) {
-		if (declarations.b) {
-			var _v2 = declarations.a;
-			var var1 = _v2.a;
-			var _v3 = _v2.b;
-			var _v4 = _v3.a;
-			var oE = _v4.a;
-			var nE = _v4.b;
-			var dv = _v3.b;
-			var flag = _v3.c;
-			var decls = declarations.b;
-			var _var = _Utils_eq(var1, s1) ? s2 : var1;
-			return A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(
-					_var,
-					_Utils_Tuple3(
-						_Utils_Tuple2(
-							A3($author$project$LangUtils$Substitute$substExp, oE, s1, s2),
-							A3($author$project$LangUtils$Substitute$substExp, nE, s1, s2)),
-						dv,
-						flag)),
-				A3($author$project$LangUtils$Substitute$substDecls, decls, s1, s2));
-		} else {
-			return _List_Nil;
-		}
-	});
-var $author$project$LangUtils$Substitute$substExp = F3(
-	function (exp, s1, s2) {
-		switch (exp.$) {
-			case 'EParens':
-				var wss = exp.a;
-				var e = exp.b;
-				return A2(
-					$author$project$Syntax$EParens,
-					wss,
-					A3($author$project$LangUtils$Substitute$substExp, e, s1, s2));
-			case 'EVar':
-				var wss = exp.a;
-				var s = exp.b;
-				return _Utils_eq(s, s1) ? A3($author$project$Syntax$EVar, wss, s2, 0) : exp;
-			case 'ELam':
-				var wss = exp.a;
-				var par1 = exp.b;
-				var body = exp.c;
-				return _Utils_eq(par1, s1) ? exp : A3(
-					$author$project$Syntax$ELam,
-					wss,
-					par1,
-					A3($author$project$LangUtils$Substitute$substExp, body, s1, s2));
-			case 'EApp':
-				var fun = exp.a;
-				var arg = exp.b;
-				return A2(
-					$author$project$Syntax$EApp,
-					A3($author$project$LangUtils$Substitute$substExp, fun, s1, s2),
-					A3($author$project$LangUtils$Substitute$substExp, arg, s1, s2));
-			case 'ELet':
-				var wss = exp.a;
-				var decls = exp.b;
-				var body = exp.c;
-				return A3(
-					$author$project$Syntax$ELet,
-					wss,
-					A3($author$project$LangUtils$Substitute$substDecls, decls, s1, s2),
-					A3($author$project$LangUtils$Substitute$substExp, body, s1, s2));
-			case 'ECons':
-				var wss = exp.a;
-				var lType = exp.b;
-				var e1 = exp.c;
-				var e2 = exp.d;
-				return A4(
-					$author$project$Syntax$ECons,
-					wss,
-					lType,
-					A3($author$project$LangUtils$Substitute$substExp, e1, s1, s2),
-					A3($author$project$LangUtils$Substitute$substExp, e2, s1, s2));
-			case 'ETuple':
-				var wss = exp.a;
-				var tType = exp.b;
-				var e1 = exp.c;
-				var e2 = exp.d;
-				return A4(
-					$author$project$Syntax$ETuple,
-					wss,
-					tType,
-					A3($author$project$LangUtils$Substitute$substExp, e1, s1, s2),
-					A3($author$project$LangUtils$Substitute$substExp, e2, s1, s2));
-			case 'EHtml':
-				var wss = exp.a;
-				var s = exp.b;
-				var e1 = exp.c;
-				var e2 = exp.d;
-				var e3 = exp.e;
-				return A5(
-					$author$project$Syntax$EHtml,
-					wss,
-					s,
-					A3($author$project$LangUtils$Substitute$substExp, e1, s1, s2),
-					A3($author$project$LangUtils$Substitute$substExp, e2, s1, s2),
-					A3($author$project$LangUtils$Substitute$substExp, e3, s1, s2));
-			case 'ECase':
-				var wss = exp.a;
-				var guard = exp.b;
-				var branch = exp.c;
-				var guard_ = A3($author$project$LangUtils$Substitute$substExp, guard, s1, s2);
-				var branch_ = A3($author$project$LangUtils$Substitute$substBranch, branch, s1, s2);
-				return A3($author$project$Syntax$ECase, wss, guard_, branch_);
-			case 'EUPrim':
-				var wss = exp.a;
-				var op = exp.b;
-				var e = exp.c;
-				return A3(
-					$author$project$Syntax$EUPrim,
-					wss,
-					op,
-					A3($author$project$LangUtils$Substitute$substExp, e, s1, s2));
-			case 'EBPrim':
-				var wss = exp.a;
-				var op = exp.b;
-				var e1 = exp.c;
-				var e2 = exp.d;
-				return A4(
-					$author$project$Syntax$EBPrim,
-					wss,
-					op,
-					A3($author$project$LangUtils$Substitute$substExp, e1, s1, s2),
-					A3($author$project$LangUtils$Substitute$substExp, e2, s1, s2));
-			default:
-				return exp;
-		}
-	});
-var $author$project$LangUtils$Substitute$substSet = F2(
-	function (ei, renamedvars) {
-		if (renamedvars.b) {
-			var _v1 = renamedvars.a;
-			var s1 = _v1.a;
-			var s2 = _v1.b;
-			var renamedvars_ = renamedvars.b;
-			var ei_ = A2($author$project$LangUtils$Substitute$substSet, ei, renamedvars_);
-			return A3($author$project$LangUtils$Substitute$substExp, ei_, s1, s2);
-		} else {
-			return ei;
-		}
-	});
-var $author$project$LangUtils$Rename$renameBranch = F2(
-	function (branch, id) {
-		if (branch.$ === 'BSin') {
-			var wss = branch.a;
-			var p = branch.b;
-			var e = branch.c;
-			var _v20 = A2($author$project$LangUtils$Rename$renameExp, e, id);
-			var e_ = _v20.a;
-			var id_ = _v20.b;
-			var renameSet = _v20.c;
-			return _Utils_Tuple3(
-				A3($author$project$Syntax$BSin, wss, p, e_),
-				id_,
-				renameSet);
-		} else {
-			var wss = branch.a;
-			var b1 = branch.b;
-			var b2 = branch.c;
-			var _v21 = A2($author$project$LangUtils$Rename$renameBranch, b1, id);
-			var b1_ = _v21.a;
-			var id1 = _v21.b;
-			var renameSet1 = _v21.c;
-			var _v22 = A2($author$project$LangUtils$Rename$renameBranch, b2, id1);
-			var b2_ = _v22.a;
-			var id2 = _v22.b;
-			var renameSet2 = _v22.c;
-			return _Utils_Tuple3(
-				A3($author$project$Syntax$BCom, wss, b1_, b2_),
-				id2,
-				_Utils_ap(renameSet1, renameSet2));
-		}
-	});
-var $author$project$LangUtils$Rename$renameExp = F2(
-	function (exp, id) {
-		switch (exp.$) {
-			case 'EParens':
-				var wss = exp.a;
-				var e = exp.b;
-				var _v1 = A2($author$project$LangUtils$Rename$renameExp, e, id);
-				var e_ = _v1.a;
-				var id_ = _v1.b;
-				var renameSet = _v1.c;
-				return _Utils_Tuple3(
-					A2($author$project$Syntax$EParens, wss, e_),
-					id_,
-					renameSet);
-			case 'ELam':
-				var wss = exp.a;
-				var par = exp.b;
-				var body = exp.c;
-				var _v2 = A2($author$project$LangUtils$Rename$renameExp, body, id);
-				var body_ = _v2.a;
-				var id_ = _v2.b;
-				var renameSet = _v2.c;
-				return _Utils_Tuple3(
-					A3($author$project$Syntax$ELam, wss, par, body_),
-					id_,
-					renameSet);
-			case 'EApp':
-				var fun = exp.a;
-				var arg = exp.b;
-				var _v3 = A2($author$project$LangUtils$Rename$renameExp, fun, id);
-				var fun_ = _v3.a;
-				var id_ = _v3.b;
-				var renameSet = _v3.c;
-				return _Utils_Tuple3(
-					A2($author$project$Syntax$EApp, fun_, arg),
-					id_,
-					renameSet);
-			case 'ELet':
-				var wss = exp.a;
-				var decls = exp.b;
-				var body = exp.c;
-				var _v4 = A2($author$project$LangUtils$Rename$renameDecls, decls, id);
-				var decls1 = _v4.a;
-				var id1 = _v4.b;
-				var renameSet1 = _v4.c;
-				var body1 = A2($author$project$LangUtils$Substitute$substSet, body, renameSet1);
-				var _v5 = A2($author$project$LangUtils$Rename$renameExp, body1, id1);
-				var body2 = _v5.a;
-				var id2 = _v5.b;
-				var renameSet2 = _v5.c;
-				var decls2 = A3(
-					$elm$core$List$foldl,
-					function (_v6) {
-						var s1 = _v6.a;
-						var s2 = _v6.b;
-						return function (decls_) {
-							return A3($author$project$LangUtils$Substitute$substDecls, decls_, s1, s2);
-						};
-					},
-					decls1,
-					renameSet1);
-				return _Utils_Tuple3(
-					A3($author$project$Syntax$ELet, wss, decls2, body2),
-					id2,
-					_Utils_ap(renameSet1, renameSet2));
-			case 'ECons':
-				var wss = exp.a;
-				var lType = exp.b;
-				var e1 = exp.c;
-				var e2 = exp.d;
-				var _v7 = A2($author$project$LangUtils$Rename$renameExp, e1, id);
-				var e1_ = _v7.a;
-				var id1 = _v7.b;
-				var renameSet1 = _v7.c;
-				var _v8 = A2($author$project$LangUtils$Rename$renameExp, e2, id1);
-				var e2_ = _v8.a;
-				var id2 = _v8.b;
-				var renameSet2 = _v8.c;
-				return _Utils_Tuple3(
-					A4($author$project$Syntax$ECons, wss, lType, e1_, e2_),
-					id2,
-					_Utils_ap(renameSet1, renameSet2));
-			case 'EHtml':
-				var wss = exp.a;
-				var s = exp.b;
-				var e1 = exp.c;
-				var e2 = exp.d;
-				var e3 = exp.e;
-				var _v9 = A2($author$project$LangUtils$Rename$renameExp, e1, id);
-				var e1_ = _v9.a;
-				var id1 = _v9.b;
-				var renameSet1 = _v9.c;
-				var _v10 = A2($author$project$LangUtils$Rename$renameExp, e2, id1);
-				var e2_ = _v10.a;
-				var id2 = _v10.b;
-				var renameSet2 = _v10.c;
-				var _v11 = A2($author$project$LangUtils$Rename$renameExp, e3, id2);
-				var e3_ = _v11.a;
-				var id3 = _v11.b;
-				var renameSet3 = _v11.c;
-				return _Utils_Tuple3(
-					A5($author$project$Syntax$EHtml, wss, s, e1_, e2_, e3_),
-					id3,
-					_Utils_ap(
-						renameSet1,
-						_Utils_ap(renameSet2, renameSet3)));
-			case 'ETuple':
-				var wss = exp.a;
-				var tType = exp.b;
-				var e1 = exp.c;
-				var e2 = exp.d;
-				var _v12 = A2($author$project$LangUtils$Rename$renameExp, e1, id);
-				var e1_ = _v12.a;
-				var id1 = _v12.b;
-				var renameSet1 = _v12.c;
-				var _v13 = A2($author$project$LangUtils$Rename$renameExp, e2, id1);
-				var e2_ = _v13.a;
-				var id2 = _v13.b;
-				var renameSet2 = _v13.c;
-				return _Utils_Tuple3(
-					A4($author$project$Syntax$ETuple, wss, tType, e1_, e2_),
-					id2,
-					_Utils_ap(renameSet1, renameSet2));
-			case 'ECase':
-				var wss = exp.a;
-				var guard = exp.b;
-				var branch = exp.c;
-				var _v14 = A2($author$project$LangUtils$Rename$renameExp, guard, id);
-				var guard_ = _v14.a;
-				var id1 = _v14.b;
-				var renameSet1 = _v14.c;
-				var _v15 = A2($author$project$LangUtils$Rename$renameBranch, branch, id1);
-				var branch_ = _v15.a;
-				var id2 = _v15.b;
-				var renameSet2 = _v15.c;
-				return _Utils_Tuple3(
-					A3($author$project$Syntax$ECase, wss, guard_, branch_),
-					id2,
-					_Utils_ap(renameSet1, renameSet2));
-			case 'EUPrim':
-				var wss = exp.a;
-				var op = exp.b;
-				var e = exp.c;
-				var _v16 = A2($author$project$LangUtils$Rename$renameExp, e, id);
-				var e_ = _v16.a;
-				var id1 = _v16.b;
-				var renameSet1 = _v16.c;
-				return _Utils_Tuple3(
-					A3($author$project$Syntax$EUPrim, wss, op, e_),
-					id1,
-					renameSet1);
-			case 'EBPrim':
-				var wss = exp.a;
-				var op = exp.b;
-				var e1 = exp.c;
-				var e2 = exp.d;
-				var _v17 = A2($author$project$LangUtils$Rename$renameExp, e1, id);
-				var e1_ = _v17.a;
-				var id1 = _v17.b;
-				var renameSet1 = _v17.c;
-				var _v18 = A2($author$project$LangUtils$Rename$renameExp, e2, id1);
-				var e2_ = _v18.a;
-				var id2 = _v18.b;
-				var renameSet2 = _v18.c;
-				return _Utils_Tuple3(
-					A4($author$project$Syntax$EBPrim, wss, op, e1_, e2_),
-					id2,
-					_Utils_ap(renameSet1, renameSet2));
-			default:
-				return _Utils_Tuple3(exp, id, _List_Nil);
-		}
-	});
-var $author$project$Eval$append = F4(
-	function (e1, e2, heap, id) {
-		append:
-		while (true) {
-			switch (e1.$) {
-				case 'ECons':
-					if (e1.d.$ === 'ENil') {
-						var wss = e1.a;
-						var lType = e1.b;
-						var e11 = e1.c;
-						var _v85 = e1.d;
-						if (e2.$ === 'ENil') {
-							return $elm$core$Result$Ok(
-								_Utils_Tuple3(heap, e1, id));
-						} else {
-							return A2(
-								$elm$core$Result$andThen,
-								function (_v87) {
-									var heap_ = _v87.a;
-									var e2_ = _v87.b;
-									var id_ = _v87.c;
-									return $elm$core$Result$Ok(
-										_Utils_Tuple3(
-											heap_,
-											A4(
-												$author$project$Syntax$ECons,
-												wss,
-												lType,
-												e11,
-												A2(
-													$author$project$Parser$Utils$repWS,
-													_List_fromArray(
-														[' ']),
-													e2_)),
-											id_));
-								},
-								A3($author$project$Eval$fwd, heap, e2, id));
-						}
-					} else {
-						var wss = e1.a;
-						var lType = e1.b;
-						var e11 = e1.c;
-						var e12 = e1.d;
-						return A2(
-							$elm$core$Result$andThen,
-							function (_v88) {
-								var heap_ = _v88.a;
-								var e12_ = _v88.b;
-								var id_ = _v88.c;
-								return $elm$core$Result$Ok(
-									_Utils_Tuple3(
-										heap_,
-										A4($author$project$Syntax$ECons, wss, lType, e11, e12_),
-										id_));
-							},
-							A4($author$project$Eval$append, e12, e2, heap, id));
-					}
-				case 'ENil':
-					var lType = e1.b;
-					var $temp$e1 = e2,
-						$temp$e2 = A2($author$project$Syntax$ENil, $author$project$Syntax$eNilDefaultWSS, lType),
-						$temp$heap = heap,
-						$temp$id = id;
-					e1 = $temp$e1;
-					e2 = $temp$e2;
-					heap = $temp$heap;
-					id = $temp$id;
-					continue append;
-				default:
-					return A2(
-						$elm$core$Result$andThen,
-						function (_v89) {
-							var heap_ = _v89.a;
-							var e1_ = _v89.b;
-							var id_ = _v89.c;
-							return A4($author$project$Eval$append, e1_, e2, heap_, id_);
-						},
-						A3($author$project$Eval$fwd, heap, e1, id));
-			}
-		}
-	});
-var $author$project$Eval$fwd = F3(
-	function (heap, exp, id) {
-		fwd:
-		while (true) {
-			switch (exp.$) {
-				case 'EError':
-					var err = exp.a;
-					return $elm$core$Result$Err(err);
-				case 'EParens':
-					var e = exp.b;
-					var $temp$heap = heap,
-						$temp$exp = e,
-						$temp$id = id;
-					heap = $temp$heap;
-					exp = $temp$exp;
-					id = $temp$id;
-					continue fwd;
-				case 'EInt':
-					return $elm$core$Result$Ok(
-						_Utils_Tuple3(heap, exp, id));
-				case 'EBool':
-					return $elm$core$Result$Ok(
-						_Utils_Tuple3(heap, exp, id));
-				case 'EChar':
-					return $elm$core$Result$Ok(
-						_Utils_Tuple3(heap, exp, id));
-				case 'ECons':
-					return $elm$core$Result$Ok(
-						_Utils_Tuple3(heap, exp, id));
-				case 'ENil':
-					return $elm$core$Result$Ok(
-						_Utils_Tuple3(heap, exp, id));
-				case 'ETuple':
-					return $elm$core$Result$Ok(
-						_Utils_Tuple3(heap, exp, id));
-				case 'ELam':
-					return $elm$core$Result$Ok(
-						_Utils_Tuple3(heap, exp, id));
-				case 'EHtml':
-					return $elm$core$Result$Ok(
-						_Utils_Tuple3(heap, exp, id));
-				case 'EApp':
-					var efun = exp.a;
-					var earg = exp.b;
-					return A2(
-						$elm$core$Result$andThen,
-						function (_v50) {
-							var heap1 = _v50.a;
-							var zfun = _v50.b;
-							var id1 = _v50.c;
-							if (zfun.$ === 'ELam') {
-								var y = zfun.b;
-								var ebody = zfun.c;
-								var _v52 = A2($author$project$LangUtils$Rename$freshName, 'x', id1);
-								var ŷ = _v52.a;
-								var id2 = _v52.b;
-								var ebody1 = A3($author$project$LangUtils$Substitute$substExp, ebody, y, ŷ);
-								return A3(
-									$author$project$Eval$fwd,
-									A2(
-										$elm$core$List$cons,
-										_Utils_Tuple2(
-											ŷ,
-											_Utils_Tuple3(
-												_Utils_Tuple2(earg, earg),
-												$author$project$Syntax$DZero,
-												_Utils_Tuple2($elm$core$Maybe$Nothing, false))),
-										heap1),
-									ebody1,
-									id2);
-							} else {
-								return $elm$core$Result$Err(
-									'fwd [E-APP]: ERROR #05: Either not a function or not a variable argument' + ($author$project$Printer$Exp$print(zfun) + (',' + $author$project$Printer$Exp$print(earg))));
-							}
-						},
-						A3($author$project$Eval$fwd, heap, efun, id));
-				case 'EVar':
-					var x = exp.b;
-					var _v53 = A2($author$project$Utils$lookup, x, heap);
-					if (_v53.$ === 'Just') {
-						if (_v53.a.c.a.$ === 'Just') {
-							var _v54 = _v53.a;
-							var _v55 = _v54.c;
-							var z = _v55.a.a;
-							var _v56 = A2($author$project$LangUtils$Rename$renameExp, z, id);
-							var ẑ = _v56.a;
-							var id1 = _v56.b;
-							return $elm$core$Result$Ok(
-								_Utils_Tuple3(heap, ẑ, id1));
-						} else {
-							var _v57 = _v53.a;
-							var _v58 = _v57.a;
-							var oE = _v58.a;
-							var nE = _v58.b;
-							var dz_glb = _v57.b;
-							var _v59 = _v57.c;
-							var _v60 = _v59.a;
-							var b = _v59.b;
-							return A2(
-								$elm$core$Result$andThen,
-								function (_v61) {
-									var h2 = _v61.a;
-									var z = _v61.b;
-									var id2 = _v61.c;
-									var h3 = A2(
-										$elm$core$List$cons,
-										_Utils_Tuple2(
-											x,
-											_Utils_Tuple3(
-												_Utils_Tuple2(oE, nE),
-												dz_glb,
-												_Utils_Tuple2(
-													$elm$core$Maybe$Just(z),
-													b))),
-										h2);
-									var _v62 = A2($author$project$LangUtils$Rename$renameExp, z, id2);
-									var ẑ = _v62.a;
-									var id3 = _v62.b;
-									return $elm$core$Result$Ok(
-										_Utils_Tuple3(h3, ẑ, id3));
-								},
-								A3(
-									$author$project$Eval$fwd,
-									A2($author$project$Utils$delete, x, heap),
-									nE,
-									id));
-						}
-					} else {
-						return $elm$core$Result$Err('ERROR #06: No Such Variable.' + x);
-					}
-				case 'ELet':
-					var decls = exp.b;
-					var ebody = exp.c;
-					var $temp$heap = _Utils_ap(decls, heap),
-						$temp$exp = ebody,
-						$temp$id = id;
-					heap = $temp$heap;
-					exp = $temp$exp;
-					id = $temp$id;
-					continue fwd;
-				case 'ECase':
-					var earg = exp.b;
-					var branch = exp.c;
-					return A2(
-						$elm$core$Result$andThen,
-						function (_v63) {
-							var heap1 = _v63.a;
-							var zarg = _v63.b;
-							var id1 = _v63.c;
-							return A2(
-								$elm$core$Result$andThen,
-								function (_v64) {
-									var matchRes = _v64.a;
-									var id2 = _v64.b;
-									return A3(
-										$author$project$Eval$fwd,
-										matchRes.heap,
-										A2($author$project$LangUtils$Substitute$substSet, matchRes.ei, matchRes.renamedvars),
-										id2);
-								},
-								A4($author$project$Eval$matchCase, zarg, branch, id1, heap1));
-						},
-						A3($author$project$Eval$fwd, heap, earg, id));
-				case 'EUPrim':
-					var op = exp.b;
-					var e1 = exp.c;
-					return A2(
-						$elm$core$Result$andThen,
-						function (_v65) {
-							var heap1 = _v65.a;
-							var e1_ = _v65.b;
-							var id1 = _v65.c;
-							return A2(
-								$elm$core$Result$andThen,
-								function (e_) {
-									return $elm$core$Result$Ok(
-										_Utils_Tuple3(heap1, e_, id1));
-								},
-								$author$project$Eval$expToResult(
-									function () {
-										var _v66 = _Utils_Tuple2(op, e1_);
-										_v66$2:
-										while (true) {
-											if (_v66.a.$ === 'Not') {
-												if (_v66.b.$ === 'EBool') {
-													var _v67 = _v66.a;
-													var _v68 = _v66.b;
-													var wss = _v68.a;
-													var b = _v68.b;
-													return A2($author$project$Syntax$EBool, wss, !b);
-												} else {
-													break _v66$2;
-												}
-											} else {
-												if (_v66.b.$ === 'EInt') {
-													var _v69 = _v66.a;
-													var _v70 = _v66.b;
-													var wss = _v70.a;
-													var n = _v70.b;
-													return A2($author$project$Syntax$EInt, wss, -n);
-												} else {
-													break _v66$2;
-												}
-											}
-										}
-										return $author$project$Syntax$EError('ERROR #07: Inappropriate uoperator and argument');
-									}()));
-						},
-						A3($author$project$Eval$fwd, heap, e1, id));
-				default:
-					var op = exp.b;
-					var e1 = exp.c;
-					var e2 = exp.d;
-					return A2(
-						$elm$core$Result$andThen,
-						function (_v71) {
-							var heap1 = _v71.a;
-							var e1_ = _v71.b;
-							var id1 = _v71.c;
-							return A2(
-								$elm$core$Result$andThen,
-								function (_v72) {
-									var heap2 = _v72.a;
-									var e2_ = _v72.b;
-									var id2 = _v72.c;
-									var _v73 = _Utils_Tuple2(e1_, e2_);
-									_v73$3:
-									while (true) {
-										switch (_v73.a.$) {
-											case 'EInt':
-												if (_v73.b.$ === 'EInt') {
-													var _v74 = _v73.a;
-													var n1 = _v74.b;
-													var _v75 = _v73.b;
-													var wss = _v75.a;
-													var n2 = _v75.b;
-													switch (op.$) {
-														case 'Sub':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2($author$project$Syntax$EInt, wss, n1 - n2),
-																	id2));
-														case 'Add':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2($author$project$Syntax$EInt, wss, n1 + n2),
-																	id2));
-														case 'Mul':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2($author$project$Syntax$EInt, wss, n1 * n2),
-																	id2));
-														case 'Mod':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EInt,
-																		wss,
-																		A2($elm$core$Basics$modBy, n1, n2)),
-																	id2));
-														case 'Eq':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EBool,
-																		wss,
-																		_Utils_eq(n1, n2)),
-																	id2));
-														case 'Ne':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EBool,
-																		wss,
-																		!_Utils_eq(n1, n2)),
-																	id2));
-														case 'Lt':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EBool,
-																		wss,
-																		_Utils_cmp(n1, n2) < 0),
-																	id2));
-														case 'Gt':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EBool,
-																		wss,
-																		_Utils_cmp(n1, n2) > 0),
-																	id2));
-														case 'Le':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EBool,
-																		wss,
-																		_Utils_cmp(n1, n2) < 1),
-																	id2));
-														case 'Ge':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EBool,
-																		wss,
-																		_Utils_cmp(n1, n2) > -1),
-																	id2));
-														default:
-															return $elm$core$Result$Err('ERROR #07: Inappropriate boperator between Integers.');
-													}
-												} else {
-													break _v73$3;
-												}
-											case 'EBool':
-												if (_v73.b.$ === 'EBool') {
-													var _v77 = _v73.a;
-													var b1 = _v77.b;
-													var _v78 = _v73.b;
-													var wss = _v78.a;
-													var b2 = _v78.b;
-													switch (op.$) {
-														case 'Eq':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EBool,
-																		wss,
-																		_Utils_eq(b1, b2)),
-																	id2));
-														case 'Ne':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EBool,
-																		wss,
-																		!_Utils_eq(b1, b2)),
-																	id2));
-														case 'And':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2($author$project$Syntax$EBool, wss, b1 && b2),
-																	id2));
-														case 'Or':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2($author$project$Syntax$EBool, wss, b1 || b2),
-																	id2));
-														default:
-															return $elm$core$Result$Err('ERROR #07: Inappropriate boperator between Booleans.');
-													}
-												} else {
-													break _v73$3;
-												}
-											case 'EChar':
-												if (_v73.b.$ === 'EChar') {
-													var _v80 = _v73.a;
-													var c1 = _v80.b;
-													var _v81 = _v73.b;
-													var wss = _v81.a;
-													var c2 = _v81.b;
-													switch (op.$) {
-														case 'Eq':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EBool,
-																		wss,
-																		_Utils_eq(c1, c2)),
-																	id2));
-														case 'Ne':
-															return $elm$core$Result$Ok(
-																_Utils_Tuple3(
-																	heap2,
-																	A2(
-																		$author$project$Syntax$EBool,
-																		wss,
-																		!_Utils_eq(c1, c2)),
-																	id2));
-														default:
-															return $elm$core$Result$Err('ERROR #07: Inappropriate boperator between Chars.');
-													}
-												} else {
-													break _v73$3;
-												}
-											default:
-												break _v73$3;
-										}
-									}
-									switch (op.$) {
-										case 'Cat':
-											return A4($author$project$Eval$append, e1_, e2_, heap2, id2);
-										case 'Eq':
-											return A4($author$project$Eval$strEq, e1_, e2_, heap2, id2);
-										case 'Ne':
-											return A4($author$project$Eval$strNe, e1_, e2_, heap2, id2);
-										default:
-											return $elm$core$Result$Err(
-												'ERROR #07: Operands are not matching types.' + $elm$core$Debug$toString(
-													_Utils_Tuple2(e1_, e2_)));
-									}
-								},
-								A3($author$project$Eval$fwd, heap1, e2, id1));
-						},
-						A3($author$project$Eval$fwd, heap, e1, id));
-			}
-		}
-	});
-var $author$project$Eval$match = F4(
-	function (exp, pat, id, h) {
-		match:
-		while (true) {
-			var _v23 = _Utils_Tuple2(exp, pat);
-			_v23$9:
-			while (true) {
-				switch (_v23.b.$) {
-					case 'PInt':
-						if (_v23.a.$ === 'EInt') {
-							var _v24 = _v23.a;
-							var n1 = _v24.b;
-							var _v25 = _v23.b;
-							var n2 = _v25.b;
-							return _Utils_eq(n1, n2) ? $elm$core$Result$Ok(
-								_Utils_Tuple3(h, _List_Nil, id)) : $elm$core$Result$Err(
-								'Match Failed.' + $elm$core$Debug$toString(
-									_Utils_Tuple2(exp, pat)));
-						} else {
-							break _v23$9;
-						}
-					case 'PBool':
-						if (_v23.a.$ === 'EBool') {
-							var _v26 = _v23.a;
-							var b1 = _v26.b;
-							var _v27 = _v23.b;
-							var b2 = _v27.b;
-							return _Utils_eq(b1, b2) ? $elm$core$Result$Ok(
-								_Utils_Tuple3(h, _List_Nil, id)) : $elm$core$Result$Err(
-								'Match Failed.' + $elm$core$Debug$toString(
-									_Utils_Tuple2(exp, pat)));
-						} else {
-							break _v23$9;
-						}
-					case 'PChar':
-						if (_v23.a.$ === 'EChar') {
-							var _v28 = _v23.a;
-							var c1 = _v28.b;
-							var _v29 = _v23.b;
-							var c2 = _v29.b;
-							return _Utils_eq(c1, c2) ? $elm$core$Result$Ok(
-								_Utils_Tuple3(h, _List_Nil, id)) : $elm$core$Result$Err(
-								'Match Failed.' + $elm$core$Debug$toString(
-									_Utils_Tuple2(exp, pat)));
-						} else {
-							break _v23$9;
-						}
-					case 'PVar':
-						var _v30 = _v23.b;
-						var x = _v30.b;
-						var _v31 = A2($author$project$LangUtils$Rename$freshName, 'x', id);
-						var y = _v31.a;
-						var id1 = _v31.b;
-						return $elm$core$Result$Ok(
-							_Utils_Tuple3(
-								A2(
-									$elm$core$List$cons,
-									_Utils_Tuple2(
-										y,
-										_Utils_Tuple3(
-											_Utils_Tuple2(exp, exp),
-											$author$project$Syntax$DZero,
-											_Utils_Tuple2($elm$core$Maybe$Nothing, false))),
-									h),
-								_List_fromArray(
-									[
-										_Utils_Tuple2(x, y)
-									]),
-								id1));
-					case 'PCons':
-						if (_v23.a.$ === 'ECons') {
-							var _v32 = _v23.a;
-							var e1 = _v32.c;
-							var e2 = _v32.d;
-							var _v33 = _v23.b;
-							var p1 = _v33.c;
-							var p2 = _v33.d;
-							return A2(
-								$elm$core$Result$andThen,
-								function (_v34) {
-									var h1 = _v34.a;
-									var renamedvars1 = _v34.b;
-									var id1 = _v34.c;
-									return A2(
-										$elm$core$Result$andThen,
-										function (_v35) {
-											var h2 = _v35.a;
-											var renamedvars2 = _v35.b;
-											var id2 = _v35.c;
-											return $elm$core$Result$Ok(
-												_Utils_Tuple3(
-													h2,
-													_Utils_ap(renamedvars1, renamedvars2),
-													id2));
-										},
-										A4($author$project$Eval$match, e2, p2, id1, h1));
-								},
-								A4($author$project$Eval$match, e1, p1, id, h));
-						} else {
-							break _v23$9;
-						}
-					case 'PTuple':
-						if (_v23.a.$ === 'ETuple') {
-							var _v36 = _v23.a;
-							var e1 = _v36.c;
-							var e2 = _v36.d;
-							var _v37 = _v23.b;
-							var p1 = _v37.c;
-							var p2 = _v37.d;
-							return A2(
-								$elm$core$Result$andThen,
-								function (_v38) {
-									var h1 = _v38.a;
-									var renamedvars1 = _v38.b;
-									var id1 = _v38.c;
-									return A2(
-										$elm$core$Result$andThen,
-										function (_v39) {
-											var h2 = _v39.a;
-											var renamedvars2 = _v39.b;
-											var id2 = _v39.c;
-											return $elm$core$Result$Ok(
-												_Utils_Tuple3(
-													h2,
-													_Utils_ap(renamedvars1, renamedvars2),
-													id2));
-										},
-										A4($author$project$Eval$match, e2, p2, id1, h1));
-								},
-								A4($author$project$Eval$match, e1, p1, id, h));
-						} else {
-							break _v23$9;
-						}
-					case 'PHtml':
-						if (_v23.a.$ === 'EHtml') {
-							var _v40 = _v23.a;
-							var s = _v40.b;
-							var e1 = _v40.c;
-							var e2 = _v40.d;
-							var e3 = _v40.e;
-							var _v41 = _v23.b;
-							var s_ = _v41.b;
-							var p1 = _v41.c;
-							var p2 = _v41.d;
-							var p3 = _v41.e;
-							return _Utils_eq(s, s_) ? A2(
-								$elm$core$Result$andThen,
-								function (_v42) {
-									var h1 = _v42.a;
-									var renamedvars1 = _v42.b;
-									var id1 = _v42.c;
-									return A2(
-										$elm$core$Result$andThen,
-										function (_v43) {
-											var h2 = _v43.a;
-											var renamedvars2 = _v43.b;
-											var id2 = _v43.c;
-											return A2(
-												$elm$core$Result$andThen,
-												function (_v44) {
-													var h3 = _v44.a;
-													var renamedvars3 = _v44.b;
-													var id3 = _v44.c;
-													return $elm$core$Result$Ok(
-														_Utils_Tuple3(
-															h3,
-															_Utils_ap(
-																renamedvars1,
-																_Utils_ap(renamedvars2, renamedvars3)),
-															id3));
-												},
-												A4($author$project$Eval$match, e3, p3, id2, h2));
-										},
-										A4($author$project$Eval$match, e2, p2, id1, h1));
-								},
-								A4($author$project$Eval$match, e1, p1, id, h)) : $elm$core$Result$Err(
-								'Match Failed.' + $elm$core$Debug$toString(
-									_Utils_Tuple2(exp, pat)));
-						} else {
-							break _v23$9;
-						}
-					case 'PNil':
-						if (_v23.a.$ === 'ENil') {
-							var _v45 = _v23.a;
-							var _v46 = _v23.b;
-							return $elm$core$Result$Ok(
-								_Utils_Tuple3(h, _List_Nil, id));
-						} else {
-							break _v23$9;
-						}
-					default:
-						return $elm$core$Result$Ok(
-							_Utils_Tuple3(h, _List_Nil, id));
-				}
-			}
-			if ($author$project$LangUtils$WHNF$isWHNF(exp)) {
-				return $elm$core$Result$Err(
-					'Match Failed.' + $elm$core$Debug$toString(
-						_Utils_Tuple2(exp, pat)));
-			} else {
-				var _v47 = A3($author$project$Eval$fwd, h, exp, id);
-				if (_v47.$ === 'Ok') {
-					var _v48 = _v47.a;
-					var h1 = _v48.a;
-					var z = _v48.b;
-					var id1 = _v48.c;
-					var $temp$exp = z,
-						$temp$pat = pat,
-						$temp$id = id1,
-						$temp$h = h1;
-					exp = $temp$exp;
-					pat = $temp$pat;
-					id = $temp$id;
-					h = $temp$h;
-					continue match;
-				} else {
-					var e = _v47.a;
-					return $elm$core$Result$Err(e);
-				}
-			}
-		}
-	});
-var $author$project$Eval$matchCase = F4(
-	function (e, b, id0, h) {
-		var go = F3(
-			function (b_, cnt, id) {
-				go:
-				while (true) {
-					if (b_.$ === 'BSin') {
-						var p = b_.b;
-						var t = b_.c;
-						return A2(
-							$elm$core$Result$andThen,
-							function (_v20) {
-								var h_ = _v20.a;
-								var renamedvars = _v20.b;
-								var id1 = _v20.c;
-								return $elm$core$Result$Ok(
-									_Utils_Tuple2(
-										{choice: cnt, ei: t, heap: h_, pi: p, renamedvars: renamedvars},
-										id1));
-							},
-							A4($author$project$Eval$match, e, p, id, h));
-					} else {
-						var b1 = b_.b;
-						var b2 = b_.c;
-						var _v21 = A3(go, b1, cnt, id);
-						if (_v21.$ === 'Ok') {
-							var _v22 = _v21.a;
-							var res = _v22.a;
-							var id1 = _v22.b;
-							return $elm$core$Result$Ok(
-								_Utils_Tuple2(res, id1));
-						} else {
-							var $temp$b_ = b2,
-								$temp$cnt = cnt + 1,
-								$temp$id = id;
-							b_ = $temp$b_;
-							cnt = $temp$cnt;
-							id = $temp$id;
-							continue go;
-						}
-					}
-				}
-			});
-		return A3(go, b, 1, id0);
-	});
-var $author$project$Eval$strEq = F4(
-	function (e1, e2, heap, id) {
-		return A2(
-			$elm$core$Result$andThen,
-			function (_v2) {
-				var heap1 = _v2.a;
-				var z1 = _v2.b;
-				var id1 = _v2.c;
-				return A2(
-					$elm$core$Result$andThen,
-					function (_v3) {
-						var heap2 = _v3.a;
-						var z2 = _v3.b;
-						var id2 = _v3.c;
-						var _v4 = _Utils_Tuple2(z1, z2);
-						_v4$4:
-						while (true) {
-							switch (_v4.a.$) {
-								case 'ECons':
-									switch (_v4.b.$) {
-										case 'ECons':
-											var _v5 = _v4.a;
-											var lType1 = _v5.b;
-											var e11 = _v5.c;
-											var e12 = _v5.d;
-											var _v6 = _v4.b;
-											var lType2 = _v6.b;
-											var e21 = _v6.c;
-											var e22 = _v6.d;
-											return (_Utils_eq(lType1, lType2) && _Utils_eq(lType1, $author$project$Syntax$StringType)) ? A2(
-												$elm$core$Result$andThen,
-												function (_v7) {
-													var heap3 = _v7.a;
-													var z11 = _v7.b;
-													var id3 = _v7.c;
-													return A2(
-														$elm$core$Result$andThen,
-														function (_v8) {
-															var heap4 = _v8.a;
-															var z21 = _v8.b;
-															var id4 = _v8.c;
-															var _v9 = _Utils_Tuple2(z11, z21);
-															if ((_v9.a.$ === 'EChar') && (_v9.b.$ === 'EChar')) {
-																var _v10 = _v9.a;
-																var c1 = _v10.b;
-																var _v11 = _v9.b;
-																var c2 = _v11.b;
-																return _Utils_eq(c1, c2) ? A2(
-																	$elm$core$Result$andThen,
-																	function (_v12) {
-																		var heap5 = _v12.a;
-																		var z12 = _v12.b;
-																		var id5 = _v12.c;
-																		return $elm$core$Result$Ok(
-																			_Utils_Tuple3(heap5, z12, id5));
-																	},
-																	A4($author$project$Eval$strEq, e12, e22, heap4, id4)) : $elm$core$Result$Ok(
-																	_Utils_Tuple3(
-																		heap4,
-																		A2($author$project$Syntax$EBool, $author$project$Syntax$eBoolDefaultWSS, false),
-																		id4));
-															} else {
-																return $elm$core$Result$Err('ERROR #28: Eq Operands are not matching String Type.');
-															}
-														},
-														A3($author$project$Eval$fwd, heap3, e21, id3));
-												},
-												A3($author$project$Eval$fwd, heap2, e11, id2)) : $elm$core$Result$Err('ERROR #28: Eq Operands are not matching List Type.');
-										case 'ENil':
-											var _v15 = _v4.a;
-											var _v16 = _v4.b;
-											return $elm$core$Result$Ok(
-												_Utils_Tuple3(
-													heap2,
-													A2($author$project$Syntax$EBool, $author$project$Syntax$eBoolDefaultWSS, false),
-													id2));
-										default:
-											break _v4$4;
-									}
-								case 'ENil':
-									switch (_v4.b.$) {
-										case 'ENil':
-											var _v13 = _v4.a;
-											var lType1 = _v13.b;
-											var _v14 = _v4.b;
-											var lType2 = _v14.b;
-											return (_Utils_eq(lType1, lType2) && _Utils_eq(lType1, $author$project$Syntax$StringType)) ? $elm$core$Result$Ok(
-												_Utils_Tuple3(
-													heap2,
-													A2($author$project$Syntax$EBool, $author$project$Syntax$eBoolDefaultWSS, true),
-													id2)) : $elm$core$Result$Err('ERROR #28: Eq Operands are not matching List Type.');
-										case 'ECons':
-											var _v17 = _v4.a;
-											var _v18 = _v4.b;
-											return $elm$core$Result$Ok(
-												_Utils_Tuple3(
-													heap2,
-													A2($author$project$Syntax$EBool, $author$project$Syntax$eBoolDefaultWSS, false),
-													id2));
-										default:
-											break _v4$4;
-									}
-								default:
-									break _v4$4;
-							}
-						}
-						return $elm$core$Result$Err('ERROR #28: Eq Operands are not matching String Type.');
-					},
-					A3($author$project$Eval$fwd, heap1, e2, id1));
-			},
-			A3($author$project$Eval$fwd, heap, e1, id));
-	});
-var $author$project$Eval$strNe = F4(
-	function (e1, e2, heap, id) {
-		return A2(
-			$elm$core$Result$andThen,
-			function (_v0) {
-				var heap_ = _v0.a;
-				var z = _v0.b;
-				var id_ = _v0.c;
-				if (z.$ === 'EBool') {
-					var wss = z.a;
-					var b = z.b;
-					return $elm$core$Result$Ok(
-						_Utils_Tuple3(
-							heap_,
-							A2($author$project$Syntax$EBool, wss, !b),
-							id_));
-				} else {
-					return $elm$core$Result$Err('ERROR #29: Ne Operands are not matching Boolean Type.');
-				}
-			},
-			A4($author$project$Eval$strEq, e1, e2, heap, id));
-	});
-var $author$project$LangUtils$Delta$isNorm = function (dv) {
-	isNorm:
-	while (true) {
-		switch (dv.$) {
-			case 'DRem':
-				return true;
-			case 'DId':
-				return true;
-			case 'DAdd':
-				return true;
-			case 'DCom':
-				if (dv.b.$ === 'DZero') {
-					var dv1 = dv.a;
-					var _v1 = dv.b;
-					var $temp$dv = dv1;
-					dv = $temp$dv;
-					continue isNorm;
-				} else {
-					var dv1 = dv.a;
-					var dv2 = dv.b;
-					return $author$project$LangUtils$Delta$isNorm(dv1) && $author$project$LangUtils$Delta$isNorm(dv2);
-				}
-			case 'DCons':
-				var dv1 = dv.b;
-				var dv2 = dv.c;
-				return $author$project$LangUtils$Delta$isNorm(dv1) && $author$project$LangUtils$Delta$isNorm(dv2);
-			case 'DTuple':
-				var dv1 = dv.a;
-				var dv2 = dv.b;
-				return $author$project$LangUtils$Delta$isNorm(dv1) && $author$project$LangUtils$Delta$isNorm(dv2);
-			case 'DHtml':
-				var dv1 = dv.b;
-				var dv2 = dv.c;
-				var dv3 = dv.d;
-				return $author$project$LangUtils$Delta$isNorm(dv1) && ($author$project$LangUtils$Delta$isNorm(dv2) && $author$project$LangUtils$Delta$isNorm(dv3));
-			default:
-				return false;
-		}
-	}
-};
-var $author$project$LangUtils$Delta$length = function (dv) {
-	switch (dv.$) {
-		case 'DCom':
-			var dv2 = dv.b;
-			return $author$project$LangUtils$Delta$length(dv2) + 1;
-		case 'DZero':
-			return 0;
-		default:
-			return 1;
-	}
-};
-var $elm$core$Debug$log = _Debug_log;
-var $elm$core$Result$map = F2(
-	function (func, ra) {
-		if (ra.$ === 'Ok') {
-			var a = ra.a;
-			return $elm$core$Result$Ok(
-				func(a));
-		} else {
-			var e = ra.a;
-			return $elm$core$Result$Err(e);
-		}
-	});
-var $author$project$Eval$refreshHeap = F2(
-	function (oHeap, nHeap) {
-		if (!nHeap.b) {
-			return _List_Nil;
-		} else {
-			var _v1 = nHeap.a;
-			var x = _v1.a;
-			var _v2 = _v1.b;
-			var e = _v2.a;
-			var dv = _v2.b;
-			var _v3 = _v2.c;
-			var v = _v3.a;
-			var nb = _v3.b;
-			var nHeap_ = nHeap.b;
-			var _v4 = A2($author$project$Utils$lookup, x, oHeap);
-			if (_v4.$ === 'Just') {
-				var _v5 = _v4.a;
-				var _v6 = _v5.c;
-				var ob = _v6.b;
-				return ((!ob) && nb) ? A2(
-					$elm$core$List$cons,
-					_Utils_Tuple2(
-						x,
-						_Utils_Tuple3(
-							e,
-							dv,
-							_Utils_Tuple2(v, false))),
-					A2($author$project$Eval$refreshHeap, oHeap, nHeap_)) : A2(
-					$elm$core$List$cons,
-					_Utils_Tuple2(
-						x,
-						_Utils_Tuple3(
-							e,
-							dv,
-							_Utils_Tuple2(v, ob))),
-					A2($author$project$Eval$refreshHeap, oHeap, nHeap_));
-			} else {
-				return A2(
-					$elm$core$List$cons,
-					_Utils_Tuple2(
-						x,
-						_Utils_Tuple3(
-							e,
-							dv,
-							_Utils_Tuple2(v, nb))),
-					A2($author$project$Eval$refreshHeap, oHeap, nHeap_));
-			}
-		}
-	});
-var $author$project$Eval$replPVar = F2(
-	function (pi, renamedvars) {
-		replPVar:
-		while (true) {
-			if (!renamedvars.b) {
-				return pi;
-			} else {
-				var _v1 = renamedvars.a;
-				var x = _v1.a;
-				var y = _v1.b;
-				var renamedvars_ = renamedvars.b;
-				if (pi.$ === 'PVar') {
-					var wss = pi.a;
-					var s = pi.b;
-					if (_Utils_eq(s, x)) {
-						return A2($author$project$Syntax$PVar, wss, y);
-					} else {
-						var $temp$pi = pi,
-							$temp$renamedvars = renamedvars_;
-						pi = $temp$pi;
-						renamedvars = $temp$renamedvars;
-						continue replPVar;
-					}
-				} else {
-					return pi;
-				}
-			}
-		}
-	});
-var $author$project$Eval$replPat = F2(
-	function (pi, renamedvars) {
-		switch (pi.$) {
-			case 'PVar':
-				return A2($author$project$Eval$replPVar, pi, renamedvars);
-			case 'PCons':
-				var wss = pi.a;
-				var lType = pi.b;
-				var p1 = pi.c;
-				var p2 = pi.d;
-				return A4(
-					$author$project$Syntax$PCons,
-					wss,
-					lType,
-					A2($author$project$Eval$replPat, p1, renamedvars),
-					A2($author$project$Eval$replPat, p2, renamedvars));
-			case 'PTuple':
-				var wss = pi.a;
-				var tTuple = pi.b;
-				var p1 = pi.c;
-				var p2 = pi.d;
-				return A4(
-					$author$project$Syntax$PTuple,
-					wss,
-					tTuple,
-					A2($author$project$Eval$replPat, p1, renamedvars),
-					A2($author$project$Eval$replPat, p2, renamedvars));
-			case 'PHtml':
-				var wss = pi.a;
-				var s = pi.b;
-				var p1 = pi.c;
-				var p2 = pi.d;
-				var p3 = pi.e;
-				return A5(
-					$author$project$Syntax$PHtml,
-					wss,
-					s,
-					A2($author$project$Eval$replPat, p1, renamedvars),
-					A2($author$project$Eval$replPat, p2, renamedvars),
-					A2($author$project$Eval$replPat, p3, renamedvars));
-			default:
-				return pi;
-		}
-	});
-var $author$project$Utils$replace = F3(
-	function (x, v, xvs) {
-		if (!xvs.b) {
-			return _List_Nil;
-		} else {
-			var _v1 = xvs.a;
-			var x1 = _v1.a;
-			var v1 = _v1.b;
-			var xvs_ = xvs.b;
-			return _Utils_eq(x1, x) ? A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(x, v),
-				xvs_) : A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(x1, v1),
-				A3($author$project$Utils$replace, x, v, xvs_));
-		}
-	});
-var $author$project$LangUtils$Fuse$simplify = function (dv) {
-	simplify:
-	while (true) {
-		_v0$1:
-		while (true) {
-			_v0$2:
-			while (true) {
-				switch (dv.$) {
-					case 'DCom':
-						switch (dv.a.$) {
-							case 'DZero':
-								var _v1 = dv.a;
-								var dv2 = dv.b;
-								var $temp$dv = dv2;
-								dv = $temp$dv;
-								continue simplify;
-							case 'DId':
-								switch (dv.b.$) {
-									case 'DZero':
-										break _v0$1;
-									case 'DId':
-										break _v0$2;
-									default:
-										break _v0$2;
-								}
-							default:
-								switch (dv.b.$) {
-									case 'DZero':
-										break _v0$1;
-									case 'DId':
-										var dv1 = dv.a;
-										var _v4 = dv.b;
-										var $temp$dv = dv1;
-										dv = $temp$dv;
-										continue simplify;
-									default:
-										var dv1 = dv.a;
-										var dv2 = dv.b;
-										return A2(
-											$author$project$Syntax$DCom,
-											$author$project$LangUtils$Fuse$simplify(dv1),
-											$author$project$LangUtils$Fuse$simplify(dv2));
-								}
-						}
-					case 'DTuple':
-						var dv1 = dv.a;
-						var dv2 = dv.b;
-						var _v5 = _Utils_Tuple2(
-							$author$project$LangUtils$Fuse$simplify(dv1),
-							$author$project$LangUtils$Fuse$simplify(dv2));
-						_v5$4:
-						while (true) {
-							switch (_v5.a.$) {
-								case 'DZero':
-									switch (_v5.b.$) {
-										case 'DZero':
-											var _v6 = _v5.a;
-											var _v7 = _v5.b;
-											return $author$project$Syntax$DZero;
-										case 'DId':
-											var _v8 = _v5.a;
-											var _v9 = _v5.b;
-											return $author$project$Syntax$DId;
-										default:
-											break _v5$4;
-									}
-								case 'DId':
-									switch (_v5.b.$) {
-										case 'DZero':
-											var _v10 = _v5.a;
-											var _v11 = _v5.b;
-											return $author$project$Syntax$DId;
-										case 'DId':
-											var _v12 = _v5.a;
-											var _v13 = _v5.b;
-											return $author$project$Syntax$DId;
-										default:
-											break _v5$4;
-									}
-								default:
-									break _v5$4;
-							}
-						}
-						var dv1_ = _v5.a;
-						var dv2_ = _v5.b;
-						return A2($author$project$Syntax$DTuple, dv1_, dv2_);
-					case 'DCons':
-						var mv = dv.a;
-						var dv1 = dv.b;
-						var dv2 = dv.c;
-						if (mv.$ === 'Nothing') {
-							var _v15 = _Utils_Tuple2(
-								$author$project$LangUtils$Fuse$simplify(dv1),
-								$author$project$LangUtils$Fuse$simplify(dv2));
-							_v15$4:
-							while (true) {
-								switch (_v15.a.$) {
-									case 'DZero':
-										switch (_v15.b.$) {
-											case 'DZero':
-												var _v16 = _v15.a;
-												var _v17 = _v15.b;
-												return $author$project$Syntax$DZero;
-											case 'DId':
-												var _v18 = _v15.a;
-												var _v19 = _v15.b;
-												return $author$project$Syntax$DId;
-											default:
-												break _v15$4;
-										}
-									case 'DId':
-										switch (_v15.b.$) {
-											case 'DZero':
-												var _v20 = _v15.a;
-												var _v21 = _v15.b;
-												return $author$project$Syntax$DId;
-											case 'DId':
-												var _v22 = _v15.a;
-												var _v23 = _v15.b;
-												return $author$project$Syntax$DId;
-											default:
-												break _v15$4;
-										}
-									default:
-										break _v15$4;
-								}
-							}
-							var dv1_ = _v15.a;
-							var dv2_ = _v15.b;
-							return A3($author$project$Syntax$DCons, mv, dv1_, dv2_);
-						} else {
-							return A3(
-								$author$project$Syntax$DCons,
-								mv,
-								$author$project$LangUtils$Fuse$simplify(dv1),
-								$author$project$LangUtils$Fuse$simplify(dv2));
-						}
-					case 'DHtml':
-						var s = dv.a;
-						var dv1 = dv.b;
-						var dv2 = dv.c;
-						var dv3 = dv.d;
-						var _v24 = _Utils_Tuple3(
-							$author$project$LangUtils$Fuse$simplify(dv1),
-							$author$project$LangUtils$Fuse$simplify(dv2),
-							$author$project$LangUtils$Fuse$simplify(dv3));
-						_v24$8:
-						while (true) {
-							switch (_v24.a.$) {
-								case 'DZero':
-									switch (_v24.b.$) {
-										case 'DZero':
-											switch (_v24.c.$) {
-												case 'DZero':
-													var _v25 = _v24.a;
-													var _v26 = _v24.b;
-													var _v27 = _v24.c;
-													return $author$project$Syntax$DZero;
-												case 'DId':
-													var _v28 = _v24.a;
-													var _v29 = _v24.b;
-													var _v30 = _v24.c;
-													return $author$project$Syntax$DId;
-												default:
-													break _v24$8;
-											}
-										case 'DId':
-											switch (_v24.c.$) {
-												case 'DZero':
-													var _v31 = _v24.a;
-													var _v32 = _v24.b;
-													var _v33 = _v24.c;
-													return $author$project$Syntax$DId;
-												case 'DId':
-													var _v37 = _v24.a;
-													var _v38 = _v24.b;
-													var _v39 = _v24.c;
-													return $author$project$Syntax$DId;
-												default:
-													break _v24$8;
-											}
-										default:
-											break _v24$8;
-									}
-								case 'DId':
-									switch (_v24.b.$) {
-										case 'DZero':
-											switch (_v24.c.$) {
-												case 'DZero':
-													var _v34 = _v24.a;
-													var _v35 = _v24.b;
-													var _v36 = _v24.c;
-													return $author$project$Syntax$DId;
-												case 'DId':
-													var _v40 = _v24.a;
-													var _v41 = _v24.b;
-													var _v42 = _v24.c;
-													return $author$project$Syntax$DId;
-												default:
-													break _v24$8;
-											}
-										case 'DId':
-											switch (_v24.c.$) {
-												case 'DZero':
-													var _v43 = _v24.a;
-													var _v44 = _v24.b;
-													var _v45 = _v24.c;
-													return $author$project$Syntax$DId;
-												case 'DId':
-													var _v46 = _v24.a;
-													var _v47 = _v24.b;
-													var _v48 = _v24.c;
-													return $author$project$Syntax$DId;
-												default:
-													break _v24$8;
-											}
-										default:
-											break _v24$8;
-									}
-								default:
-									break _v24$8;
-							}
-						}
-						var dv1_ = _v24.a;
-						var dv2_ = _v24.b;
-						var dv3_ = _v24.c;
-						return A4($author$project$Syntax$DHtml, s, dv1_, dv2_, dv3_);
-					default:
-						var dv_ = dv;
-						return dv_;
-				}
-			}
-			var _v3 = dv.a;
-			var dv2 = dv.b;
-			var $temp$dv = dv2;
-			dv = $temp$dv;
-			continue simplify;
-		}
-		var dv1 = dv.a;
-		var _v2 = dv.b;
-		var $temp$dv = dv1;
-		dv = $temp$dv;
-		continue simplify;
-	}
-};
-var $author$project$Eval$splitDelta = F4(
-	function (e, dv, h, id) {
-		splitDelta:
-		while (true) {
-			var _v0 = _Utils_Tuple2(
-				e,
-				$author$project$LangUtils$Fuse$simplify(dv));
-			_v0$2:
-			while (true) {
-				_v0$3:
-				while (true) {
-					if (_v0.b.$ === 'DCons') {
-						if (_v0.b.a.$ === 'Nothing') {
-							switch (_v0.a.$) {
-								case 'ECons':
-									var _v1 = _v0.a;
-									var e2 = _v1.d;
-									var _v2 = _v0.b;
-									var _v3 = _v2.a;
-									var dv1 = _v2.b;
-									var dv2 = _v2.c;
-									var _v4 = A4($author$project$Eval$splitDelta, e2, dv2, h, id);
-									var _v5 = _v4.a;
-									var dv1_ = _v5.a;
-									var dv2_ = _v5.b;
-									var h_ = _v4.b;
-									var id_ = _v4.c;
-									return _Utils_Tuple3(
-										_Utils_Tuple2(
-											A3($author$project$Syntax$DCons, $elm$core$Maybe$Nothing, dv1, dv1_),
-											dv2_),
-										h_,
-										id_);
-								case 'ENil':
-									break _v0$2;
-								default:
-									break _v0$3;
-							}
-						} else {
-							var _v6 = _v0.b;
-							var e_ = _v6.a.a;
-							var dv1 = _v6.b;
-							var dv2 = _v6.c;
-							var _v7 = A4($author$project$Eval$splitDelta, e, dv2, h, id);
-							var _v8 = _v7.a;
-							var dv1_ = _v8.a;
-							var dv2_ = _v8.b;
-							var h_ = _v7.b;
-							var id_ = _v7.c;
-							return _Utils_Tuple3(
-								_Utils_Tuple2(
-									A3(
-										$author$project$Syntax$DCons,
-										$elm$core$Maybe$Just(e_),
-										dv1,
-										dv1_),
-									dv2_),
-								h_,
-								id_);
-						}
-					} else {
-						if (_v0.a.$ === 'ENil') {
-							break _v0$2;
-						} else {
-							break _v0$3;
-						}
-					}
-				}
-				if ($author$project$LangUtils$WHNF$isWHNF(e)) {
-					return _Utils_Tuple3(
-						_Utils_Tuple2($author$project$Syntax$DId, $author$project$Syntax$DId),
-						h,
-						id);
-				} else {
-					var _v10 = A3($author$project$Eval$fwd, h, e, id);
-					if (_v10.$ === 'Ok') {
-						var _v11 = _v10.a;
-						var h1 = _v11.a;
-						var z = _v11.b;
-						var id1 = _v11.c;
-						var $temp$e = z,
-							$temp$dv = dv,
-							$temp$h = h1,
-							$temp$id = id1;
-						e = $temp$e;
-						dv = $temp$dv;
-						h = $temp$h;
-						id = $temp$id;
-						continue splitDelta;
-					} else {
-						return _Utils_Tuple3(
-							_Utils_Tuple2($author$project$Syntax$DId, $author$project$Syntax$DId),
-							h,
-							id);
-					}
-				}
-			}
-			var _v9 = _v0.a;
-			return _Utils_Tuple3(
-				_Utils_Tuple2($author$project$Syntax$DId, dv),
-				h,
-				id);
-		}
-	});
-var $author$project$Eval$splitHeap = F2(
-	function (h1, h2) {
-		if (!h1.b) {
-			return _Utils_Tuple2(h1, h2);
-		} else {
-			var _v1 = h1.a;
-			var x = _v1.a;
-			var h1_ = h1.b;
-			var _v2 = A2($author$project$Eval$splitHeap, h1_, h2);
-			var h3 = _v2.a;
-			var h4 = _v2.b;
-			var _v3 = A2($author$project$Utils$lookup, x, h4);
-			if (_v3.$ === 'Just') {
-				var binding = _v3.a;
-				return _Utils_Tuple2(
-					A2(
-						$elm$core$List$cons,
-						_Utils_Tuple2(x, binding),
-						h3),
-					A2($author$project$Utils$delete, x, h4));
-			} else {
-				return _Utils_Tuple2(_List_Nil, _List_Nil);
-			}
-		}
-	});
-var $author$project$LangUtils$Delta$take = F2(
-	function (n, dv) {
-		var _v0 = _Utils_Tuple2(dv, n);
-		_v0$0:
-		while (true) {
-			if (_v0.a.$ === 'DCom') {
-				if (!_v0.b) {
-					break _v0$0;
-				} else {
-					if (_v0.a.b.$ === 'DZero') {
-						var _v1 = _v0.a;
-						var dv1 = _v1.a;
-						var _v2 = _v1.b;
-						return $elm$core$Result$Ok(
-							_Utils_Tuple2(dv1, n - 1));
-					} else {
-						var _v3 = _v0.a;
-						var dv2 = _v3.a;
-						var dv1 = _v3.b;
-						return A2(
-							$elm$core$Result$andThen,
-							function (_v4) {
-								var dv1_ = _v4.a;
-								var n_ = _v4.b;
-								return (!n_) ? $elm$core$Result$Ok(
-									_Utils_Tuple2(dv1_, 0)) : $elm$core$Result$Ok(
-									_Utils_Tuple2(
-										A2($author$project$Syntax$DCom, dv2, dv1_),
-										n_ - 1));
-							},
-							A2($author$project$LangUtils$Delta$take, n, dv1));
-					}
-				}
-			} else {
-				if (!_v0.b) {
-					break _v0$0;
-				} else {
-					return $elm$core$Result$Err(
-						'Tried to take n > 1 from non-compositional delta: ' + $author$project$Printer$Delta$print(dv));
-				}
-			}
-		}
-		return $elm$core$Result$Ok(
-			_Utils_Tuple2($author$project$Syntax$DZero, 0));
-	});
-var $author$project$Eval$updateBranch = F4(
-	function (branch, choice, exp, cnt) {
-		if (branch.$ === 'BSin') {
-			var wss = branch.a;
-			var p = branch.b;
-			var e = branch.c;
-			return _Utils_eq(cnt + 1, choice) ? _Utils_Tuple2(
-				A3($author$project$Syntax$BSin, wss, p, exp),
-				cnt + 1) : _Utils_Tuple2(
-				A3($author$project$Syntax$BSin, wss, p, e),
-				cnt + 1);
-		} else {
-			var wss = branch.a;
-			var b1 = branch.b;
-			var b2 = branch.c;
-			var _v1 = A4($author$project$Eval$updateBranch, b1, choice, exp, cnt);
-			var b1_ = _v1.a;
-			var cnt1 = _v1.b;
-			if (_Utils_eq(cnt1, choice)) {
-				return _Utils_Tuple2(
-					A3($author$project$Syntax$BCom, wss, b1_, b2),
-					cnt1);
-			} else {
-				var _v2 = A4($author$project$Eval$updateBranch, b2, choice, exp, cnt1);
-				var b2_ = _v2.a;
-				var cnt2 = _v2.b;
-				return _Utils_Tuple2(
-					A3($author$project$Syntax$BCom, wss, b1_, b2_),
-					cnt2);
-			}
-		}
-	});
-var $author$project$Eval$bwd = F4(
-	function (dv, heap, exp, id) {
-		var _v0 = _Utils_Tuple2(exp, dv);
-		_v0$0:
-		while (true) {
-			_v0$5:
-			while (true) {
-				_v0$8:
-				while (true) {
-					_v0$9:
-					while (true) {
-						_v0$10:
-						while (true) {
-							_v0$11:
-							while (true) {
-								_v0$12:
-								while (true) {
-									_v0$13:
-									while (true) {
-										_v0$14:
-										while (true) {
-											_v0$16:
-											while (true) {
-												_v0$17:
-												while (true) {
-													_v0$24:
-													while (true) {
-														_v0$25:
-														while (true) {
-															_v0$28:
-															while (true) {
-																switch (_v0.a.$) {
-																	case 'ENil':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DId':
-																				var _v2 = _v0.a;
-																				var _v3 = _v0.b;
-																				return _Utils_Tuple3(heap, exp, id);
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					if (_v0.b.b.$ === 'DRem') {
-																						break _v0$16;
-																					} else {
-																						break _v0$17;
-																					}
-																				} else {
-																					break _v0$28;
-																				}
-																			case 'DCom':
-																				break _v0$24;
-																			default:
-																				break _v0$28;
-																		}
-																	case 'EBool':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DId':
-																				var _v6 = _v0.a;
-																				var _v7 = _v0.b;
-																				return _Utils_Tuple3(heap, exp, id);
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					if (_v0.b.b.$ === 'DRem') {
-																						break _v0$16;
-																					} else {
-																						break _v0$17;
-																					}
-																				} else {
-																					break _v0$28;
-																				}
-																			case 'DCom':
-																				break _v0$24;
-																			default:
-																				break _v0$28;
-																		}
-																	case 'EChar':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DId':
-																				var _v8 = _v0.a;
-																				var _v9 = _v0.b;
-																				return _Utils_Tuple3(heap, exp, id);
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					if (_v0.b.b.$ === 'DRem') {
-																						break _v0$16;
-																					} else {
-																						break _v0$17;
-																					}
-																				} else {
-																					break _v0$28;
-																				}
-																			case 'DCom':
-																				break _v0$24;
-																			default:
-																				break _v0$28;
-																		}
-																	case 'EParens':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DCons':
-																				break _v0$5;
-																			case 'DCom':
-																				break _v0$5;
-																			default:
-																				break _v0$5;
-																		}
-																	case 'EInt':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DId':
-																				var _v4 = _v0.a;
-																				var _v5 = _v0.b;
-																				return _Utils_Tuple3(heap, exp, id);
-																			case 'DAdd':
-																				var _v12 = _v0.a;
-																				var wss = _v12.a;
-																				var n1 = _v12.b;
-																				var n2 = _v0.b.a;
-																				return _Utils_Tuple3(
-																					heap,
-																					A2($author$project$Syntax$EInt, wss, n1 + n2),
-																					id);
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					if (_v0.b.b.$ === 'DRem') {
-																						break _v0$16;
-																					} else {
-																						break _v0$17;
-																					}
-																				} else {
-																					break _v0$28;
-																				}
-																			case 'DCom':
-																				break _v0$24;
-																			default:
-																				break _v0$28;
-																		}
-																	case 'EApp':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DCons':
-																				break _v0$8;
-																			case 'DCom':
-																				break _v0$8;
-																			default:
-																				break _v0$8;
-																		}
-																	case 'ELet':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DCons':
-																				break _v0$9;
-																			case 'DCom':
-																				break _v0$9;
-																			default:
-																				break _v0$9;
-																		}
-																	case 'EVar':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DCons':
-																				break _v0$10;
-																			case 'DCom':
-																				break _v0$10;
-																			default:
-																				break _v0$10;
-																		}
-																	case 'ECase':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DCons':
-																				break _v0$11;
-																			case 'DCom':
-																				break _v0$11;
-																			default:
-																				break _v0$11;
-																		}
-																	case 'EBPrim':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					switch (_v0.a.b.$) {
-																						case 'Mul':
-																							break _v0$12;
-																						case 'Cat':
-																							break _v0$13;
-																						default:
-																							break _v0$14;
-																					}
-																				} else {
-																					switch (_v0.a.b.$) {
-																						case 'Mul':
-																							break _v0$12;
-																						case 'Cat':
-																							break _v0$13;
-																						default:
-																							break _v0$14;
-																					}
-																				}
-																			case 'DCom':
-																				if (_v0.a.b.$ === 'Mul') {
-																					break _v0$12;
-																				} else {
-																					break _v0$14;
-																				}
-																			default:
-																				if (_v0.a.b.$ === 'Mul') {
-																					break _v0$12;
-																				} else {
-																					break _v0$14;
-																				}
-																		}
-																	case 'ECons':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DId':
-																				var _v81 = _v0.a;
-																				var wss = _v81.a;
-																				var lType = _v81.b;
-																				var e1 = _v81.c;
-																				var e2 = _v81.d;
-																				var _v82 = _v0.b;
-																				var _v83 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap, e1, id);
-																				var heap1 = _v83.a;
-																				var e1_ = _v83.b;
-																				var id1 = _v83.c;
-																				var _v84 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap1, e2, id1);
-																				var heap2 = _v84.a;
-																				var e2_ = _v84.b;
-																				var id2 = _v84.c;
-																				return _Utils_Tuple3(
-																					heap2,
-																					A4($author$project$Syntax$ECons, wss, lType, e1_, e2_),
-																					id2);
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					if (_v0.b.b.$ === 'DRem') {
-																						break _v0$16;
-																					} else {
-																						break _v0$17;
-																					}
-																				} else {
-																					if (_v0.b.b.$ === 'DRem') {
-																						var _v108 = _v0.a;
-																						var wss = _v108.a;
-																						var lType = _v108.b;
-																						var e2 = _v108.d;
-																						var _v109 = _v0.b;
-																						var _v110 = _v109.a;
-																						var _v111 = _v109.b;
-																						var dv2 = _v109.c;
-																						var _v112 = A4($author$project$Eval$bwd, dv2, heap, e2, id);
-																						var heap1 = _v112.a;
-																						var e2_ = _v112.b;
-																						var id1 = _v112.c;
-																						var _v113 = _Utils_Tuple3(wss, lType, e2_);
-																						_v113$4:
-																						while (true) {
-																							if (_v113.a.b) {
-																								if (_v113.a.b.b) {
-																									if ((!_v113.a.b.b.b) && (_v113.b.$ === 'SquareType')) {
-																										switch (_v113.c.$) {
-																											case 'ECons':
-																												var _v114 = _v113.a;
-																												var ws1 = _v114.a;
-																												var _v115 = _v114.b;
-																												var ws2 = _v115.a;
-																												var _v116 = _v113.b;
-																												var _v117 = _v113.c;
-																												var e3 = _v117.c;
-																												var e4 = _v117.d;
-																												return _Utils_Tuple3(
-																													heap1,
-																													A4($author$project$Syntax$ECons, wss, lType, e3, e4),
-																													id1);
-																											case 'ENil':
-																												var _v121 = _v113.a;
-																												var ws1 = _v121.a;
-																												var _v122 = _v121.b;
-																												var ws2 = _v122.a;
-																												var _v123 = _v113.b;
-																												var _v124 = _v113.c;
-																												return _Utils_Tuple3(
-																													heap1,
-																													A2($author$project$Syntax$ENil, wss, lType),
-																													id1);
-																											default:
-																												break _v113$4;
-																										}
-																									} else {
-																										break _v113$4;
-																									}
-																								} else {
-																									if (_v113.b.$ === 'StringType') {
-																										switch (_v113.c.$) {
-																											case 'ECons':
-																												var _v118 = _v113.a;
-																												var ws = _v118.a;
-																												var _v119 = _v113.b;
-																												var _v120 = _v113.c;
-																												var e3 = _v120.c;
-																												var e4 = _v120.d;
-																												return _Utils_Tuple3(
-																													heap1,
-																													A4($author$project$Syntax$ECons, wss, lType, e3, e4),
-																													id1);
-																											case 'ENil':
-																												var _v125 = _v113.a;
-																												var ws = _v125.a;
-																												var _v126 = _v113.b;
-																												var _v127 = _v113.c;
-																												return _Utils_Tuple3(
-																													heap1,
-																													A2($author$project$Syntax$ENil, wss, lType),
-																													id1);
-																											default:
-																												break _v113$4;
-																										}
-																									} else {
-																										break _v113$4;
-																									}
-																								}
-																							} else {
-																								break _v113$4;
-																							}
-																						}
-																						return _Utils_Tuple3(heap1, e2_, id1);
-																					} else {
-																						var _v128 = _v0.a;
-																						var wss = _v128.a;
-																						var lType = _v128.b;
-																						var e1 = _v128.c;
-																						var e2 = _v128.d;
-																						var _v129 = _v0.b;
-																						var _v130 = _v129.a;
-																						var dv1 = _v129.b;
-																						var dv2 = _v129.c;
-																						var _v131 = A4($author$project$Eval$bwd, dv1, heap, e1, id);
-																						var heap1 = _v131.a;
-																						var e1_ = _v131.b;
-																						var id1 = _v131.c;
-																						var _v132 = A4($author$project$Eval$bwd, dv2, heap1, e2, id1);
-																						var heap2 = _v132.a;
-																						var e2_ = _v132.b;
-																						var id2 = _v132.c;
-																						return _Utils_Tuple3(
-																							heap2,
-																							A4($author$project$Syntax$ECons, wss, lType, e1_, e2_),
-																							id2);
-																					}
-																				}
-																			case 'DCom':
-																				break _v0$24;
-																			default:
-																				break _v0$28;
-																		}
-																	case 'EHtml':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					if (_v0.b.b.$ === 'DRem') {
-																						break _v0$16;
-																					} else {
-																						break _v0$17;
-																					}
-																				} else {
-																					break _v0$28;
-																				}
-																			case 'DHtml':
-																				var _v137 = _v0.a;
-																				var wss = _v137.a;
-																				var s1 = _v137.b;
-																				var e1 = _v137.c;
-																				var e2 = _v137.d;
-																				var e3 = _v137.e;
-																				var _v138 = _v0.b;
-																				var s2 = _v138.a;
-																				var dv1 = _v138.b;
-																				var dv2 = _v138.c;
-																				var dv3 = _v138.d;
-																				if (_Utils_eq(s1, s2)) {
-																					var _v139 = A4($author$project$Eval$bwd, dv1, heap, e1, id);
-																					var heap1 = _v139.a;
-																					var e1_ = _v139.b;
-																					var id1 = _v139.c;
-																					var _v140 = A4($author$project$Eval$bwd, dv2, heap1, e2, id1);
-																					var heap2 = _v140.a;
-																					var e2_ = _v140.b;
-																					var id2 = _v140.c;
-																					var _v141 = A4($author$project$Eval$bwd, dv3, heap2, e3, id2);
-																					var heap3 = _v141.a;
-																					var e3_ = _v141.b;
-																					var id3 = _v141.c;
-																					return _Utils_Tuple3(
-																						heap3,
-																						A5($author$project$Syntax$EHtml, wss, s1, e1_, e2_, e3_),
-																						id3);
-																				} else {
-																					return _Utils_Tuple3(
-																						heap,
-																						$author$project$Syntax$EError('ERROR #02: HTML Type'),
-																						id);
-																				}
-																			case 'DId':
-																				var _v142 = _v0.a;
-																				var wss = _v142.a;
-																				var s = _v142.b;
-																				var e1 = _v142.c;
-																				var e2 = _v142.d;
-																				var e3 = _v142.e;
-																				var _v143 = _v0.b;
-																				var _v144 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap, e1, id);
-																				var heap1 = _v144.a;
-																				var e1_ = _v144.b;
-																				var id1 = _v144.c;
-																				var _v145 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap1, e2, id1);
-																				var heap2 = _v145.a;
-																				var e2_ = _v145.b;
-																				var id2 = _v145.c;
-																				var _v146 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap2, e3, id2);
-																				var heap3 = _v146.a;
-																				var e3_ = _v146.b;
-																				var id3 = _v146.c;
-																				return _Utils_Tuple3(
-																					heap3,
-																					A5($author$project$Syntax$EHtml, wss, s, e1_, e2_, e3_),
-																					id3);
-																			case 'DCom':
-																				break _v0$24;
-																			default:
-																				break _v0$28;
-																		}
-																	case 'ETuple':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					if (_v0.b.b.$ === 'DRem') {
-																						break _v0$16;
-																					} else {
-																						break _v0$17;
-																					}
-																				} else {
-																					break _v0$28;
-																				}
-																			case 'DId':
-																				var _v133 = _v0.a;
-																				var wss = _v133.a;
-																				var tType = _v133.b;
-																				var e1 = _v133.c;
-																				var e2 = _v133.d;
-																				var _v134 = _v0.b;
-																				var _v135 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap, e1, id);
-																				var heap1 = _v135.a;
-																				var e1_ = _v135.b;
-																				var id1 = _v135.c;
-																				var _v136 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap1, e2, id1);
-																				var heap2 = _v136.a;
-																				var e2_ = _v136.b;
-																				var id2 = _v136.c;
-																				return _Utils_Tuple3(
-																					heap2,
-																					A4($author$project$Syntax$ETuple, wss, tType, e1_, e2_),
-																					id2);
-																			case 'DTuple':
-																				var _v147 = _v0.a;
-																				var wss = _v147.a;
-																				var tType = _v147.b;
-																				var e1 = _v147.c;
-																				var e2 = _v147.d;
-																				var _v148 = _v0.b;
-																				var dv1 = _v148.a;
-																				var dv2 = _v148.b;
-																				var _v149 = A4($author$project$Eval$bwd, dv1, heap, e1, id);
-																				var heap1 = _v149.a;
-																				var e1_ = _v149.b;
-																				var id1 = _v149.c;
-																				var _v150 = A4($author$project$Eval$bwd, dv2, heap1, e2, id1);
-																				var heap2 = _v150.a;
-																				var e2_ = _v150.b;
-																				var id2 = _v150.c;
-																				return _Utils_Tuple3(
-																					heap2,
-																					A4($author$project$Syntax$ETuple, wss, tType, e1_, e2_),
-																					id2);
-																			case 'DCom':
-																				break _v0$24;
-																			default:
-																				break _v0$28;
-																		}
-																	case 'EUPrim':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					if (_v0.b.b.$ === 'DRem') {
-																						break _v0$16;
-																					} else {
-																						break _v0$17;
-																					}
-																				} else {
-																					if (_v0.a.b.$ === 'Neg') {
-																						break _v0$25;
-																					} else {
-																						break _v0$28;
-																					}
-																				}
-																			case 'DCom':
-																				break _v0$24;
-																			case 'DId':
-																				if (_v0.a.b.$ === 'Neg') {
-																					break _v0$25;
-																				} else {
-																					var _v158 = _v0.a;
-																					var wss = _v158.a;
-																					var _v159 = _v158.b;
-																					var e = _v158.c;
-																					var _v160 = _v0.b;
-																					var _v161 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap, e, id);
-																					var heap1 = _v161.a;
-																					var e_ = _v161.b;
-																					var id1 = _v161.c;
-																					return _Utils_Tuple3(
-																						heap1,
-																						A3($author$project$Syntax$EUPrim, wss, $author$project$Syntax$Not, e_),
-																						id1);
-																				}
-																			default:
-																				if (_v0.a.b.$ === 'Neg') {
-																					break _v0$25;
-																				} else {
-																					break _v0$28;
-																				}
-																		}
-																	case 'ELam':
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DLam':
-																				if (_v0.b.a.$ === 'EVar') {
-																					var _v13 = _v0.a;
-																					var wssLam = _v13.a;
-																					var x = _v13.b;
-																					var ef = _v13.c;
-																					var _v14 = _v0.b;
-																					var _v15 = _v14.a;
-																					var x1 = _v15.b;
-																					var dv1 = _v14.b;
-																					var _v16 = A2(
-																						$author$project$LangUtils$Rename$renameExp,
-																						A3($author$project$LangUtils$Substitute$substExp, ef, x, x1),
-																						id);
-																					var ef1 = _v16.a;
-																					var id1 = _v16.b;
-																					var renameSet = _v16.c;
-																					var swapedRenamedVars = A2(
-																						$elm$core$List$map,
-																						function (_v18) {
-																							var a = _v18.a;
-																							var b = _v18.b;
-																							return _Utils_Tuple2(b, a);
-																						},
-																						renameSet);
-																					var _v17 = A4($author$project$Eval$bwd, dv1, heap, ef1, id1);
-																					var heap_ = _v17.a;
-																					var ef_ = _v17.b;
-																					var id2 = _v17.c;
-																					return _Utils_Tuple3(
-																						heap_,
-																						A3(
-																							$author$project$Syntax$ELam,
-																							wssLam,
-																							x,
-																							A2(
-																								$author$project$LangUtils$Substitute$substSet,
-																								A3($author$project$LangUtils$Substitute$substExp, ef_, x1, x),
-																								swapedRenamedVars)),
-																						id2);
-																				} else {
-																					break _v0$28;
-																				}
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					if (_v0.b.b.$ === 'DRem') {
-																						break _v0$16;
-																					} else {
-																						break _v0$17;
-																					}
-																				} else {
-																					break _v0$28;
-																				}
-																			case 'DCom':
-																				break _v0$24;
-																			case 'DId':
-																				var _v162 = _v0.a;
-																				var _v163 = _v0.b;
-																				var _v164 = A2($elm$core$Debug$log, 'Error in Bwd', 'ERROR #08: Lambda cannot be modified by identity delta.');
-																				return _Utils_Tuple3(heap, exp, id);
-																			default:
-																				break _v0$28;
-																		}
-																	default:
-																		switch (_v0.b.$) {
-																			case 'DZero':
-																				break _v0$0;
-																			case 'DCons':
-																				if (_v0.b.a.$ === 'Just') {
-																					if (_v0.b.b.$ === 'DRem') {
-																						break _v0$16;
-																					} else {
-																						break _v0$17;
-																					}
-																				} else {
-																					break _v0$28;
-																				}
-																			case 'DCom':
-																				break _v0$24;
-																			default:
-																				break _v0$28;
-																		}
-																}
-															}
-															var _v165 = A2(
-																$elm$core$Debug$log,
-																'Error in Bwd',
-																_Utils_Tuple2(exp, dv));
-															return _Utils_Tuple3(heap, exp, id);
-														}
-														var _v154 = _v0.a;
-														var wss = _v154.a;
-														var _v155 = _v154.b;
-														var e = _v154.c;
-														var _v156 = function () {
-															switch (dv.$) {
-																case 'DAdd':
-																	var n = dv.a;
-																	return A4(
-																		$author$project$Eval$bwd,
-																		$author$project$Syntax$DAdd(-n),
-																		heap,
-																		e,
-																		id);
-																case 'DId':
-																	return A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap, e, id);
-																default:
-																	return _Utils_Tuple3(
-																		heap,
-																		$author$project$Syntax$EError('ERROR #10: Invalid delta for Negation'),
-																		id);
-															}
-														}();
-														var heap1 = _v156.a;
-														var e_ = _v156.b;
-														var id1 = _v156.c;
-														return _Utils_Tuple3(
-															heap1,
-															A3($author$project$Syntax$EUPrim, wss, $author$project$Syntax$Neg, e_),
-															id1);
-													}
-													var _v151 = _v0.b;
-													var dv2 = _v151.a;
-													var dv1 = _v151.b;
-													var _v152 = A4($author$project$Eval$bwd, dv1, heap, exp, id);
-													var heap1 = _v152.a;
-													var exp1 = _v152.b;
-													var id1 = _v152.c;
-													var _v153 = A4(
-														$author$project$Eval$bwd,
-														dv2,
-														A2($author$project$Eval$refreshHeap, heap, heap1),
-														exp1,
-														id1);
-													var heap2 = _v153.a;
-													var exp2 = _v153.b;
-													var id2 = _v153.c;
-													return _Utils_Tuple3(heap2, exp2, id2);
-												}
-												var _v88 = _v0.b;
-												var e1 = _v88.a.a;
-												var dv1 = _v88.b;
-												var dv2 = _v88.c;
-												var _v89 = A4($author$project$Eval$bwd, dv1, heap, e1, id);
-												var heap1 = _v89.a;
-												var e1_ = _v89.b;
-												var id1 = _v89.c;
-												var _v90 = A4($author$project$Eval$bwd, dv2, heap1, exp, id1);
-												var heap2 = _v90.a;
-												var e2_ = _v90.b;
-												var id2 = _v90.c;
-												var _v91 = function () {
-													_v92$7:
-													while (true) {
-														switch (exp.$) {
-															case 'ECons':
-																switch (exp.b.$) {
-																	case 'ConsType':
-																		var wss = exp.a;
-																		var _v93 = exp.b;
-																		return _Utils_Tuple3(wss, $author$project$Syntax$ConsType, e2_);
-																	case 'SquareType':
-																		if (exp.a.b) {
-																			if (exp.a.b.b) {
-																				if (!exp.a.b.b.b) {
-																					var _v94 = exp.a;
-																					var ws1 = _v94.a;
-																					var _v95 = _v94.b;
-																					var ws2 = _v95.a;
-																					var _v96 = exp.b;
-																					return _Utils_Tuple3(
-																						_List_fromArray(
-																							[ws1, ws2]),
-																						$author$project$Syntax$SquareType,
-																						A2($author$project$Parser$Utils$repWS, $author$project$Syntax$eConsDefaultWSS, e2_));
-																				} else {
-																					break _v92$7;
-																				}
-																			} else {
-																				var _v97 = exp.a;
-																				var ws = _v97.a;
-																				var _v98 = exp.b;
-																				return _Utils_Tuple3(
-																					_List_fromArray(
-																						[ws]),
-																					$author$project$Syntax$SquareType,
-																					e2_);
-																			}
-																		} else {
-																			break _v92$7;
-																		}
-																	default:
-																		var wss = exp.a;
-																		var _v106 = exp.b;
-																		return _Utils_Tuple3(wss, $author$project$Syntax$StringType, e2_);
-																}
-															case 'ENil':
-																switch (exp.b.$) {
-																	case 'SquareType':
-																		if (exp.a.b) {
-																			if (exp.a.b.b && (!exp.a.b.b.b)) {
-																				var _v99 = exp.a;
-																				var ws1 = _v99.a;
-																				var _v100 = _v99.b;
-																				var ws2 = _v100.a;
-																				var _v101 = exp.b;
-																				var e2__WS = function () {
-																					_v102$2:
-																					while (true) {
-																						switch (e2_.$) {
-																							case 'ECons':
-																								if (e2_.b.$ === 'SquareType') {
-																									var _v103 = e2_.b;
-																									return $author$project$Syntax$eConsDefaultWSS;
-																								} else {
-																									break _v102$2;
-																								}
-																							case 'ENil':
-																								if (e2_.b.$ === 'SquareType') {
-																									var _v104 = e2_.b;
-																									return _List_Nil;
-																								} else {
-																									break _v102$2;
-																								}
-																							default:
-																								break _v102$2;
-																						}
-																					}
-																					return _List_fromArray(
-																						[
-																							'ERROR #17: DCons update error, exp=' + $elm$core$Debug$toString(exp)
-																						]);
-																				}();
-																				return _Utils_Tuple3(
-																					_List_fromArray(
-																						[ws1, ws2]),
-																					$author$project$Syntax$SquareType,
-																					A2($author$project$Parser$Utils$repWS, e2__WS, e2_));
-																			} else {
-																				break _v92$7;
-																			}
-																		} else {
-																			var _v105 = exp.b;
-																			return _Utils_Tuple3($author$project$Syntax$eConsDefaultWSS, $author$project$Syntax$SquareType, e2_);
-																		}
-																	case 'StringType':
-																		var wss = exp.a;
-																		var _v107 = exp.b;
-																		return _Utils_Tuple3(wss, $author$project$Syntax$StringType, e2_);
-																	default:
-																		break _v92$7;
-																}
-															default:
-																break _v92$7;
-														}
-													}
-													return _Utils_Tuple3($author$project$Syntax$eConsDefaultWSS, $author$project$Syntax$SquareType, e2_);
-												}();
-												var wssInserted = _v91.a;
-												var lTypeInserted = _v91.b;
-												var e2__ = _v91.c;
-												return _Utils_Tuple3(
-													heap2,
-													A4($author$project$Syntax$ECons, wssInserted, lTypeInserted, e1_, e2__),
-													id2);
-											}
-											var _v85 = _v0.b;
-											var _v86 = _v85.b;
-											var dv2 = _v85.c;
-											var _v87 = A4($author$project$Eval$bwd, dv2, heap, exp, id);
-											var heap1 = _v87.a;
-											var e2_ = _v87.b;
-											var id2 = _v87.c;
-											return _Utils_Tuple3(heap1, e2_, id2);
-										}
-										var _v78 = _v0.a;
-										var wss = _v78.a;
-										var op = _v78.b;
-										var e1 = _v78.c;
-										var e2 = _v78.d;
-										var _v79 = A4($author$project$Eval$bwd, dv, heap, e1, id);
-										var heap1 = _v79.a;
-										var e1_ = _v79.b;
-										var id1 = _v79.c;
-										var _v80 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap1, e2, id1);
-										var heap2 = _v80.a;
-										var e2_ = _v80.b;
-										var id2 = _v80.c;
-										return _Utils_Tuple3(
-											heap2,
-											A4($author$project$Syntax$EBPrim, wss, op, e1_, e2_),
-											id2);
-									}
-									var _v71 = _v0.a;
-									var wss = _v71.a;
-									var _v72 = _v71.b;
-									var e1 = _v71.c;
-									var e2 = _v71.d;
-									var _v73 = _v0.b;
-									var _v74 = A4($author$project$Eval$splitDelta, e1, dv, heap, id);
-									var _v75 = _v74.a;
-									var dv1 = _v75.a;
-									var dv2 = _v75.b;
-									var _v76 = A4($author$project$Eval$bwd, dv1, heap, e1, id);
-									var heap1 = _v76.a;
-									var e1_ = _v76.b;
-									var id1 = _v76.c;
-									var _v77 = A4($author$project$Eval$bwd, dv2, heap1, e2, id1);
-									var heap2 = _v77.a;
-									var e2_ = _v77.b;
-									var id2 = _v77.c;
-									return _Utils_Tuple3(
-										heap2,
-										A4($author$project$Syntax$EBPrim, wss, $author$project$Syntax$Cat, e1_, e2_),
-										id2);
-								}
-								var _v60 = _v0.a;
-								var wss = _v60.a;
-								var _v61 = _v60.b;
-								var e1 = _v60.c;
-								var e2 = _v60.d;
-								var _v62 = $author$project$LangUtils$Fuse$simplify(dv);
-								switch (_v62.$) {
-									case 'DId':
-										var _v63 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap, e1, id);
-										var heap1 = _v63.a;
-										var e1_ = _v63.b;
-										var id1 = _v63.c;
-										var _v64 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap1, e2, id1);
-										var heap2 = _v64.a;
-										var e2_ = _v64.b;
-										var id2 = _v64.c;
-										return _Utils_Tuple3(
-											heap2,
-											A4($author$project$Syntax$EBPrim, wss, $author$project$Syntax$Mul, e1_, e2_),
-											id2);
-									case 'DAdd':
-										var n = _v62.a;
-										var _v65 = A3($author$project$Eval$fwd, heap, e2, id);
-										if (_v65.$ === 'Ok') {
-											var _v66 = _v65.a;
-											var z2 = _v66.b;
-											if (z2.$ === 'EInt') {
-												var n2 = z2.b;
-												var _v68 = A4(
-													$author$project$Eval$bwd,
-													$author$project$Syntax$DAdd((n / n2) | 0),
-													heap,
-													e1,
-													id);
-												var heap1 = _v68.a;
-												var e1_ = _v68.b;
-												var id1 = _v68.c;
-												var _v69 = A4($author$project$Eval$bwd, $author$project$Syntax$DId, heap1, e2, id1);
-												var heap2 = _v69.a;
-												var e2_ = _v69.b;
-												var id2 = _v69.c;
-												return _Utils_Tuple3(
-													heap2,
-													A4($author$project$Syntax$EBPrim, wss, $author$project$Syntax$Mul, e1_, e2_),
-													id2);
-											} else {
-												return _Utils_Tuple3(
-													heap,
-													$author$project$Syntax$EError('ERROR #03: Wrong Operands.'),
-													id);
-											}
-										} else {
-											var e = _v65.a;
-											return _Utils_Tuple3(
-												heap,
-												$author$project$Syntax$EError(e),
-												id);
-										}
-									default:
-										var _v70 = A2(
-											$elm$core$Debug$log,
-											'Bwd Mul Err: ',
-											$author$project$LangUtils$Fuse$simplify(dv));
-										return _Utils_Tuple3(
-											heap,
-											$author$project$Syntax$EError('ERROR #03: Currently, Mul does not support composition.'),
-											id);
-								}
-							}
-							var _v52 = _v0.a;
-							var wss = _v52.a;
-							var guard = _v52.b;
-							var branch = _v52.c;
-							var matchfwd = A2(
-								$elm$core$Result$andThen,
-								function (_v59) {
-									var heap1_ = _v59.a;
-									var zarg = _v59.b;
-									var id1 = _v59.c;
-									return A4($author$project$Eval$matchCase, zarg, branch, id1, heap1_);
-								},
-								A3($author$project$Eval$fwd, heap, guard, id));
-							if (matchfwd.$ === 'Err') {
-								var e = matchfwd.a;
-								return _Utils_Tuple3(
-									heap,
-									$author$project$Syntax$EError(e),
-									id);
-							} else {
-								var _v54 = matchfwd.a;
-								var matchRes = _v54.a;
-								var id3 = _v54.b;
-								var swapedRenamedVars = A2(
-									$elm$core$List$map,
-									function (_v58) {
-										var x = _v58.a;
-										var y = _v58.b;
-										return _Utils_Tuple2(y, x);
-									},
-									matchRes.renamedvars);
-								var _v55 = A4(
-									$author$project$Eval$bwd,
-									dv,
-									matchRes.heap,
-									A2($author$project$LangUtils$Substitute$substSet, matchRes.ei, matchRes.renamedvars),
-									id3);
-								var heap2 = _v55.a;
-								var ei_ = _v55.b;
-								var id4 = _v55.c;
-								var dv_guard = A2(
-									$author$project$Eval$collectDvForGuard,
-									heap2,
-									A2($author$project$Eval$replPat, matchRes.pi, matchRes.renamedvars));
-								var _v56 = A4($author$project$Eval$bwd, dv_guard, heap2, guard, id4);
-								var heap4 = _v56.a;
-								var guard_ = _v56.b;
-								var id5 = _v56.c;
-								var _v57 = A4(
-									$author$project$Eval$updateBranch,
-									branch,
-									matchRes.choice,
-									A2($author$project$LangUtils$Substitute$substSet, ei_, swapedRenamedVars),
-									0);
-								var branch_ = _v57.a;
-								return _Utils_Tuple3(
-									heap4,
-									A3($author$project$Syntax$ECase, wss, guard_, branch_),
-									id5);
-							}
-						}
-						var _v28 = _v0.a;
-						var wss = _v28.a;
-						var x = _v28.b;
-						var n = _v28.c;
-						return function (_v29) {
-							var h_ = _v29.a;
-							var e_ = _v29.b;
-							var id_ = _v29.c;
-							if (e_.$ === 'EVar') {
-								return _Utils_Tuple3(h_, e_, id_);
-							} else {
-								return _Utils_Tuple3(
-									h_,
-									A2($author$project$Syntax$EParens, $author$project$Syntax$eParensDefaultWSS, e_),
-									id_);
-							}
-						}(
-							function () {
-								var _v31 = A2($author$project$Utils$lookup, x, heap);
-								if (_v31.$ === 'Just') {
-									var _v32 = _v31.a;
-									var _v33 = _v32.a;
-									var e = _v33.a;
-									var nE = _v33.b;
-									var dv1 = _v32.b;
-									var _v34 = _v32.c;
-									var v = _v34.a;
-									var b = _v34.b;
-									if (_Utils_eq(
-										n,
-										$author$project$LangUtils$Delta$length(dv1)) && (!b)) {
-										var _v35 = A4($author$project$Eval$bwd, dv, heap, nE, id);
-										var heap1 = _v35.a;
-										var nE_ = _v35.b;
-										var id1 = _v35.c;
-										var _v36 = A2($author$project$Utils$lookup, x, heap1);
-										if (_v36.$ === 'Just') {
-											if (_v36.a.c.b) {
-												var _v37 = _v36.a;
-												var _v38 = _v37.a;
-												var nE1_ = _v38.b;
-												var _v39 = _v37.c;
-												return A2($author$project$LangUtils$Equality$eqExp, nE_, nE1_) ? _Utils_Tuple3(
-													heap1,
-													A3(
-														$author$project$Syntax$EVar,
-														wss,
-														x,
-														$author$project$LangUtils$Delta$length(dv1)),
-													id1) : _Utils_Tuple3(heap1, nE_, id1);
-											} else {
-												var _v40 = _v36.a;
-												var _v41 = _v40.c;
-												return _Utils_Tuple3(
-													A3(
-														$author$project$Utils$replace,
-														x,
-														_Utils_Tuple3(
-															_Utils_Tuple2(e, nE_),
-															A2($author$project$Syntax$DCom, dv, dv1),
-															_Utils_Tuple2(v, true)),
-														heap1),
-													A3(
-														$author$project$Syntax$EVar,
-														wss,
-														x,
-														$author$project$LangUtils$Delta$length(
-															A2($author$project$Syntax$DCom, dv, dv1))),
-													id1);
-											}
-										} else {
-											return _Utils_Tuple3(
-												heap,
-												$author$project$Syntax$EError('ERROR #09: No Such Variable'),
-												id);
-										}
-									} else {
-										if ((!$author$project$LangUtils$Delta$isNorm(dv1)) && (!_Utils_eq(dv1, $author$project$Syntax$DZero))) {
-											var _v42 = A2($author$project$LangUtils$Delta$take, n, dv1);
-											if (_v42.$ === 'Ok') {
-												var _v43 = _v42.a;
-												var dv_ = _v43.a;
-												var _v44 = A4($author$project$Eval$bwd, dv_, heap, e, id);
-												var heap1 = _v44.a;
-												var e1 = _v44.b;
-												var id1 = _v44.c;
-												var _v45 = A4($author$project$Eval$bwd, dv, heap1, e1, id1);
-												var heap2 = _v45.a;
-												var e2 = _v45.b;
-												var id2 = _v45.c;
-												return A2($author$project$LangUtils$Equality$eqExp, e2, nE) ? _Utils_Tuple3(
-													heap2,
-													A3(
-														$author$project$Syntax$EVar,
-														wss,
-														x,
-														$author$project$LangUtils$Delta$length(dv1)),
-													id2) : _Utils_Tuple3(heap2, e2, id2);
-											} else {
-												var res = _v42;
-												return _Utils_Tuple3(
-													heap,
-													$author$project$Syntax$EError(
-														$elm$core$Debug$toString(res)),
-													id);
-											}
-										} else {
-											var _v46 = A2($author$project$LangUtils$Delta$drop, n, dv1);
-											if (_v46.$ === 'Ok') {
-												var _v47 = _v46.a;
-												var dv_ = _v47.a;
-												var _v48 = A2(
-													$elm$core$Result$map,
-													$author$project$LangUtils$Fuse$simplify,
-													A2($author$project$Eval$diffDeltas, dv, dv_));
-												if (_v48.$ === 'Ok') {
-													switch (_v48.a.$) {
-														case 'DZero':
-															var _v49 = _v48.a;
-															return _Utils_Tuple3(
-																heap,
-																A3(
-																	$author$project$Syntax$EVar,
-																	wss,
-																	x,
-																	$author$project$LangUtils$Delta$length(dv1)),
-																id);
-														case 'DId':
-															var _v50 = _v48.a;
-															return _Utils_Tuple3(
-																heap,
-																A3(
-																	$author$project$Syntax$EVar,
-																	wss,
-																	x,
-																	$author$project$LangUtils$Delta$length(dv1)),
-																id);
-														case 'DAdd':
-															var n1 = _v48.a.a;
-															return _Utils_Tuple3(
-																heap,
-																A4(
-																	$author$project$Syntax$EBPrim,
-																	$author$project$Syntax$eBPrimDefaultWSS,
-																	$author$project$Syntax$Add,
-																	A3(
-																		$author$project$Syntax$EVar,
-																		wss,
-																		x,
-																		$author$project$LangUtils$Delta$length(dv1)),
-																	A2($author$project$Syntax$EInt, $author$project$Syntax$eIntDefaultWSS, n1)),
-																id);
-														default:
-															var dv_diff = _v48.a;
-															var _v51 = A2($author$project$LangUtils$Fuse$deltaToFun, dv_diff, id);
-															var fun = _v51.a;
-															return _Utils_Tuple3(
-																heap,
-																A2(
-																	$author$project$Syntax$EApp,
-																	fun,
-																	A3(
-																		$author$project$Syntax$EVar,
-																		wss,
-																		x,
-																		$author$project$LangUtils$Delta$length(dv1))),
-																id);
-													}
-												} else {
-													var res = _v48;
-													return _Utils_Tuple3(
-														heap,
-														$author$project$Syntax$EError(
-															$elm$core$Debug$toString(res)),
-														id);
-												}
-											} else {
-												var res = _v46;
-												return _Utils_Tuple3(
-													heap,
-													$author$project$Syntax$EError(
-														$elm$core$Debug$toString(res)),
-													id);
-											}
-										}
-									}
-								} else {
-									return _Utils_Tuple3(
-										heap,
-										$author$project$Syntax$EError('ERROR #04: No Such Variable'),
-										id);
-								}
-							}());
-					}
-					var _v25 = _v0.a;
-					var wss = _v25.a;
-					var decls = _v25.b;
-					var e = _v25.c;
-					var _v26 = A4(
-						$author$project$Eval$bwd,
-						dv,
-						_Utils_ap(decls, heap),
-						e,
-						id);
-					var heap1 = _v26.a;
-					var e_ = _v26.b;
-					var id1 = _v26.c;
-					var _v27 = A2($author$project$Eval$splitHeap, decls, heap1);
-					var decls_ = _v27.a;
-					var heap_ = _v27.b;
-					return _Utils_Tuple3(
-						heap_,
-						A3($author$project$Syntax$ELet, wss, decls_, e_),
-						id1);
-				}
-				var _v19 = _v0.a;
-				var e1 = _v19.a;
-				var e2 = _v19.b;
-				var _v20 = A2($author$project$LangUtils$Rename$freshName, 'R', id);
-				var x = _v20.a;
-				var id1 = _v20.b;
-				var heapWithArg = A2(
-					$elm$core$List$cons,
-					_Utils_Tuple2(
-						x,
-						_Utils_Tuple3(
-							_Utils_Tuple2(e2, e2),
-							$author$project$Syntax$DZero,
-							_Utils_Tuple2($elm$core$Maybe$Nothing, false))),
-					heap);
-				var _v21 = A4(
-					$author$project$Eval$bwd,
-					A2(
-						$author$project$Syntax$DLam,
-						A3($author$project$Syntax$EVar, $author$project$Syntax$eVarDefaultWSS, x, 0),
-						dv),
-					heapWithArg,
-					e1,
-					id1);
-				var heap1 = _v21.a;
-				var e1_ = _v21.b;
-				var id2 = _v21.c;
-				var _v22 = A2($author$project$Utils$lookup, x, heap1);
-				if (_v22.$ === 'Just') {
-					var _v23 = _v22.a;
-					var _v24 = _v23.a;
-					var e2_ = _v24.b;
-					return _Utils_Tuple3(
-						heap1,
-						A2($author$project$Syntax$EApp, e1_, e2_),
-						id2);
-				} else {
-					return _Utils_Tuple3(
-						heap,
-						$author$project$Syntax$EError('ERROR #01: No Such Variable'),
-						id);
-				}
-			}
-			var _v10 = _v0.a;
-			var wss = _v10.a;
-			var e = _v10.b;
-			var _v11 = A4($author$project$Eval$bwd, dv, heap, e, id);
-			var heap1 = _v11.a;
-			var exp1 = _v11.b;
-			var id1 = _v11.c;
-			return _Utils_Tuple3(
-				heap1,
-				A2($author$project$Syntax$EParens, wss, exp1),
-				id1);
-		}
-		var _v1 = _v0.b;
-		return _Utils_Tuple3(heap, exp, id);
-	});
-var $elm$parser$Parser$Advanced$Bad = F2(
-	function (a, b) {
-		return {$: 'Bad', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$Good = F3(
-	function (a, b, c) {
-		return {$: 'Good', a: a, b: b, c: c};
-	});
-var $elm$parser$Parser$Advanced$Parser = function (a) {
-	return {$: 'Parser', a: a};
-};
-var $elm$parser$Parser$Advanced$backtrackable = function (_v0) {
-	var parse = _v0.a;
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s0) {
-			var _v1 = parse(s0);
-			if (_v1.$ === 'Bad') {
-				var x = _v1.b;
-				return A2($elm$parser$Parser$Advanced$Bad, false, x);
-			} else {
-				var a = _v1.b;
-				var s1 = _v1.c;
-				return A3($elm$parser$Parser$Advanced$Good, false, a, s1);
-			}
-		});
-};
-var $elm$parser$Parser$backtrackable = $elm$parser$Parser$Advanced$backtrackable;
-var $elm$parser$Parser$Advanced$andThen = F2(
-	function (callback, _v0) {
-		var parseA = _v0.a;
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s0) {
-				var _v1 = parseA(s0);
-				if (_v1.$ === 'Bad') {
-					var p = _v1.a;
-					var x = _v1.b;
-					return A2($elm$parser$Parser$Advanced$Bad, p, x);
-				} else {
-					var p1 = _v1.a;
-					var a = _v1.b;
-					var s1 = _v1.c;
-					var _v2 = callback(a);
-					var parseB = _v2.a;
-					var _v3 = parseB(s1);
-					if (_v3.$ === 'Bad') {
-						var p2 = _v3.a;
-						var x = _v3.b;
-						return A2($elm$parser$Parser$Advanced$Bad, p1 || p2, x);
-					} else {
-						var p2 = _v3.a;
-						var b = _v3.b;
-						var s2 = _v3.c;
-						return A3($elm$parser$Parser$Advanced$Good, p1 || p2, b, s2);
-					}
-				}
-			});
-	});
-var $elm$parser$Parser$andThen = $elm$parser$Parser$Advanced$andThen;
-var $Punie$elm_parser_extras$Parser$Expression$initOps = {lassoc: _List_Nil, nassoc: _List_Nil, postfix: _List_Nil, prefix: _List_Nil, rassoc: _List_Nil};
-var $elm$parser$Parser$Advanced$map2 = F3(
-	function (func, _v0, _v1) {
-		var parseA = _v0.a;
-		var parseB = _v1.a;
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s0) {
-				var _v2 = parseA(s0);
-				if (_v2.$ === 'Bad') {
-					var p = _v2.a;
-					var x = _v2.b;
-					return A2($elm$parser$Parser$Advanced$Bad, p, x);
-				} else {
-					var p1 = _v2.a;
-					var a = _v2.b;
-					var s1 = _v2.c;
-					var _v3 = parseB(s1);
-					if (_v3.$ === 'Bad') {
-						var p2 = _v3.a;
-						var x = _v3.b;
-						return A2($elm$parser$Parser$Advanced$Bad, p1 || p2, x);
-					} else {
-						var p2 = _v3.a;
-						var b = _v3.b;
-						var s2 = _v3.c;
-						return A3(
-							$elm$parser$Parser$Advanced$Good,
-							p1 || p2,
-							A2(func, a, b),
-							s2);
-					}
-				}
-			});
-	});
-var $elm$parser$Parser$Advanced$keeper = F2(
-	function (parseFunc, parseArg) {
-		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$apL, parseFunc, parseArg);
-	});
-var $elm$parser$Parser$keeper = $elm$parser$Parser$Advanced$keeper;
-var $elm$parser$Parser$Advanced$Empty = {$: 'Empty'};
-var $elm$parser$Parser$Advanced$Append = F2(
-	function (a, b) {
-		return {$: 'Append', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$oneOfHelp = F3(
-	function (s0, bag, parsers) {
-		oneOfHelp:
-		while (true) {
-			if (!parsers.b) {
-				return A2($elm$parser$Parser$Advanced$Bad, false, bag);
-			} else {
-				var parse = parsers.a.a;
-				var remainingParsers = parsers.b;
-				var _v1 = parse(s0);
-				if (_v1.$ === 'Good') {
-					var step = _v1;
-					return step;
-				} else {
-					var step = _v1;
-					var p = step.a;
-					var x = step.b;
-					if (p) {
-						return step;
-					} else {
-						var $temp$s0 = s0,
-							$temp$bag = A2($elm$parser$Parser$Advanced$Append, bag, x),
-							$temp$parsers = remainingParsers;
-						s0 = $temp$s0;
-						bag = $temp$bag;
-						parsers = $temp$parsers;
-						continue oneOfHelp;
-					}
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$oneOf = function (parsers) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return A3($elm$parser$Parser$Advanced$oneOfHelp, s, $elm$parser$Parser$Advanced$Empty, parsers);
-		});
-};
-var $elm$parser$Parser$oneOf = $elm$parser$Parser$Advanced$oneOf;
-var $elm$core$Tuple$pair = F2(
-	function (a, b) {
-		return _Utils_Tuple2(a, b);
-	});
-var $elm$parser$Parser$Problem = function (a) {
-	return {$: 'Problem', a: a};
-};
-var $elm$parser$Parser$Advanced$AddRight = F2(
-	function (a, b) {
-		return {$: 'AddRight', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$DeadEnd = F4(
-	function (row, col, problem, contextStack) {
-		return {col: col, contextStack: contextStack, problem: problem, row: row};
-	});
-var $elm$parser$Parser$Advanced$fromState = F2(
-	function (s, x) {
-		return A2(
-			$elm$parser$Parser$Advanced$AddRight,
-			$elm$parser$Parser$Advanced$Empty,
-			A4($elm$parser$Parser$Advanced$DeadEnd, s.row, s.col, x, s.context));
-	});
-var $elm$parser$Parser$Advanced$problem = function (x) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return A2(
-				$elm$parser$Parser$Advanced$Bad,
-				false,
-				A2($elm$parser$Parser$Advanced$fromState, s, x));
-		});
-};
-var $elm$parser$Parser$problem = function (msg) {
-	return $elm$parser$Parser$Advanced$problem(
-		$elm$parser$Parser$Problem(msg));
-};
-var $Punie$elm_parser_extras$Parser$Expression$splitOp = F2(
-	function (operator, ops) {
-		var rassoc = ops.rassoc;
-		var lassoc = ops.lassoc;
-		var nassoc = ops.nassoc;
-		var prefix = ops.prefix;
-		var postfix = ops.postfix;
-		switch (operator.$) {
-			case 'Infix':
-				switch (operator.b.$) {
-					case 'AssocNone':
-						var op = operator.a;
-						var _v1 = operator.b;
-						return _Utils_update(
-							ops,
-							{
-								nassoc: A2($elm$core$List$cons, op, ops.nassoc)
-							});
-					case 'AssocLeft':
-						var op = operator.a;
-						var _v2 = operator.b;
-						return _Utils_update(
-							ops,
-							{
-								lassoc: A2($elm$core$List$cons, op, ops.lassoc)
-							});
-					default:
-						var op = operator.a;
-						var _v3 = operator.b;
-						return _Utils_update(
-							ops,
-							{
-								rassoc: A2($elm$core$List$cons, op, ops.rassoc)
-							});
-				}
-			case 'Prefix':
-				var op = operator.a;
-				return _Utils_update(
-					ops,
-					{
-						prefix: A2($elm$core$List$cons, op, ops.prefix)
-					});
-			default:
-				var op = operator.a;
-				return _Utils_update(
-					ops,
-					{
-						postfix: A2($elm$core$List$cons, op, ops.postfix)
-					});
-		}
-	});
-var $elm$parser$Parser$Advanced$succeed = function (a) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return A3($elm$parser$Parser$Advanced$Good, false, a, s);
-		});
-};
-var $elm$parser$Parser$succeed = $elm$parser$Parser$Advanced$succeed;
-var $Punie$elm_parser_extras$Parser$Expression$makeParser = F2(
-	function (ops, term) {
-		var ambiguous = F2(
-			function (assoc, op) {
-				return $elm$parser$Parser$backtrackable(
-					A2(
-						$elm$parser$Parser$andThen,
-						function (_v3) {
-							return $elm$parser$Parser$problem('ambiguous use of a ' + (assoc + ' associative operator'));
-						},
-						op));
-			});
-		var _v0 = A3($elm$core$List$foldr, $Punie$elm_parser_extras$Parser$Expression$splitOp, $Punie$elm_parser_extras$Parser$Expression$initOps, ops);
-		var rassoc = _v0.rassoc;
-		var lassoc = _v0.lassoc;
-		var nassoc = _v0.nassoc;
-		var prefix = _v0.prefix;
-		var postfix = _v0.postfix;
-		var lassocOp = $elm$parser$Parser$oneOf(lassoc);
-		var ambiguousLeft = A2(ambiguous, 'left', lassocOp);
-		var nassocOp = $elm$parser$Parser$oneOf(nassoc);
-		var ambiguousNon = A2(ambiguous, 'non', nassocOp);
-		var postfixOp = $elm$parser$Parser$oneOf(postfix);
-		var postfixP = $elm$parser$Parser$oneOf(
-			_List_fromArray(
-				[
-					postfixOp,
-					$elm$parser$Parser$succeed($elm$core$Basics$identity)
-				]));
-		var prefixOp = $elm$parser$Parser$oneOf(prefix);
-		var prefixP = $elm$parser$Parser$oneOf(
-			_List_fromArray(
-				[
-					prefixOp,
-					$elm$parser$Parser$succeed($elm$core$Basics$identity)
-				]));
-		var termP = A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					$elm$parser$Parser$succeed(
-						F3(
-							function (pre, x, post) {
-								return post(
-									pre(x));
-							})),
-					prefixP),
-				term),
-			postfixP);
-		var rassocOp = $elm$parser$Parser$oneOf(rassoc);
-		var ambiguousRight = A2(ambiguous, 'right', rassocOp);
-		var lassocP = function (x) {
-			return $elm$parser$Parser$oneOf(
-				_List_fromArray(
-					[
-						A2(
-						$elm$parser$Parser$andThen,
-						function (_v2) {
-							var f = _v2.a;
-							var y = _v2.b;
-							return lassocP1(
-								A2(f, x, y));
-						},
-						A2(
-							$elm$parser$Parser$keeper,
-							A2(
-								$elm$parser$Parser$keeper,
-								$elm$parser$Parser$succeed($elm$core$Tuple$pair),
-								lassocOp),
-							termP)),
-						ambiguousRight,
-						ambiguousNon
-					]));
-		};
-		var lassocP1 = function (x) {
-			return $elm$parser$Parser$oneOf(
-				_List_fromArray(
-					[
-						lassocP(x),
-						$elm$parser$Parser$succeed(x)
-					]));
-		};
-		var nassocP = function (x) {
-			return A2(
-				$elm$parser$Parser$andThen,
-				function (_v1) {
-					var f = _v1.a;
-					var y = _v1.b;
-					return $elm$parser$Parser$oneOf(
-						_List_fromArray(
-							[
-								ambiguousRight,
-								ambiguousLeft,
-								ambiguousNon,
-								$elm$parser$Parser$succeed(
-								A2(f, x, y))
-							]));
-				},
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$keeper,
-						$elm$parser$Parser$succeed($elm$core$Tuple$pair),
-						nassocOp),
-					termP));
-		};
-		var rassocP = function (x) {
-			return $elm$parser$Parser$oneOf(
-				_List_fromArray(
-					[
-						A2(
-						$elm$parser$Parser$keeper,
-						A2(
-							$elm$parser$Parser$keeper,
-							$elm$parser$Parser$succeed(
-								F2(
-									function (f, y) {
-										return A2(f, x, y);
-									})),
-							rassocOp),
-						A2($elm$parser$Parser$andThen, rassocP1, termP)),
-						ambiguousLeft,
-						ambiguousNon
-					]));
-		};
-		var rassocP1 = function (x) {
-			return $elm$parser$Parser$oneOf(
-				_List_fromArray(
-					[
-						rassocP(x),
-						$elm$parser$Parser$succeed(x)
-					]));
-		};
-		return A2(
-			$elm$parser$Parser$andThen,
-			function (x) {
-				return $elm$parser$Parser$oneOf(
-					_List_fromArray(
-						[
-							rassocP(x),
-							lassocP(x),
-							nassocP(x),
-							$elm$parser$Parser$succeed(x)
-						]));
-			},
-			termP);
-	});
-var $Punie$elm_parser_extras$Parser$Expression$buildExpressionParser = F2(
-	function (operators, simpleExpr) {
-		return A3($elm$core$List$foldl, $Punie$elm_parser_extras$Parser$Expression$makeParser, simpleExpr, operators);
-	});
-var $elm$core$Basics$always = F2(
-	function (a, _v0) {
-		return a;
-	});
-var $elm$parser$Parser$Advanced$ignorer = F2(
-	function (keepParser, ignoreParser) {
-		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$always, keepParser, ignoreParser);
-	});
-var $elm$parser$Parser$ignorer = $elm$parser$Parser$Advanced$ignorer;
-var $elm$parser$Parser$ExpectingInt = {$: 'ExpectingInt'};
-var $elm$parser$Parser$Advanced$consumeBase = _Parser_consumeBase;
-var $elm$parser$Parser$Advanced$consumeBase16 = _Parser_consumeBase16;
-var $elm$parser$Parser$Advanced$bumpOffset = F2(
-	function (newOffset, s) {
-		return {col: s.col + (newOffset - s.offset), context: s.context, indent: s.indent, offset: newOffset, row: s.row, src: s.src};
-	});
-var $elm$parser$Parser$Advanced$chompBase10 = _Parser_chompBase10;
-var $elm$parser$Parser$Advanced$isAsciiCode = _Parser_isAsciiCode;
-var $elm$parser$Parser$Advanced$consumeExp = F2(
-	function (offset, src) {
-		if (A3($elm$parser$Parser$Advanced$isAsciiCode, 101, offset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 69, offset, src)) {
-			var eOffset = offset + 1;
-			var expOffset = (A3($elm$parser$Parser$Advanced$isAsciiCode, 43, eOffset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 45, eOffset, src)) ? (eOffset + 1) : eOffset;
-			var newOffset = A2($elm$parser$Parser$Advanced$chompBase10, expOffset, src);
-			return _Utils_eq(expOffset, newOffset) ? (-newOffset) : newOffset;
-		} else {
-			return offset;
-		}
-	});
-var $elm$parser$Parser$Advanced$consumeDotAndExp = F2(
-	function (offset, src) {
-		return A3($elm$parser$Parser$Advanced$isAsciiCode, 46, offset, src) ? A2(
-			$elm$parser$Parser$Advanced$consumeExp,
-			A2($elm$parser$Parser$Advanced$chompBase10, offset + 1, src),
-			src) : A2($elm$parser$Parser$Advanced$consumeExp, offset, src);
-	});
-var $elm$parser$Parser$Advanced$finalizeInt = F5(
-	function (invalid, handler, startOffset, _v0, s) {
-		var endOffset = _v0.a;
-		var n = _v0.b;
-		if (handler.$ === 'Err') {
-			var x = handler.a;
-			return A2(
-				$elm$parser$Parser$Advanced$Bad,
-				true,
-				A2($elm$parser$Parser$Advanced$fromState, s, x));
-		} else {
-			var toValue = handler.a;
-			return _Utils_eq(startOffset, endOffset) ? A2(
-				$elm$parser$Parser$Advanced$Bad,
-				_Utils_cmp(s.offset, startOffset) < 0,
-				A2($elm$parser$Parser$Advanced$fromState, s, invalid)) : A3(
-				$elm$parser$Parser$Advanced$Good,
-				true,
-				toValue(n),
-				A2($elm$parser$Parser$Advanced$bumpOffset, endOffset, s));
-		}
-	});
-var $elm$parser$Parser$Advanced$fromInfo = F4(
-	function (row, col, x, context) {
-		return A2(
-			$elm$parser$Parser$Advanced$AddRight,
-			$elm$parser$Parser$Advanced$Empty,
-			A4($elm$parser$Parser$Advanced$DeadEnd, row, col, x, context));
-	});
-var $elm$core$String$toFloat = _String_toFloat;
-var $elm$parser$Parser$Advanced$finalizeFloat = F6(
-	function (invalid, expecting, intSettings, floatSettings, intPair, s) {
-		var intOffset = intPair.a;
-		var floatOffset = A2($elm$parser$Parser$Advanced$consumeDotAndExp, intOffset, s.src);
-		if (floatOffset < 0) {
-			return A2(
-				$elm$parser$Parser$Advanced$Bad,
-				true,
-				A4($elm$parser$Parser$Advanced$fromInfo, s.row, s.col - (floatOffset + s.offset), invalid, s.context));
-		} else {
-			if (_Utils_eq(s.offset, floatOffset)) {
-				return A2(
-					$elm$parser$Parser$Advanced$Bad,
-					false,
-					A2($elm$parser$Parser$Advanced$fromState, s, expecting));
-			} else {
-				if (_Utils_eq(intOffset, floatOffset)) {
-					return A5($elm$parser$Parser$Advanced$finalizeInt, invalid, intSettings, s.offset, intPair, s);
-				} else {
-					if (floatSettings.$ === 'Err') {
-						var x = floatSettings.a;
-						return A2(
-							$elm$parser$Parser$Advanced$Bad,
-							true,
-							A2($elm$parser$Parser$Advanced$fromState, s, invalid));
-					} else {
-						var toValue = floatSettings.a;
-						var _v1 = $elm$core$String$toFloat(
-							A3($elm$core$String$slice, s.offset, floatOffset, s.src));
-						if (_v1.$ === 'Nothing') {
-							return A2(
-								$elm$parser$Parser$Advanced$Bad,
-								true,
-								A2($elm$parser$Parser$Advanced$fromState, s, invalid));
-						} else {
-							var n = _v1.a;
-							return A3(
-								$elm$parser$Parser$Advanced$Good,
-								true,
-								toValue(n),
-								A2($elm$parser$Parser$Advanced$bumpOffset, floatOffset, s));
-						}
-					}
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$number = function (c) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			if (A3($elm$parser$Parser$Advanced$isAsciiCode, 48, s.offset, s.src)) {
-				var zeroOffset = s.offset + 1;
-				var baseOffset = zeroOffset + 1;
-				return A3($elm$parser$Parser$Advanced$isAsciiCode, 120, zeroOffset, s.src) ? A5(
-					$elm$parser$Parser$Advanced$finalizeInt,
-					c.invalid,
-					c.hex,
-					baseOffset,
-					A2($elm$parser$Parser$Advanced$consumeBase16, baseOffset, s.src),
-					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 111, zeroOffset, s.src) ? A5(
-					$elm$parser$Parser$Advanced$finalizeInt,
-					c.invalid,
-					c.octal,
-					baseOffset,
-					A3($elm$parser$Parser$Advanced$consumeBase, 8, baseOffset, s.src),
-					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 98, zeroOffset, s.src) ? A5(
-					$elm$parser$Parser$Advanced$finalizeInt,
-					c.invalid,
-					c.binary,
-					baseOffset,
-					A3($elm$parser$Parser$Advanced$consumeBase, 2, baseOffset, s.src),
-					s) : A6(
-					$elm$parser$Parser$Advanced$finalizeFloat,
-					c.invalid,
-					c.expecting,
-					c._int,
-					c._float,
-					_Utils_Tuple2(zeroOffset, 0),
-					s)));
-			} else {
-				return A6(
-					$elm$parser$Parser$Advanced$finalizeFloat,
-					c.invalid,
-					c.expecting,
-					c._int,
-					c._float,
-					A3($elm$parser$Parser$Advanced$consumeBase, 10, s.offset, s.src),
-					s);
-			}
-		});
-};
-var $elm$parser$Parser$Advanced$int = F2(
-	function (expecting, invalid) {
-		return $elm$parser$Parser$Advanced$number(
-			{
-				binary: $elm$core$Result$Err(invalid),
-				expecting: expecting,
-				_float: $elm$core$Result$Err(invalid),
-				hex: $elm$core$Result$Err(invalid),
-				_int: $elm$core$Result$Ok($elm$core$Basics$identity),
-				invalid: invalid,
-				octal: $elm$core$Result$Err(invalid)
-			});
-	});
-var $elm$parser$Parser$int = A2($elm$parser$Parser$Advanced$int, $elm$parser$Parser$ExpectingInt, $elm$parser$Parser$ExpectingInt);
-var $elm$parser$Parser$Advanced$isSubChar = _Parser_isSubChar;
-var $elm$parser$Parser$Advanced$chompWhileHelp = F5(
-	function (isGood, offset, row, col, s0) {
-		chompWhileHelp:
-		while (true) {
-			var newOffset = A3($elm$parser$Parser$Advanced$isSubChar, isGood, offset, s0.src);
-			if (_Utils_eq(newOffset, -1)) {
-				return A3(
-					$elm$parser$Parser$Advanced$Good,
-					_Utils_cmp(s0.offset, offset) < 0,
-					_Utils_Tuple0,
-					{col: col, context: s0.context, indent: s0.indent, offset: offset, row: row, src: s0.src});
-			} else {
-				if (_Utils_eq(newOffset, -2)) {
-					var $temp$isGood = isGood,
-						$temp$offset = offset + 1,
-						$temp$row = row + 1,
-						$temp$col = 1,
-						$temp$s0 = s0;
-					isGood = $temp$isGood;
-					offset = $temp$offset;
-					row = $temp$row;
-					col = $temp$col;
-					s0 = $temp$s0;
-					continue chompWhileHelp;
-				} else {
-					var $temp$isGood = isGood,
-						$temp$offset = newOffset,
-						$temp$row = row,
-						$temp$col = col + 1,
-						$temp$s0 = s0;
-					isGood = $temp$isGood;
-					offset = $temp$offset;
-					row = $temp$row;
-					col = $temp$col;
-					s0 = $temp$s0;
-					continue chompWhileHelp;
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$chompWhile = function (isGood) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return A5($elm$parser$Parser$Advanced$chompWhileHelp, isGood, s.offset, s.row, s.col, s);
-		});
-};
-var $elm$parser$Parser$Advanced$spaces = $elm$parser$Parser$Advanced$chompWhile(
-	function (c) {
-		return _Utils_eq(
-			c,
-			_Utils_chr(' ')) || (_Utils_eq(
-			c,
-			_Utils_chr('\n')) || _Utils_eq(
-			c,
-			_Utils_chr('\r')));
-	});
-var $elm$parser$Parser$spaces = $elm$parser$Parser$Advanced$spaces;
-var $elm$parser$Parser$ExpectingSymbol = function (a) {
-	return {$: 'ExpectingSymbol', a: a};
-};
-var $elm$parser$Parser$Advanced$Token = F2(
-	function (a, b) {
-		return {$: 'Token', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$isSubString = _Parser_isSubString;
-var $elm$parser$Parser$Advanced$token = function (_v0) {
-	var str = _v0.a;
-	var expecting = _v0.b;
-	var progress = !$elm$core$String$isEmpty(str);
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var _v1 = A5($elm$parser$Parser$Advanced$isSubString, str, s.offset, s.row, s.col, s.src);
-			var newOffset = _v1.a;
-			var newRow = _v1.b;
-			var newCol = _v1.c;
-			return _Utils_eq(newOffset, -1) ? A2(
-				$elm$parser$Parser$Advanced$Bad,
-				false,
-				A2($elm$parser$Parser$Advanced$fromState, s, expecting)) : A3(
-				$elm$parser$Parser$Advanced$Good,
-				progress,
-				_Utils_Tuple0,
-				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
-		});
-};
-var $elm$parser$Parser$Advanced$symbol = $elm$parser$Parser$Advanced$token;
-var $elm$parser$Parser$symbol = function (str) {
-	return $elm$parser$Parser$Advanced$symbol(
-		A2(
-			$elm$parser$Parser$Advanced$Token,
-			str,
-			$elm$parser$Parser$ExpectingSymbol(str)));
-};
-var $author$project$Parser$Delta$dAdd = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed($author$project$Syntax$DAdd),
-		$elm$parser$Parser$symbol('+')),
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$oneOf(
-			_List_fromArray(
-				[
-					$elm$parser$Parser$int,
-					A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$ignorer,
-						$elm$parser$Parser$succeed($elm$core$Basics$negate),
-						$elm$parser$Parser$symbol('-')),
-					$elm$parser$Parser$int)
-				])),
-		$elm$parser$Parser$spaces));
-var $author$project$Syntax$DDelete = function (a) {
-	return {$: 'DDelete', a: a};
-};
-var $elm$parser$Parser$ExpectingKeyword = function (a) {
-	return {$: 'ExpectingKeyword', a: a};
-};
-var $elm$parser$Parser$Advanced$keyword = function (_v0) {
-	var kwd = _v0.a;
-	var expecting = _v0.b;
-	var progress = !$elm$core$String$isEmpty(kwd);
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var _v1 = A5($elm$parser$Parser$Advanced$isSubString, kwd, s.offset, s.row, s.col, s.src);
-			var newOffset = _v1.a;
-			var newRow = _v1.b;
-			var newCol = _v1.c;
-			return (_Utils_eq(newOffset, -1) || (0 <= A3(
-				$elm$parser$Parser$Advanced$isSubChar,
-				function (c) {
-					return $elm$core$Char$isAlphaNum(c) || _Utils_eq(
-						c,
-						_Utils_chr('_'));
-				},
-				newOffset,
-				s.src))) ? A2(
-				$elm$parser$Parser$Advanced$Bad,
-				false,
-				A2($elm$parser$Parser$Advanced$fromState, s, expecting)) : A3(
-				$elm$parser$Parser$Advanced$Good,
-				progress,
-				_Utils_Tuple0,
-				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
-		});
-};
-var $elm$parser$Parser$keyword = function (kwd) {
-	return $elm$parser$Parser$Advanced$keyword(
-		A2(
-			$elm$parser$Parser$Advanced$Token,
-			kwd,
-			$elm$parser$Parser$ExpectingKeyword(kwd)));
-};
-var $author$project$Parser$Delta$dDelete = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$ignorer,
-		A2(
-			$elm$parser$Parser$ignorer,
-			$elm$parser$Parser$succeed($author$project$Syntax$DDelete),
-			$elm$parser$Parser$keyword('delete')),
-		$elm$parser$Parser$spaces),
-	A2($elm$parser$Parser$ignorer, $elm$parser$Parser$int, $elm$parser$Parser$spaces));
-var $author$project$Parser$Delta$dId = A2(
-	$elm$parser$Parser$ignorer,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed($author$project$Syntax$DId),
-		$elm$parser$Parser$keyword('id')),
-	$elm$parser$Parser$spaces);
-var $author$project$Syntax$DInsert = F2(
-	function (a, b) {
-		return {$: 'DInsert', a: a, b: b};
-	});
-var $elm$parser$Parser$Done = function (a) {
-	return {$: 'Done', a: a};
-};
-var $author$project$Syntax$GuiType = {$: 'GuiType'};
-var $elm$parser$Parser$Loop = function (a) {
-	return {$: 'Loop', a: a};
-};
-var $elm$parser$Parser$chompWhile = $elm$parser$Parser$Advanced$chompWhile;
-var $elm$parser$Parser$Advanced$mapChompedString = F2(
-	function (func, _v0) {
-		var parse = _v0.a;
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s0) {
-				var _v1 = parse(s0);
-				if (_v1.$ === 'Bad') {
-					var p = _v1.a;
-					var x = _v1.b;
-					return A2($elm$parser$Parser$Advanced$Bad, p, x);
-				} else {
-					var p = _v1.a;
-					var a = _v1.b;
-					var s1 = _v1.c;
-					return A3(
-						$elm$parser$Parser$Advanced$Good,
-						p,
-						A2(
-							func,
-							A3($elm$core$String$slice, s0.offset, s1.offset, s0.src),
-							a),
-						s1);
-				}
-			});
-	});
-var $elm$parser$Parser$Advanced$getChompedString = function (parser) {
-	return A2($elm$parser$Parser$Advanced$mapChompedString, $elm$core$Basics$always, parser);
-};
-var $elm$parser$Parser$getChompedString = $elm$parser$Parser$Advanced$getChompedString;
-var $author$project$Parser$WhiteSpace$isWhiteSpace = function (c) {
-	return _Utils_eq(
-		c,
-		_Utils_chr(' ')) || (_Utils_eq(
-		c,
-		_Utils_chr('\n')) || (_Utils_eq(
-		c,
-		_Utils_chr('\r')) || _Utils_eq(
-		c,
-		_Utils_chr('\t'))));
-};
-var $author$project$Parser$WhiteSpace$mSpaces = $elm$parser$Parser$getChompedString(
-	$elm$parser$Parser$chompWhile($author$project$Parser$WhiteSpace$isWhiteSpace));
-var $author$project$Parser$Exp$bool_ = $elm$parser$Parser$oneOf(
-	_List_fromArray(
-		[
-			A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$succeed(
-					function (ws) {
-						return A2(
-							$author$project$Syntax$EBool,
-							_List_fromArray(
-								[ws]),
-							true);
-					}),
-				$elm$parser$Parser$keyword('True')),
-			$author$project$Parser$WhiteSpace$mSpaces),
-			A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$succeed(
-					function (ws) {
-						return A2(
-							$author$project$Syntax$EBool,
-							_List_fromArray(
-								[ws]),
-							false);
-					}),
-				$elm$parser$Parser$keyword('False')),
-			$author$project$Parser$WhiteSpace$mSpaces)
-		]));
-var $Punie$elm_parser_extras$Parser$Expression$AssocRight = {$: 'AssocRight'};
-var $Punie$elm_parser_extras$Parser$Expression$Infix = F2(
-	function (a, b) {
-		return {$: 'Infix', a: a, b: b};
-	});
-var $author$project$Parser$Exp$branchOp = _List_fromArray(
-	[
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed(
-						function (ws) {
-							return $author$project$Syntax$BCom(
-								_List_fromArray(
-									[ws]));
-						}),
-					$elm$parser$Parser$symbol('|')),
-				$author$project$Parser$WhiteSpace$mSpaces),
-			$Punie$elm_parser_extras$Parser$Expression$AssocRight)
-		])
-	]);
-var $author$project$Parser$Exp$exprListToECons = F2(
-	function (lType, ls) {
-		if (!ls.b) {
-			return A2($author$project$Syntax$ENil, _List_Nil, $author$project$Syntax$SquareType);
-		} else {
-			var _v1 = ls.a;
-			var wss = _v1.a;
-			var e = _v1.b;
-			var es = ls.b;
-			return A4(
-				$author$project$Syntax$ECons,
-				wss,
-				lType,
-				e,
-				A2($author$project$Parser$Exp$exprListToECons, lType, es));
-		}
-	});
-var $author$project$Parser$Exp$flip = F3(
-	function (f, x, y) {
-		return A2(f, y, x);
-	});
-var $author$project$Parser$Exp$heapListToExp = function (declList) {
-	if (!declList.b) {
-		return _Utils_Tuple2(_List_Nil, _List_Nil);
-	} else {
-		var _v1 = declList.a;
-		var wsHead = _v1.a;
-		var heapHead = _v1.b;
-		var declListTail = declList.b;
-		var _v2 = $author$project$Parser$Exp$heapListToExp(declListTail);
-		var wsTail = _v2.a;
-		var heapTail = _v2.b;
-		return _Utils_Tuple2(
-			_Utils_ap(wsHead, wsTail),
-			_Utils_ap(heapHead, heapTail));
-	}
-};
-var $elm$parser$Parser$ExpectingBinary = {$: 'ExpectingBinary'};
-var $elm$parser$Parser$ExpectingFloat = {$: 'ExpectingFloat'};
-var $elm$parser$Parser$ExpectingHex = {$: 'ExpectingHex'};
-var $elm$parser$Parser$ExpectingNumber = {$: 'ExpectingNumber'};
-var $elm$parser$Parser$ExpectingOctal = {$: 'ExpectingOctal'};
-var $elm$core$Result$fromMaybe = F2(
-	function (err, maybe) {
-		if (maybe.$ === 'Just') {
-			var v = maybe.a;
-			return $elm$core$Result$Ok(v);
-		} else {
-			return $elm$core$Result$Err(err);
-		}
-	});
-var $elm$parser$Parser$number = function (i) {
-	return $elm$parser$Parser$Advanced$number(
-		{
-			binary: A2($elm$core$Result$fromMaybe, $elm$parser$Parser$ExpectingBinary, i.binary),
-			expecting: $elm$parser$Parser$ExpectingNumber,
-			_float: A2($elm$core$Result$fromMaybe, $elm$parser$Parser$ExpectingFloat, i._float),
-			hex: A2($elm$core$Result$fromMaybe, $elm$parser$Parser$ExpectingHex, i.hex),
-			_int: A2($elm$core$Result$fromMaybe, $elm$parser$Parser$ExpectingInt, i._int),
-			invalid: $elm$parser$Parser$ExpectingNumber,
-			octal: A2($elm$core$Result$fromMaybe, $elm$parser$Parser$ExpectingOctal, i.octal)
-		});
-};
-var $author$project$Parser$Exp$int_ = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$keeper,
-		$elm$parser$Parser$succeed(
-			F2(
-				function (n, ws) {
-					return A2(
-						$author$project$Syntax$EInt,
-						_List_fromArray(
-							[ws]),
-						n);
-				})),
-		$elm$parser$Parser$number(
-			{
-				binary: $elm$core$Maybe$Just($elm$core$Basics$identity),
-				_float: $elm$core$Maybe$Nothing,
-				hex: $elm$core$Maybe$Just($elm$core$Basics$identity),
-				_int: $elm$core$Maybe$Just($elm$core$Basics$identity),
-				octal: $elm$core$Maybe$Just($elm$core$Basics$identity)
-			})),
-	$author$project$Parser$WhiteSpace$mSpaces);
-var $elm$parser$Parser$Advanced$lazy = function (thunk) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var _v0 = thunk(_Utils_Tuple0);
-			var parse = _v0.a;
-			return parse(s);
-		});
-};
-var $elm$parser$Parser$lazy = $elm$parser$Parser$Advanced$lazy;
-var $elm$parser$Parser$Advanced$loopHelp = F4(
-	function (p, state, callback, s0) {
-		loopHelp:
-		while (true) {
-			var _v0 = callback(state);
-			var parse = _v0.a;
-			var _v1 = parse(s0);
-			if (_v1.$ === 'Good') {
-				var p1 = _v1.a;
-				var step = _v1.b;
-				var s1 = _v1.c;
-				if (step.$ === 'Loop') {
-					var newState = step.a;
-					var $temp$p = p || p1,
-						$temp$state = newState,
-						$temp$callback = callback,
-						$temp$s0 = s1;
-					p = $temp$p;
-					state = $temp$state;
-					callback = $temp$callback;
-					s0 = $temp$s0;
-					continue loopHelp;
-				} else {
-					var result = step.a;
-					return A3($elm$parser$Parser$Advanced$Good, p || p1, result, s1);
-				}
-			} else {
-				var p1 = _v1.a;
-				var x = _v1.b;
-				return A2($elm$parser$Parser$Advanced$Bad, p || p1, x);
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$loop = F2(
-	function (state, callback) {
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s) {
-				return A4($elm$parser$Parser$Advanced$loopHelp, false, state, callback, s);
-			});
-	});
-var $elm$parser$Parser$Advanced$map = F2(
-	function (func, _v0) {
-		var parse = _v0.a;
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s0) {
-				var _v1 = parse(s0);
-				if (_v1.$ === 'Good') {
-					var p = _v1.a;
-					var a = _v1.b;
-					var s1 = _v1.c;
-					return A3(
-						$elm$parser$Parser$Advanced$Good,
-						p,
-						func(a),
-						s1);
-				} else {
-					var p = _v1.a;
-					var x = _v1.b;
-					return A2($elm$parser$Parser$Advanced$Bad, p, x);
-				}
-			});
-	});
-var $elm$parser$Parser$map = $elm$parser$Parser$Advanced$map;
-var $elm$parser$Parser$Advanced$Done = function (a) {
-	return {$: 'Done', a: a};
-};
-var $elm$parser$Parser$Advanced$Loop = function (a) {
-	return {$: 'Loop', a: a};
-};
-var $elm$parser$Parser$toAdvancedStep = function (step) {
-	if (step.$ === 'Loop') {
-		var s = step.a;
-		return $elm$parser$Parser$Advanced$Loop(s);
-	} else {
-		var a = step.a;
-		return $elm$parser$Parser$Advanced$Done(a);
-	}
-};
-var $elm$parser$Parser$loop = F2(
-	function (state, callback) {
-		return A2(
-			$elm$parser$Parser$Advanced$loop,
-			state,
-			function (s) {
-				return A2(
-					$elm$parser$Parser$map,
-					$elm$parser$Parser$toAdvancedStep,
-					callback(s));
-			});
-	});
-var $author$project$Parser$Exp$nil = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$ignorer,
-			$elm$parser$Parser$succeed(
-				F2(
-					function (ws1, ws2) {
-						return A2(
-							$author$project$Syntax$ENil,
-							_List_fromArray(
-								[ws1, ws2]),
-							$author$project$Syntax$SquareType);
-					})),
-			$elm$parser$Parser$symbol('[')),
-		A2(
-			$elm$parser$Parser$ignorer,
-			$author$project$Parser$WhiteSpace$mSpaces,
-			$elm$parser$Parser$symbol(']'))),
-	$author$project$Parser$WhiteSpace$mSpaces);
-var $author$project$Syntax$And = {$: 'And'};
-var $Punie$elm_parser_extras$Parser$Expression$AssocLeft = {$: 'AssocLeft'};
-var $Punie$elm_parser_extras$Parser$Expression$AssocNone = {$: 'AssocNone'};
-var $author$project$Syntax$Eq = {$: 'Eq'};
-var $author$project$Syntax$Ge = {$: 'Ge'};
-var $author$project$Syntax$Gt = {$: 'Gt'};
-var $author$project$Syntax$Le = {$: 'Le'};
-var $author$project$Syntax$Lt = {$: 'Lt'};
-var $author$project$Syntax$Mod = {$: 'Mod'};
-var $author$project$Syntax$Ne = {$: 'Ne'};
-var $author$project$Syntax$Or = {$: 'Or'};
-var $Punie$elm_parser_extras$Parser$Expression$Prefix = function (a) {
-	return {$: 'Prefix', a: a};
-};
-var $author$project$Syntax$Sub = {$: 'Sub'};
-var $author$project$Parser$Exp$bop = F2(
-	function (s, op) {
-		return A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$succeed(
-					F3(
-						function (ws, e1, e2) {
-							return A4(
-								$author$project$Syntax$EBPrim,
-								_List_fromArray(
-									[ws]),
-								op,
-								e1,
-								e2);
-						})),
-				$elm$parser$Parser$symbol(s)),
-			$author$project$Parser$WhiteSpace$mSpaces);
-	});
-var $author$project$Parser$Exp$cons = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed(
-			function (ws) {
-				return A2(
-					$author$project$Syntax$ECons,
-					_List_fromArray(
-						[ws]),
-					$author$project$Syntax$ConsType);
-			}),
-		$elm$parser$Parser$symbol('::')),
-	$author$project$Parser$WhiteSpace$mSpaces);
-var $author$project$Parser$Exp$uop = F2(
-	function (s, op) {
-		return A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$succeed(
-					F2(
-						function (ws, e) {
-							return A3(
-								$author$project$Syntax$EUPrim,
-								_List_fromArray(
-									[ws]),
-								op,
-								e);
-						})),
-				$elm$parser$Parser$symbol(s)),
-			$author$project$Parser$WhiteSpace$mSpaces);
-	});
-var $author$project$Parser$Exp$operators = _List_fromArray(
-	[
-		_List_fromArray(
-		[
-			$Punie$elm_parser_extras$Parser$Expression$Prefix(
-			$elm$parser$Parser$backtrackable(
-				A2($author$project$Parser$Exp$uop, '-', $author$project$Syntax$Neg)))
-		]),
-		_List_fromArray(
-		[
-			$Punie$elm_parser_extras$Parser$Expression$Prefix(
-			A2($author$project$Parser$Exp$uop, '!', $author$project$Syntax$Not))
-		]),
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2($author$project$Parser$Exp$bop, '%', $author$project$Syntax$Mod),
-			$Punie$elm_parser_extras$Parser$Expression$AssocLeft)
-		]),
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2($author$project$Parser$Exp$bop, '*', $author$project$Syntax$Mul),
-			$Punie$elm_parser_extras$Parser$Expression$AssocLeft)
-		]),
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			$elm$parser$Parser$backtrackable(
-				A2($author$project$Parser$Exp$bop, '+', $author$project$Syntax$Add)),
-			$Punie$elm_parser_extras$Parser$Expression$AssocLeft),
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			$elm$parser$Parser$backtrackable(
-				A2($author$project$Parser$Exp$bop, '-', $author$project$Syntax$Sub)),
-			$Punie$elm_parser_extras$Parser$Expression$AssocLeft)
-		]),
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2($author$project$Parser$Exp$bop, '++', $author$project$Syntax$Cat),
-			$Punie$elm_parser_extras$Parser$Expression$AssocLeft)
-		]),
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			$elm$parser$Parser$backtrackable(
-				A2($author$project$Parser$Exp$bop, '<', $author$project$Syntax$Lt)),
-			$Punie$elm_parser_extras$Parser$Expression$AssocNone),
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			$elm$parser$Parser$backtrackable(
-				A2($author$project$Parser$Exp$bop, '>', $author$project$Syntax$Gt)),
-			$Punie$elm_parser_extras$Parser$Expression$AssocNone)
-		]),
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2($author$project$Parser$Exp$bop, '<=', $author$project$Syntax$Le),
-			$Punie$elm_parser_extras$Parser$Expression$AssocNone),
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2($author$project$Parser$Exp$bop, '>=', $author$project$Syntax$Ge),
-			$Punie$elm_parser_extras$Parser$Expression$AssocNone)
-		]),
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2($author$project$Parser$Exp$bop, '==', $author$project$Syntax$Eq),
-			$Punie$elm_parser_extras$Parser$Expression$AssocNone)
-		]),
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2($author$project$Parser$Exp$bop, '!=', $author$project$Syntax$Ne),
-			$Punie$elm_parser_extras$Parser$Expression$AssocNone)
-		]),
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2($author$project$Parser$Exp$bop, '&&', $author$project$Syntax$And),
-			$Punie$elm_parser_extras$Parser$Expression$AssocLeft)
-		]),
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2($author$project$Parser$Exp$bop, '||', $author$project$Syntax$Or),
-			$Punie$elm_parser_extras$Parser$Expression$AssocLeft)
-		]),
-		_List_fromArray(
-		[
-			A2($Punie$elm_parser_extras$Parser$Expression$Infix, $author$project$Parser$Exp$cons, $Punie$elm_parser_extras$Parser$Expression$AssocRight)
-		])
-	]);
-var $author$project$Syntax$PBool = F2(
-	function (a, b) {
-		return {$: 'PBool', a: a, b: b};
-	});
-var $author$project$Parser$Pattern$pBool = $elm$parser$Parser$oneOf(
-	_List_fromArray(
-		[
-			A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$succeed(
-					function (ws) {
-						return A2(
-							$author$project$Syntax$PBool,
-							_List_fromArray(
-								[ws]),
-							true);
-					}),
-				$elm$parser$Parser$keyword('True')),
-			$author$project$Parser$WhiteSpace$mSpaces),
-			A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$succeed(
-					function (ws) {
-						return A2(
-							$author$project$Syntax$PBool,
-							_List_fromArray(
-								[ws]),
-							false);
-					}),
-				$elm$parser$Parser$keyword('False')),
-			$author$project$Parser$WhiteSpace$mSpaces)
-		]));
-var $author$project$Parser$Pattern$pConsOp = _List_fromArray(
-	[
-		_List_fromArray(
-		[
-			A2(
-			$Punie$elm_parser_extras$Parser$Expression$Infix,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed(
-						function (spc) {
-							return A2(
-								$author$project$Syntax$PCons,
-								_List_fromArray(
-									[spc]),
-								$author$project$Syntax$ConsType);
-						}),
-					$elm$parser$Parser$symbol('::')),
-				$author$project$Parser$WhiteSpace$mSpaces),
-			$Punie$elm_parser_extras$Parser$Expression$AssocRight)
-		])
-	]);
-var $author$project$Syntax$PInt = F2(
-	function (a, b) {
-		return {$: 'PInt', a: a, b: b};
-	});
-var $author$project$Parser$Pattern$pInt = $elm$parser$Parser$oneOf(
-	_List_fromArray(
-		[
-			A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				$elm$parser$Parser$succeed(
-					F2(
-						function (n, ws) {
-							return A2(
-								$author$project$Syntax$PInt,
-								_List_fromArray(
-									[ws]),
-								n);
-						})),
-				$elm$parser$Parser$number(
-					{
-						binary: $elm$core$Maybe$Just($elm$core$Basics$identity),
-						_float: $elm$core$Maybe$Nothing,
-						hex: $elm$core$Maybe$Just($elm$core$Basics$identity),
-						_int: $elm$core$Maybe$Just($elm$core$Basics$identity),
-						octal: $elm$core$Maybe$Just($elm$core$Basics$identity)
-					})),
-			$author$project$Parser$WhiteSpace$mSpaces),
-			A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed(
-						F2(
-							function (n, ws) {
-								return A2(
-									$author$project$Syntax$PInt,
-									_List_fromArray(
-										[ws]),
-									-n);
-							})),
-					$elm$parser$Parser$symbol('-')),
-				$elm$parser$Parser$int),
-			$author$project$Parser$WhiteSpace$mSpaces)
-		]));
-var $author$project$Syntax$PNil = F2(
-	function (a, b) {
-		return {$: 'PNil', a: a, b: b};
-	});
-var $author$project$Parser$Pattern$pNil = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$ignorer,
-			$elm$parser$Parser$succeed(
-				F2(
-					function (ws1, ws2) {
-						return A2(
-							$author$project$Syntax$PNil,
-							_List_fromArray(
-								[ws1, ws2]),
-							$author$project$Syntax$SquareType);
-					})),
-			$elm$parser$Parser$symbol('[')),
-		A2(
-			$elm$parser$Parser$ignorer,
-			$author$project$Parser$WhiteSpace$mSpaces,
-			$elm$parser$Parser$symbol(']'))),
-	$author$project$Parser$WhiteSpace$mSpaces);
-var $author$project$Syntax$POk = function (a) {
-	return {$: 'POk', a: a};
-};
-var $author$project$Parser$Pattern$pOk = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed(
-			function (ws) {
-				return $author$project$Syntax$POk(
-					_List_fromArray(
-						[ws]));
-			}),
-		$elm$parser$Parser$symbol('_')),
-	$author$project$Parser$WhiteSpace$mSpaces);
-var $author$project$Syntax$PChar = F2(
-	function (a, b) {
-		return {$: 'PChar', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$findSubString = _Parser_findSubString;
-var $elm$parser$Parser$Advanced$chompUntil = function (_v0) {
-	var str = _v0.a;
-	var expecting = _v0.b;
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var _v1 = A5($elm$parser$Parser$Advanced$findSubString, str, s.offset, s.row, s.col, s.src);
-			var newOffset = _v1.a;
-			var newRow = _v1.b;
-			var newCol = _v1.c;
-			return _Utils_eq(newOffset, -1) ? A2(
-				$elm$parser$Parser$Advanced$Bad,
-				false,
-				A4($elm$parser$Parser$Advanced$fromInfo, newRow, newCol, expecting, s.context)) : A3(
-				$elm$parser$Parser$Advanced$Good,
-				_Utils_cmp(s.offset, newOffset) < 0,
-				_Utils_Tuple0,
-				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
-		});
-};
-var $elm$parser$Parser$Expecting = function (a) {
-	return {$: 'Expecting', a: a};
-};
-var $elm$parser$Parser$toToken = function (str) {
-	return A2(
-		$elm$parser$Parser$Advanced$Token,
-		str,
-		$elm$parser$Parser$Expecting(str));
-};
-var $elm$parser$Parser$chompUntil = function (str) {
-	return $elm$parser$Parser$Advanced$chompUntil(
-		$elm$parser$Parser$toToken(str));
-};
-var $author$project$Parser$Utils$mstring = $elm$parser$Parser$getChompedString(
-	$elm$parser$Parser$chompUntil('\"'));
-var $author$project$Parser$Utils$repPatWS = F2(
-	function (ws, p) {
-		switch (p.$) {
-			case 'PCons':
-				var lType = p.b;
-				var p1 = p.c;
-				var p2 = p.d;
-				return A4($author$project$Syntax$PCons, ws, lType, p1, p2);
-			case 'PNil':
-				var lType = p.b;
-				return A2($author$project$Syntax$PNil, ws, lType);
-			default:
-				return p;
-		}
-	});
-var $author$project$Parser$Pattern$pString = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$ignorer,
-			$elm$parser$Parser$succeed(
-				F2(
-					function (s, ws) {
-						return A2(
-							$author$project$Parser$Utils$repPatWS,
-							_List_fromArray(
-								[ws]),
-							A3(
-								$elm$core$Basics$composeR,
-								$elm$core$String$toList,
-								A2(
-									$elm$core$List$foldr,
-									F2(
-										function (c, acc) {
-											return A4(
-												$author$project$Syntax$PCons,
-												_List_fromArray(
-													[' ']),
-												$author$project$Syntax$StringType,
-												A2($author$project$Syntax$PChar, _List_Nil, c),
-												acc);
-										}),
-									A2($author$project$Syntax$PNil, _List_Nil, $author$project$Syntax$StringType)),
-								s));
-					})),
-			$elm$parser$Parser$symbol('\"')),
-		A2(
-			$elm$parser$Parser$ignorer,
-			$author$project$Parser$Utils$mstring,
-			$elm$parser$Parser$symbol('\"'))),
-	$author$project$Parser$WhiteSpace$mSpaces);
-var $elm$core$Set$Set_elm_builtin = function (a) {
-	return {$: 'Set_elm_builtin', a: a};
-};
-var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
-var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
-var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
-var $elm$core$Dict$Black = {$: 'Black'};
-var $elm$core$Dict$RBNode_elm_builtin = F5(
-	function (a, b, c, d, e) {
-		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
-	});
-var $elm$core$Dict$Red = {$: 'Red'};
-var $elm$core$Dict$balance = F5(
-	function (color, key, value, left, right) {
-		if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Red')) {
-			var _v1 = right.a;
-			var rK = right.b;
-			var rV = right.c;
-			var rLeft = right.d;
-			var rRight = right.e;
-			if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
-				var _v3 = left.a;
-				var lK = left.b;
-				var lV = left.c;
-				var lLeft = left.d;
-				var lRight = left.e;
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					$elm$core$Dict$Red,
-					key,
-					value,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, lK, lV, lLeft, lRight),
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rLeft, rRight));
-			} else {
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					color,
-					rK,
-					rV,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, left, rLeft),
-					rRight);
-			}
-		} else {
-			if ((((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) && (left.d.$ === 'RBNode_elm_builtin')) && (left.d.a.$ === 'Red')) {
-				var _v5 = left.a;
-				var lK = left.b;
-				var lV = left.c;
-				var _v6 = left.d;
-				var _v7 = _v6.a;
-				var llK = _v6.b;
-				var llV = _v6.c;
-				var llLeft = _v6.d;
-				var llRight = _v6.e;
-				var lRight = left.e;
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					$elm$core$Dict$Red,
-					lK,
-					lV,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, lRight, right));
-			} else {
-				return A5($elm$core$Dict$RBNode_elm_builtin, color, key, value, left, right);
-			}
-		}
-	});
-var $elm$core$Basics$compare = _Utils_compare;
-var $elm$core$Dict$insertHelp = F3(
-	function (key, value, dict) {
-		if (dict.$ === 'RBEmpty_elm_builtin') {
-			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
-		} else {
-			var nColor = dict.a;
-			var nKey = dict.b;
-			var nValue = dict.c;
-			var nLeft = dict.d;
-			var nRight = dict.e;
-			var _v1 = A2($elm$core$Basics$compare, key, nKey);
-			switch (_v1.$) {
-				case 'LT':
-					return A5(
-						$elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						A3($elm$core$Dict$insertHelp, key, value, nLeft),
-						nRight);
-				case 'EQ':
-					return A5($elm$core$Dict$RBNode_elm_builtin, nColor, nKey, value, nLeft, nRight);
-				default:
-					return A5(
-						$elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						nLeft,
-						A3($elm$core$Dict$insertHelp, key, value, nRight));
-			}
-		}
-	});
-var $elm$core$Dict$insert = F3(
-	function (key, value, dict) {
-		var _v0 = A3($elm$core$Dict$insertHelp, key, value, dict);
-		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
-			var _v1 = _v0.a;
-			var k = _v0.b;
-			var v = _v0.c;
-			var l = _v0.d;
-			var r = _v0.e;
-			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
-		} else {
-			var x = _v0;
-			return x;
-		}
-	});
-var $elm$core$Set$insert = F2(
-	function (key, _v0) {
-		var dict = _v0.a;
-		return $elm$core$Set$Set_elm_builtin(
-			A3($elm$core$Dict$insert, key, _Utils_Tuple0, dict));
-	});
-var $elm$core$Set$fromList = function (list) {
-	return A3($elm$core$List$foldl, $elm$core$Set$insert, $elm$core$Set$empty, list);
-};
-var $elm$parser$Parser$ExpectingVariable = {$: 'ExpectingVariable'};
-var $elm$core$Dict$get = F2(
-	function (targetKey, dict) {
-		get:
-		while (true) {
-			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return $elm$core$Maybe$Nothing;
-			} else {
-				var key = dict.b;
-				var value = dict.c;
-				var left = dict.d;
-				var right = dict.e;
-				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
-				switch (_v1.$) {
-					case 'LT':
-						var $temp$targetKey = targetKey,
-							$temp$dict = left;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-					case 'EQ':
-						return $elm$core$Maybe$Just(value);
-					default:
-						var $temp$targetKey = targetKey,
-							$temp$dict = right;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-				}
-			}
-		}
-	});
-var $elm$core$Dict$member = F2(
-	function (key, dict) {
-		var _v0 = A2($elm$core$Dict$get, key, dict);
-		if (_v0.$ === 'Just') {
-			return true;
-		} else {
-			return false;
-		}
-	});
-var $elm$core$Set$member = F2(
-	function (key, _v0) {
-		var dict = _v0.a;
-		return A2($elm$core$Dict$member, key, dict);
-	});
-var $elm$parser$Parser$Advanced$varHelp = F7(
-	function (isGood, offset, row, col, src, indent, context) {
-		varHelp:
-		while (true) {
-			var newOffset = A3($elm$parser$Parser$Advanced$isSubChar, isGood, offset, src);
-			if (_Utils_eq(newOffset, -1)) {
-				return {col: col, context: context, indent: indent, offset: offset, row: row, src: src};
-			} else {
-				if (_Utils_eq(newOffset, -2)) {
-					var $temp$isGood = isGood,
-						$temp$offset = offset + 1,
-						$temp$row = row + 1,
-						$temp$col = 1,
-						$temp$src = src,
-						$temp$indent = indent,
-						$temp$context = context;
-					isGood = $temp$isGood;
-					offset = $temp$offset;
-					row = $temp$row;
-					col = $temp$col;
-					src = $temp$src;
-					indent = $temp$indent;
-					context = $temp$context;
-					continue varHelp;
-				} else {
-					var $temp$isGood = isGood,
-						$temp$offset = newOffset,
-						$temp$row = row,
-						$temp$col = col + 1,
-						$temp$src = src,
-						$temp$indent = indent,
-						$temp$context = context;
-					isGood = $temp$isGood;
-					offset = $temp$offset;
-					row = $temp$row;
-					col = $temp$col;
-					src = $temp$src;
-					indent = $temp$indent;
-					context = $temp$context;
-					continue varHelp;
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$variable = function (i) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var firstOffset = A3($elm$parser$Parser$Advanced$isSubChar, i.start, s.offset, s.src);
-			if (_Utils_eq(firstOffset, -1)) {
-				return A2(
-					$elm$parser$Parser$Advanced$Bad,
-					false,
-					A2($elm$parser$Parser$Advanced$fromState, s, i.expecting));
-			} else {
-				var s1 = _Utils_eq(firstOffset, -2) ? A7($elm$parser$Parser$Advanced$varHelp, i.inner, s.offset + 1, s.row + 1, 1, s.src, s.indent, s.context) : A7($elm$parser$Parser$Advanced$varHelp, i.inner, firstOffset, s.row, s.col + 1, s.src, s.indent, s.context);
-				var name = A3($elm$core$String$slice, s.offset, s1.offset, s.src);
-				return A2($elm$core$Set$member, name, i.reserved) ? A2(
-					$elm$parser$Parser$Advanced$Bad,
-					false,
-					A2($elm$parser$Parser$Advanced$fromState, s, i.expecting)) : A3($elm$parser$Parser$Advanced$Good, true, name, s1);
-			}
-		});
-};
-var $elm$parser$Parser$variable = function (i) {
-	return $elm$parser$Parser$Advanced$variable(
-		{expecting: $elm$parser$Parser$ExpectingVariable, inner: i.inner, reserved: i.reserved, start: i.start});
-};
-var $author$project$Parser$Utils$varName = $elm$parser$Parser$variable(
-	{
-		inner: function (c) {
-			return $elm$core$Char$isAlphaNum(c) || _Utils_eq(
-				c,
-				_Utils_chr('_'));
-		},
-		reserved: $elm$core$Set$fromList(
-			_List_fromArray(
-				['let', 'in', 'case', 'of', 'id', 'True', 'False', 'Html', 'Gui', 'Event'])),
-		start: $elm$core$Char$isAlpha
-	});
-var $author$project$Parser$Pattern$pVar = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$keeper,
-		$elm$parser$Parser$succeed(
-			F2(
-				function (vn, ws) {
-					return A2(
-						$author$project$Syntax$PVar,
-						_List_fromArray(
-							[ws]),
-						vn);
-				})),
-		$author$project$Parser$Utils$varName),
-	$author$project$Parser$WhiteSpace$mSpaces);
-function $author$project$Parser$Pattern$cyclic$pterm() {
-	return $elm$parser$Parser$oneOf(
-		_List_fromArray(
-			[
-				$author$project$Parser$Pattern$pNil,
-				$author$project$Parser$Pattern$cyclic$pTuple(),
-				$author$project$Parser$Pattern$cyclic$pHtml(),
-				$elm$parser$Parser$backtrackable($author$project$Parser$Pattern$pInt),
-				$author$project$Parser$Pattern$pBool,
-				$author$project$Parser$Pattern$pOk,
-				$author$project$Parser$Pattern$pVar,
-				$author$project$Parser$Pattern$pString,
-				$author$project$Parser$Pattern$cyclic$pGui(),
-				$author$project$Parser$Pattern$cyclic$pEvent()
-			]));
-}
-function $author$project$Parser$Pattern$cyclic$pEvent() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed(
-						F3(
-							function (ws1, p1, p2) {
-								return A4(
-									$author$project$Syntax$PTuple,
-									_List_fromArray(
-										[ws1]),
-									$author$project$Syntax$EventType,
-									p1,
-									p2);
-							})),
-					$elm$parser$Parser$keyword('Event')),
-				$author$project$Parser$WhiteSpace$mSpaces),
-			$elm$parser$Parser$lazy(
-				function (_v8) {
-					return $author$project$Parser$Pattern$cyclic$pattern();
-				})),
-		$elm$parser$Parser$lazy(
-			function (_v9) {
-				return $author$project$Parser$Pattern$cyclic$pattern();
-			}));
-}
-function $author$project$Parser$Pattern$cyclic$pGui() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed(
-						F3(
-							function (ws, p1, p2) {
-								return A4(
-									$author$project$Syntax$PTuple,
-									_List_fromArray(
-										[ws]),
-									$author$project$Syntax$GuiType,
-									p1,
-									p2);
-							})),
-					$elm$parser$Parser$keyword('Gui')),
-				$author$project$Parser$WhiteSpace$mSpaces),
-			$elm$parser$Parser$lazy(
-				function (_v6) {
-					return $author$project$Parser$Pattern$cyclic$pattern();
-				})),
-		$elm$parser$Parser$lazy(
-			function (_v7) {
-				return $author$project$Parser$Pattern$cyclic$pattern();
-			}));
-}
-function $author$project$Parser$Pattern$cyclic$pHtml() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$keeper,
-						A2(
-							$elm$parser$Parser$ignorer,
-							A2(
-								$elm$parser$Parser$ignorer,
-								$elm$parser$Parser$succeed(
-									F5(
-										function (vn1, ws1, vn2, vn3, vn4) {
-											return A5(
-												$author$project$Syntax$PHtml,
-												_List_fromArray(
-													[ws1]),
-												vn1,
-												vn2,
-												vn3,
-												vn4);
-										})),
-								$elm$parser$Parser$keyword('Html')),
-							$elm$parser$Parser$symbol('.')),
-						$author$project$Parser$Utils$varName),
-					$author$project$Parser$WhiteSpace$mSpaces),
-				$elm$parser$Parser$lazy(
-					function (_v3) {
-						return $author$project$Parser$Pattern$cyclic$pattern();
-					})),
-			$elm$parser$Parser$lazy(
-				function (_v4) {
-					return $author$project$Parser$Pattern$cyclic$pattern();
-				})),
-		$elm$parser$Parser$lazy(
-			function (_v5) {
-				return $author$project$Parser$Pattern$cyclic$pattern();
-			}));
-}
-function $author$project$Parser$Pattern$cyclic$pTuple() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$keeper,
-						A2(
-							$elm$parser$Parser$ignorer,
-							$elm$parser$Parser$succeed(
-								F5(
-									function (ws1, vn1, ws2, vn2, ws3) {
-										return A4(
-											$author$project$Syntax$PTuple,
-											_List_fromArray(
-												[ws1, ws2, ws3]),
-											$author$project$Syntax$TupleType,
-											vn1,
-											vn2);
-									})),
-							$elm$parser$Parser$symbol('(')),
-						$author$project$Parser$WhiteSpace$mSpaces),
-					A2(
-						$elm$parser$Parser$ignorer,
-						$elm$parser$Parser$lazy(
-							function (_v1) {
-								return $author$project$Parser$Pattern$cyclic$pattern();
-							}),
-						$elm$parser$Parser$symbol(','))),
-				$author$project$Parser$WhiteSpace$mSpaces),
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$lazy(
-					function (_v2) {
-						return $author$project$Parser$Pattern$cyclic$pattern();
-					}),
-				$elm$parser$Parser$symbol(')'))),
-		$author$project$Parser$WhiteSpace$mSpaces);
-}
-function $author$project$Parser$Pattern$cyclic$pattern() {
-	return A2(
-		$Punie$elm_parser_extras$Parser$Expression$buildExpressionParser,
-		$author$project$Parser$Pattern$pConsOp,
-		$elm$parser$Parser$lazy(
-			function (_v0) {
-				return $author$project$Parser$Pattern$cyclic$pterm();
-			}));
-}
-try {
-	var $author$project$Parser$Pattern$pterm = $author$project$Parser$Pattern$cyclic$pterm();
-	$author$project$Parser$Pattern$cyclic$pterm = function () {
-		return $author$project$Parser$Pattern$pterm;
-	};
-	var $author$project$Parser$Pattern$pEvent = $author$project$Parser$Pattern$cyclic$pEvent();
-	$author$project$Parser$Pattern$cyclic$pEvent = function () {
-		return $author$project$Parser$Pattern$pEvent;
-	};
-	var $author$project$Parser$Pattern$pGui = $author$project$Parser$Pattern$cyclic$pGui();
-	$author$project$Parser$Pattern$cyclic$pGui = function () {
-		return $author$project$Parser$Pattern$pGui;
-	};
-	var $author$project$Parser$Pattern$pHtml = $author$project$Parser$Pattern$cyclic$pHtml();
-	$author$project$Parser$Pattern$cyclic$pHtml = function () {
-		return $author$project$Parser$Pattern$pHtml;
-	};
-	var $author$project$Parser$Pattern$pTuple = $author$project$Parser$Pattern$cyclic$pTuple();
-	$author$project$Parser$Pattern$cyclic$pTuple = function () {
-		return $author$project$Parser$Pattern$pTuple;
-	};
-	var $author$project$Parser$Pattern$pattern = $author$project$Parser$Pattern$cyclic$pattern();
-	$author$project$Parser$Pattern$cyclic$pattern = function () {
-		return $author$project$Parser$Pattern$pattern;
-	};
-} catch ($) {
-	throw 'Some top-level definitions from `Parser.Pattern` are causing infinite recursion:\n\n  ┌─────┐\n  │    pterm\n  │     ↓\n  │    pEvent\n  │     ↓\n  │    pGui\n  │     ↓\n  │    pHtml\n  │     ↓\n  │    pTuple\n  │     ↓\n  │    pattern\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
-var $Punie$elm_parser_extras$Parser$Extras$manyHelp = F2(
-	function (p, vs) {
-		return $elm$parser$Parser$oneOf(
-			_List_fromArray(
-				[
-					A2(
-					$elm$parser$Parser$keeper,
-					$elm$parser$Parser$succeed(
-						function (v) {
-							return $elm$parser$Parser$Loop(
-								A2($elm$core$List$cons, v, vs));
-						}),
-					A2($elm$parser$Parser$ignorer, p, $elm$parser$Parser$spaces)),
-					A2(
-					$elm$parser$Parser$map,
-					function (_v0) {
-						return $elm$parser$Parser$Done(
-							$elm$core$List$reverse(vs));
-					},
-					$elm$parser$Parser$succeed(_Utils_Tuple0))
-				]));
-	});
-var $Punie$elm_parser_extras$Parser$Extras$many = function (p) {
-	return A2(
-		$elm$parser$Parser$loop,
-		_List_Nil,
-		$Punie$elm_parser_extras$Parser$Extras$manyHelp(p));
-};
-var $Punie$elm_parser_extras$Parser$Extras$some = function (p) {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			$elm$parser$Parser$succeed($elm$core$Tuple$pair),
-			A2($elm$parser$Parser$ignorer, p, $elm$parser$Parser$spaces)),
-		$Punie$elm_parser_extras$Parser$Extras$many(p));
-};
-var $author$project$Parser$Exp$string = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$ignorer,
-			$elm$parser$Parser$succeed(
-				F2(
-					function (s, ws) {
-						return A2(
-							$author$project$Parser$Utils$repWS,
-							_List_fromArray(
-								[ws]),
-							A3(
-								$elm$core$Basics$composeR,
-								$elm$core$String$toList,
-								A2(
-									$elm$core$List$foldr,
-									F2(
-										function (c, acc) {
-											return A4(
-												$author$project$Syntax$ECons,
-												_List_fromArray(
-													[' ']),
-												$author$project$Syntax$StringType,
-												A2($author$project$Syntax$EChar, _List_Nil, c),
-												acc);
-										}),
-									A2($author$project$Syntax$ENil, _List_Nil, $author$project$Syntax$StringType)),
-								s));
-					})),
-			$elm$parser$Parser$symbol('\"')),
-		A2(
-			$elm$parser$Parser$ignorer,
-			$author$project$Parser$Utils$mstring,
-			$elm$parser$Parser$symbol('\"'))),
-	$author$project$Parser$WhiteSpace$mSpaces);
-var $author$project$Parser$Exp$var = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$keeper,
-		$elm$parser$Parser$succeed(
-			F2(
-				function (s, ws) {
-					return A3(
-						$author$project$Syntax$EVar,
-						_List_fromArray(
-							[ws]),
-						s,
-						0);
-				})),
-		$author$project$Parser$Utils$varName),
-	$author$project$Parser$WhiteSpace$mSpaces);
-var $author$project$Parser$Exp$letHelper = function (revDeclList) {
-	return $elm$parser$Parser$oneOf(
-		_List_fromArray(
-			[
-				A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$ignorer,
-						$elm$parser$Parser$succeed(
-							F2(
-								function (ws, _v8) {
-									var wss = _v8.a;
-									var elm = _v8.b;
-									return $elm$parser$Parser$Loop(
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple2(
-												A2($elm$core$List$cons, ws, wss),
-												_List_fromArray(
-													[elm])),
-											revDeclList));
-								})),
-						$elm$parser$Parser$symbol(',')),
-					$author$project$Parser$WhiteSpace$mSpaces),
-				$elm$parser$Parser$lazy(
-					function (_v9) {
-						return $author$project$Parser$Exp$cyclic$decl();
-					})),
-				A2(
-				$elm$parser$Parser$map,
-				function (_v10) {
-					return $elm$parser$Parser$Done(
-						$elm$core$List$reverse(revDeclList));
-				},
-				$elm$parser$Parser$succeed(_Utils_Tuple0))
-			]));
-};
-var $author$project$Parser$Exp$listHelper = function (revExps) {
-	return $elm$parser$Parser$oneOf(
-		_List_fromArray(
-			[
-				A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$ignorer,
-						$elm$parser$Parser$succeed(
-							F2(
-								function (ws, e) {
-									return $elm$parser$Parser$Loop(
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple2(
-												_List_fromArray(
-													[ws]),
-												e),
-											revExps));
-								})),
-						$elm$parser$Parser$symbol(',')),
-					$author$project$Parser$WhiteSpace$mSpaces),
-				$elm$parser$Parser$lazy(
-					function (_v5) {
-						return $author$project$Parser$Exp$cyclic$exp();
-					})),
-				A2(
-				$elm$parser$Parser$map,
-				function (_v6) {
-					return $elm$parser$Parser$Done(
-						$elm$core$List$reverse(revExps));
-				},
-				$elm$parser$Parser$succeed(_Utils_Tuple0))
-			]));
-};
-function $author$project$Parser$Exp$cyclic$abs() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$keeper,
-						A2(
-							$elm$parser$Parser$ignorer,
-							$elm$parser$Parser$succeed(
-								F4(
-									function (ws1, varName, ws2, ws3) {
-										return A2(
-											$author$project$Syntax$ELam,
-											_List_fromArray(
-												[ws1, ws2, ws3]),
-											varName);
-									})),
-							$elm$parser$Parser$symbol('\\')),
-						$author$project$Parser$WhiteSpace$mSpaces),
-					$author$project$Parser$Utils$varName),
-				A2(
-					$elm$parser$Parser$ignorer,
-					$author$project$Parser$WhiteSpace$mSpaces,
-					$elm$parser$Parser$symbol('->'))),
-			$author$project$Parser$WhiteSpace$mSpaces),
-		$elm$parser$Parser$lazy(
-			function (_v27) {
-				return $author$project$Parser$Exp$cyclic$exp();
-			}));
-}
-function $author$project$Parser$Exp$cyclic$aexp() {
-	return $elm$parser$Parser$oneOf(
-		_List_fromArray(
-			[
-				$author$project$Parser$Exp$cyclic$html(),
-				$elm$parser$Parser$backtrackable(
-				$author$project$Parser$Exp$cyclic$parens_()),
-				$elm$parser$Parser$backtrackable($author$project$Parser$Exp$int_),
-				$elm$parser$Parser$backtrackable($author$project$Parser$Exp$var),
-				$elm$parser$Parser$lazy(
-				function (_v25) {
-					return $author$project$Parser$Exp$cyclic$abs();
-				}),
-				$elm$parser$Parser$lazy(
-				function (_v26) {
-					return $author$project$Parser$Exp$cyclic$let_();
-				}),
-				$author$project$Parser$Exp$cyclic$caseOf(),
-				$elm$parser$Parser$backtrackable($author$project$Parser$Exp$nil),
-				$elm$parser$Parser$backtrackable(
-				$author$project$Parser$Exp$cyclic$list()),
-				$author$project$Parser$Exp$cyclic$tuple(),
-				$author$project$Parser$Exp$bool_,
-				$author$project$Parser$Exp$string,
-				$author$project$Parser$Exp$cyclic$gui(),
-				$author$project$Parser$Exp$cyclic$event()
-			]));
-}
-function $author$project$Parser$Exp$cyclic$app() {
-	var foldl1 = F2(
-		function (f, _v24) {
-			var x = _v24.a;
-			var xs = _v24.b;
-			return A3(
-				$elm$core$List$foldl,
-				$author$project$Parser$Exp$flip(f),
-				x,
-				xs);
-		});
-	return A2(
-		$elm$parser$Parser$keeper,
-		$elm$parser$Parser$succeed(
-			foldl1($author$project$Syntax$EApp)),
-		$Punie$elm_parser_extras$Parser$Extras$some(
-			$elm$parser$Parser$lazy(
-				function (_v23) {
-					return $author$project$Parser$Exp$cyclic$aexp();
-				})));
-}
-function $author$project$Parser$Exp$cyclic$caseOf() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$ignorer,
-						$elm$parser$Parser$succeed(
-							F3(
-								function (ws1, e, ws2) {
-									return A2(
-										$author$project$Syntax$ECase,
-										_List_fromArray(
-											[ws1, ws2]),
-										e);
-								})),
-						$elm$parser$Parser$keyword('case')),
-					$author$project$Parser$WhiteSpace$mSpaces),
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$lazy(
-						function (_v22) {
-							return $author$project$Parser$Exp$cyclic$exp();
-						}),
-					$elm$parser$Parser$keyword('of'))),
-			$author$project$Parser$WhiteSpace$mSpaces),
-		$author$project$Parser$Exp$cyclic$branch());
-}
-function $author$project$Parser$Exp$cyclic$branch() {
-	return A2(
-		$Punie$elm_parser_extras$Parser$Expression$buildExpressionParser,
-		$author$project$Parser$Exp$branchOp,
-		$author$project$Parser$Exp$cyclic$sinBranch());
-}
-function $author$project$Parser$Exp$cyclic$let_() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$keeper,
-						A2(
-							$elm$parser$Parser$ignorer,
-							$elm$parser$Parser$succeed(
-								F5(
-									function (ws1, _v19, _v20, ws2, e) {
-										var wss1 = _v19.a;
-										var elm = _v19.b;
-										var wss2 = _v20.a;
-										var ls = _v20.b;
-										var wss = _Utils_ap(
-											A2($elm$core$List$cons, ws1, wss1),
-											_Utils_ap(
-												wss2,
-												_List_fromArray(
-													[ws2])));
-										return A3(
-											$author$project$Syntax$ELet,
-											wss,
-											A2($elm$core$List$cons, elm, ls),
-											e);
-									})),
-							$elm$parser$Parser$keyword('let')),
-						$author$project$Parser$WhiteSpace$mSpaces),
-					$author$project$Parser$Exp$cyclic$decl()),
-				A2(
-					$elm$parser$Parser$ignorer,
-					$author$project$Parser$Exp$cyclic$declloop(),
-					$elm$parser$Parser$keyword('in'))),
-			$author$project$Parser$WhiteSpace$mSpaces),
-		$elm$parser$Parser$lazy(
-			function (_v21) {
-				return $author$project$Parser$Exp$cyclic$exp();
-			}));
-}
-function $author$project$Parser$Exp$cyclic$decl() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					$elm$parser$Parser$succeed(
-						F4(
-							function (p, ws1, ws2, e) {
-								return _Utils_Tuple2(
-									_List_fromArray(
-										[ws1, ws2]),
-									_Utils_Tuple2(
-										p,
-										_Utils_Tuple3(
-											_Utils_Tuple2(e, e),
-											$author$project$Syntax$DZero,
-											_Utils_Tuple2($elm$core$Maybe$Nothing, false))));
-							})),
-					$author$project$Parser$Utils$varName),
-				A2(
-					$elm$parser$Parser$ignorer,
-					$author$project$Parser$WhiteSpace$mSpaces,
-					$elm$parser$Parser$symbol('='))),
-			$author$project$Parser$WhiteSpace$mSpaces),
-		$elm$parser$Parser$lazy(
-			function (_v18) {
-				return $author$project$Parser$Exp$cyclic$exp();
-			}));
-}
-function $author$project$Parser$Exp$cyclic$declloop() {
-	return A2(
-		$elm$parser$Parser$map,
-		$author$project$Parser$Exp$heapListToExp,
-		A2($elm$parser$Parser$loop, _List_Nil, $author$project$Parser$Exp$letHelper));
-}
-function $author$project$Parser$Exp$cyclic$event() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed(
-						F3(
-							function (ws, e1, e2) {
-								return A4(
-									$author$project$Syntax$ETuple,
-									_List_fromArray(
-										[ws]),
-									$author$project$Syntax$EventType,
-									e1,
-									e2);
-							})),
-					$elm$parser$Parser$keyword('Event')),
-				$author$project$Parser$WhiteSpace$mSpaces),
-			$author$project$Parser$Exp$string),
-		$elm$parser$Parser$lazy(
-			function (_v17) {
-				return $author$project$Parser$Exp$cyclic$aexp();
-			}));
-}
-function $author$project$Parser$Exp$cyclic$exp() {
-	return A2(
-		$Punie$elm_parser_extras$Parser$Expression$buildExpressionParser,
-		$author$project$Parser$Exp$operators,
-		$elm$parser$Parser$lazy(
-			function (_v16) {
-				return $author$project$Parser$Exp$cyclic$app();
-			}));
-}
-function $author$project$Parser$Exp$cyclic$gui() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed(
-						F3(
-							function (ws, e1, e2) {
-								return A4(
-									$author$project$Syntax$ETuple,
-									_List_fromArray(
-										[ws]),
-									$author$project$Syntax$GuiType,
-									e1,
-									e2);
-							})),
-					$elm$parser$Parser$keyword('Gui')),
-				$author$project$Parser$WhiteSpace$mSpaces),
-			$elm$parser$Parser$lazy(
-				function (_v14) {
-					return $author$project$Parser$Exp$cyclic$aexp();
-				})),
-		$elm$parser$Parser$lazy(
-			function (_v15) {
-				return $author$project$Parser$Exp$cyclic$aexp();
-			}));
-}
-function $author$project$Parser$Exp$cyclic$html() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$keeper,
-						A2(
-							$elm$parser$Parser$ignorer,
-							A2(
-								$elm$parser$Parser$ignorer,
-								$elm$parser$Parser$succeed(
-									F2(
-										function (varName, ws) {
-											return A2(
-												$author$project$Syntax$EHtml,
-												_List_fromArray(
-													[ws]),
-												varName);
-										})),
-								$elm$parser$Parser$keyword('Html')),
-							$elm$parser$Parser$symbol('.')),
-						$author$project$Parser$Utils$varName),
-					$author$project$Parser$WhiteSpace$mSpaces),
-				$elm$parser$Parser$lazy(
-					function (_v11) {
-						return $author$project$Parser$Exp$cyclic$aexp();
-					})),
-			$elm$parser$Parser$lazy(
-				function (_v12) {
-					return $author$project$Parser$Exp$cyclic$aexp();
-				})),
-		$elm$parser$Parser$lazy(
-			function (_v13) {
-				return $author$project$Parser$Exp$cyclic$aexp();
-			}));
-}
-function $author$project$Parser$Exp$cyclic$list() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$ignorer,
-						$elm$parser$Parser$succeed(
-							F4(
-								function (ws1, e1, e2, ws2) {
-									return A4(
-										$author$project$Syntax$ECons,
-										_List_fromArray(
-											[ws1, ws2]),
-										$author$project$Syntax$SquareType,
-										e1,
-										e2);
-								})),
-						$elm$parser$Parser$symbol('[')),
-					$author$project$Parser$WhiteSpace$mSpaces),
-				$elm$parser$Parser$lazy(
-					function (_v7) {
-						return $author$project$Parser$Exp$cyclic$exp();
-					})),
-			A2(
-				$elm$parser$Parser$ignorer,
-				$author$project$Parser$Exp$cyclic$listloop(),
-				$elm$parser$Parser$symbol(']'))),
-		$author$project$Parser$WhiteSpace$mSpaces);
-}
-function $author$project$Parser$Exp$cyclic$listloop() {
-	return A2(
-		$elm$parser$Parser$map,
-		$author$project$Parser$Exp$exprListToECons($author$project$Syntax$SquareType),
-		A2($elm$parser$Parser$loop, _List_Nil, $author$project$Parser$Exp$listHelper));
-}
-function $author$project$Parser$Exp$cyclic$parens_() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed(
-						F3(
-							function (s1, e, s2) {
-								return A2(
-									$author$project$Syntax$EParens,
-									_List_fromArray(
-										[s1, s2]),
-									e);
-							})),
-					$elm$parser$Parser$symbol('(')),
-				$author$project$Parser$WhiteSpace$mSpaces),
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$lazy(
-					function (_v4) {
-						return $author$project$Parser$Exp$cyclic$exp();
-					}),
-				$elm$parser$Parser$symbol(')'))),
-		$author$project$Parser$WhiteSpace$mSpaces);
-}
-function $author$project$Parser$Exp$cyclic$sinBranch() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				$elm$parser$Parser$succeed(
-					F2(
-						function (p, ws) {
-							return A2(
-								$author$project$Syntax$BSin,
-								_List_fromArray(
-									[ws]),
-								p);
-						})),
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$lazy(
-						function (_v2) {
-							return $author$project$Parser$Pattern$pattern;
-						}),
-					$elm$parser$Parser$symbol('->'))),
-			$author$project$Parser$WhiteSpace$mSpaces),
-		$elm$parser$Parser$lazy(
-			function (_v3) {
-				return $author$project$Parser$Exp$cyclic$exp();
-			}));
-}
-function $author$project$Parser$Exp$cyclic$tuple() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$keeper,
-						A2(
-							$elm$parser$Parser$ignorer,
-							$elm$parser$Parser$succeed(
-								F5(
-									function (ws1, e1, ws2, e2, ws3) {
-										return A4(
-											$author$project$Syntax$ETuple,
-											_List_fromArray(
-												[ws1, ws2, ws3]),
-											$author$project$Syntax$TupleType,
-											e1,
-											e2);
-									})),
-							$elm$parser$Parser$symbol('(')),
-						$author$project$Parser$WhiteSpace$mSpaces),
-					A2(
-						$elm$parser$Parser$ignorer,
-						$elm$parser$Parser$lazy(
-							function (_v0) {
-								return $author$project$Parser$Exp$cyclic$exp();
-							}),
-						$elm$parser$Parser$symbol(','))),
-				$author$project$Parser$WhiteSpace$mSpaces),
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$lazy(
-					function (_v1) {
-						return $author$project$Parser$Exp$cyclic$exp();
-					}),
-				$elm$parser$Parser$symbol(')'))),
-		$author$project$Parser$WhiteSpace$mSpaces);
-}
-try {
-	var $author$project$Parser$Exp$abs = $author$project$Parser$Exp$cyclic$abs();
-	$author$project$Parser$Exp$cyclic$abs = function () {
-		return $author$project$Parser$Exp$abs;
-	};
-	var $author$project$Parser$Exp$aexp = $author$project$Parser$Exp$cyclic$aexp();
-	$author$project$Parser$Exp$cyclic$aexp = function () {
-		return $author$project$Parser$Exp$aexp;
-	};
-	var $author$project$Parser$Exp$app = $author$project$Parser$Exp$cyclic$app();
-	$author$project$Parser$Exp$cyclic$app = function () {
-		return $author$project$Parser$Exp$app;
-	};
-	var $author$project$Parser$Exp$caseOf = $author$project$Parser$Exp$cyclic$caseOf();
-	$author$project$Parser$Exp$cyclic$caseOf = function () {
-		return $author$project$Parser$Exp$caseOf;
-	};
-	var $author$project$Parser$Exp$branch = $author$project$Parser$Exp$cyclic$branch();
-	$author$project$Parser$Exp$cyclic$branch = function () {
-		return $author$project$Parser$Exp$branch;
-	};
-	var $author$project$Parser$Exp$let_ = $author$project$Parser$Exp$cyclic$let_();
-	$author$project$Parser$Exp$cyclic$let_ = function () {
-		return $author$project$Parser$Exp$let_;
-	};
-	var $author$project$Parser$Exp$decl = $author$project$Parser$Exp$cyclic$decl();
-	$author$project$Parser$Exp$cyclic$decl = function () {
-		return $author$project$Parser$Exp$decl;
-	};
-	var $author$project$Parser$Exp$declloop = $author$project$Parser$Exp$cyclic$declloop();
-	$author$project$Parser$Exp$cyclic$declloop = function () {
-		return $author$project$Parser$Exp$declloop;
-	};
-	var $author$project$Parser$Exp$event = $author$project$Parser$Exp$cyclic$event();
-	$author$project$Parser$Exp$cyclic$event = function () {
-		return $author$project$Parser$Exp$event;
-	};
-	var $author$project$Parser$Exp$exp = $author$project$Parser$Exp$cyclic$exp();
-	$author$project$Parser$Exp$cyclic$exp = function () {
-		return $author$project$Parser$Exp$exp;
-	};
-	var $author$project$Parser$Exp$gui = $author$project$Parser$Exp$cyclic$gui();
-	$author$project$Parser$Exp$cyclic$gui = function () {
-		return $author$project$Parser$Exp$gui;
-	};
-	var $author$project$Parser$Exp$html = $author$project$Parser$Exp$cyclic$html();
-	$author$project$Parser$Exp$cyclic$html = function () {
-		return $author$project$Parser$Exp$html;
-	};
-	var $author$project$Parser$Exp$list = $author$project$Parser$Exp$cyclic$list();
-	$author$project$Parser$Exp$cyclic$list = function () {
-		return $author$project$Parser$Exp$list;
-	};
-	var $author$project$Parser$Exp$listloop = $author$project$Parser$Exp$cyclic$listloop();
-	$author$project$Parser$Exp$cyclic$listloop = function () {
-		return $author$project$Parser$Exp$listloop;
-	};
-	var $author$project$Parser$Exp$parens_ = $author$project$Parser$Exp$cyclic$parens_();
-	$author$project$Parser$Exp$cyclic$parens_ = function () {
-		return $author$project$Parser$Exp$parens_;
-	};
-	var $author$project$Parser$Exp$sinBranch = $author$project$Parser$Exp$cyclic$sinBranch();
-	$author$project$Parser$Exp$cyclic$sinBranch = function () {
-		return $author$project$Parser$Exp$sinBranch;
-	};
-	var $author$project$Parser$Exp$tuple = $author$project$Parser$Exp$cyclic$tuple();
-	$author$project$Parser$Exp$cyclic$tuple = function () {
-		return $author$project$Parser$Exp$tuple;
-	};
-} catch ($) {
-	throw 'Some top-level definitions from `Parser.Exp` are causing infinite recursion:\n\n  ┌─────┐\n  │    abs\n  │     ↓\n  │    aexp\n  │     ↓\n  │    app\n  │     ↓\n  │    caseOf\n  │     ↓\n  │    branch\n  │     ↓\n  │    let_\n  │     ↓\n  │    decl\n  │     ↓\n  │    declloop\n  │     ↓\n  │    event\n  │     ↓\n  │    exp\n  │     ↓\n  │    gui\n  │     ↓\n  │    html\n  │     ↓\n  │    letHelper\n  │     ↓\n  │    list\n  │     ↓\n  │    listloop\n  │     ↓\n  │    listHelper\n  │     ↓\n  │    parens_\n  │     ↓\n  │    sinBranch\n  │     ↓\n  │    tuple\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
-var $author$project$Parser$Delta$dInsert = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$ignorer,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$succeed($author$project$Syntax$DInsert),
-				$elm$parser$Parser$keyword('insert')),
-			$elm$parser$Parser$spaces),
-		A2($elm$parser$Parser$ignorer, $elm$parser$Parser$int, $elm$parser$Parser$spaces)),
-	A2($elm$parser$Parser$ignorer, $author$project$Parser$Exp$exp, $elm$parser$Parser$spaces));
-var $author$project$Parser$Delta$dNone = A2(
-	$elm$parser$Parser$ignorer,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed($author$project$Syntax$DZero),
-		$elm$parser$Parser$symbol('?')),
-	$elm$parser$Parser$spaces);
-var $author$project$Parser$Utils$diffMemo = F3(
-	function (memo, v1, v2) {
-		var _v0 = A2(
-			$elm$core$Dict$get,
-			_Utils_Tuple2(v1, v2),
-			memo);
-		if (_v0.$ === 'Just') {
-			var result = _v0.a;
-			return _Utils_Tuple2(result, memo);
-		} else {
-			var _v1 = _Utils_Tuple2(v1, v2);
-			if (!_v1.a.b) {
-				var result = _Utils_Tuple2(
-					$elm$core$List$length(v2),
-					A3(
-						$elm$core$List$foldr,
-						function (c) {
-							return A2(
-								$author$project$Syntax$DCons,
-								$elm$core$Maybe$Just(
-									A2($author$project$Syntax$EChar, _List_Nil, c)),
-								$author$project$Syntax$DId);
-						},
-						$author$project$Syntax$DId,
-						v2));
-				return _Utils_Tuple2(
-					result,
-					A3(
-						$elm$core$Dict$insert,
-						_Utils_Tuple2(v1, v2),
-						result,
-						memo));
-			} else {
-				if (!_v1.b.b) {
-					var result = _Utils_Tuple2(
-						$elm$core$List$length(v1),
-						A3(
-							$elm$core$List$foldr,
-							function (_v2) {
-								return A2($author$project$Syntax$DCons, $elm$core$Maybe$Nothing, $author$project$Syntax$DRem);
-							},
-							$author$project$Syntax$DId,
-							v1));
-					return _Utils_Tuple2(
-						result,
-						A3(
-							$elm$core$Dict$insert,
-							_Utils_Tuple2(v1, v2),
-							result,
-							memo));
-				} else {
-					var _v3 = _v1.a;
-					var x = _v3.a;
-					var xs = _v3.b;
-					var _v4 = _v1.b;
-					var y = _v4.a;
-					var ys = _v4.b;
-					if (_Utils_eq(x, y)) {
-						var _v5 = A3($author$project$Parser$Utils$diffMemo, memo, xs, ys);
-						var _v6 = _v5.a;
-						var n = _v6.a;
-						var opList = _v6.b;
-						var updatedMemo = _v5.b;
-						var result = _Utils_Tuple2(
-							n,
-							A3($author$project$Syntax$DCons, $elm$core$Maybe$Nothing, $author$project$Syntax$DId, opList));
-						return _Utils_Tuple2(
-							result,
-							A3(
-								$elm$core$Dict$insert,
-								_Utils_Tuple2(v1, v2),
-								result,
-								updatedMemo));
-					} else {
-						var _v7 = A3($author$project$Parser$Utils$diffMemo, memo, xs, v2);
-						var _v8 = _v7.a;
-						var n1 = _v8.a;
-						var ops1 = _v8.b;
-						var updatedMemo1 = _v7.b;
-						var _v9 = A3($author$project$Parser$Utils$diffMemo, updatedMemo1, v1, ys);
-						var _v10 = _v9.a;
-						var n2 = _v10.a;
-						var ops2 = _v10.b;
-						var updatedMemo2 = _v9.b;
-						var result = (_Utils_cmp(n1, n2) < 0) ? _Utils_Tuple2(
-							1 + n1,
-							A3($author$project$Syntax$DCons, $elm$core$Maybe$Nothing, $author$project$Syntax$DRem, ops1)) : _Utils_Tuple2(
-							1 + n2,
-							A3(
-								$author$project$Syntax$DCons,
-								$elm$core$Maybe$Just(
-									A2($author$project$Syntax$EChar, _List_Nil, y)),
-								$author$project$Syntax$DId,
-								ops2));
-						return _Utils_Tuple2(
-							result,
-							A3(
-								$elm$core$Dict$insert,
-								_Utils_Tuple2(v1, v2),
-								result,
-								updatedMemo2));
-					}
-				}
-			}
-		}
-	});
-var $author$project$Parser$Utils$diff = F2(
-	function (v1, v2) {
-		var memo = $elm$core$Dict$empty;
-		return A3($author$project$Parser$Utils$diffMemo, memo, v1, v2).a;
-	});
-var $elm$core$Tuple$second = function (_v0) {
-	var y = _v0.b;
-	return y;
-};
-var $author$project$Parser$Delta$strDiff = F2(
-	function (s1, s2) {
-		return A2(
-			$author$project$Parser$Utils$diff,
-			$elm$core$String$toList(s1),
-			$elm$core$String$toList(s2)).b;
-	});
-var $author$project$Parser$Delta$dString = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$ignorer,
-			$elm$parser$Parser$succeed($author$project$Parser$Delta$strDiff),
-			$elm$parser$Parser$symbol('\"')),
-		A2(
-			$elm$parser$Parser$ignorer,
-			$author$project$Parser$Utils$mstring,
-			$elm$parser$Parser$symbol('\"=>\"'))),
-	A2(
-		$elm$parser$Parser$ignorer,
-		$author$project$Parser$Utils$mstring,
-		$elm$parser$Parser$symbol('\"')));
-var $author$project$Parser$Delta$dCom = A2(
-	$elm$parser$Parser$ignorer,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed($author$project$Syntax$DCom),
-		$elm$parser$Parser$symbol(';')),
-	$elm$parser$Parser$spaces);
-var $author$project$Parser$Delta$dCons = A2(
-	$elm$parser$Parser$ignorer,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed(
-			$author$project$Syntax$DCons($elm$core$Maybe$Nothing)),
-		$elm$parser$Parser$symbol('::')),
-	$elm$parser$Parser$spaces);
-var $author$project$Parser$Delta$operators = _List_fromArray(
-	[
-		_List_fromArray(
-		[
-			A2($Punie$elm_parser_extras$Parser$Expression$Infix, $author$project$Parser$Delta$dCons, $Punie$elm_parser_extras$Parser$Expression$AssocRight)
-		]),
-		_List_fromArray(
-		[
-			A2($Punie$elm_parser_extras$Parser$Expression$Infix, $author$project$Parser$Delta$dCom, $Punie$elm_parser_extras$Parser$Expression$AssocRight)
-		])
-	]);
-function $author$project$Parser$Delta$cyclic$temp() {
-	return $elm$parser$Parser$oneOf(
-		_List_fromArray(
-			[
-				$author$project$Parser$Delta$dId,
-				$author$project$Parser$Delta$dAdd,
-				$elm$parser$Parser$backtrackable(
-				$author$project$Parser$Delta$cyclic$dParens()),
-				$elm$parser$Parser$backtrackable(
-				$author$project$Parser$Delta$cyclic$dTuple()),
-				$author$project$Parser$Delta$cyclic$dLam(),
-				$author$project$Parser$Delta$dNone,
-				$author$project$Parser$Delta$dInsert,
-				$author$project$Parser$Delta$dDelete,
-				$author$project$Parser$Delta$cyclic$dHtml(),
-				$author$project$Parser$Delta$dString
-			]));
-}
-function $author$project$Parser$Delta$cyclic$dHtml() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					A2(
-						$elm$parser$Parser$ignorer,
-						A2(
-							$elm$parser$Parser$ignorer,
-							$elm$parser$Parser$succeed($author$project$Syntax$DHtml),
-							$elm$parser$Parser$keyword('Html')),
-						$elm$parser$Parser$symbol('.')),
-					A2($elm$parser$Parser$ignorer, $author$project$Parser$Utils$varName, $elm$parser$Parser$spaces)),
-				$elm$parser$Parser$lazy(
-					function (_v5) {
-						return $author$project$Parser$Delta$cyclic$delta();
-					})),
-			$elm$parser$Parser$lazy(
-				function (_v6) {
-					return $author$project$Parser$Delta$cyclic$delta();
-				})),
-		$elm$parser$Parser$lazy(
-			function (_v7) {
-				return $author$project$Parser$Delta$cyclic$delta();
-			}));
-}
-function $author$project$Parser$Delta$cyclic$dLam() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$ignorer,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed($author$project$Syntax$DLam),
-					$elm$parser$Parser$symbol('\\')),
-				$elm$parser$Parser$spaces),
-			A2(
-				$elm$parser$Parser$ignorer,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$author$project$Parser$Exp$exp,
-					$elm$parser$Parser$symbol('->')),
-				$elm$parser$Parser$spaces)),
-		$elm$parser$Parser$lazy(
-			function (_v4) {
-				return $author$project$Parser$Delta$cyclic$delta();
-			}));
-}
-function $author$project$Parser$Delta$cyclic$dParens() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$ignorer,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$succeed($elm$core$Basics$identity),
-				$elm$parser$Parser$symbol('(')),
-			$elm$parser$Parser$spaces),
-		A2(
-			$elm$parser$Parser$ignorer,
-			A2(
-				$elm$parser$Parser$ignorer,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$lazy(
-						function (_v3) {
-							return $author$project$Parser$Delta$cyclic$delta();
-						}),
-					$elm$parser$Parser$spaces),
-				$elm$parser$Parser$symbol(')')),
-			$elm$parser$Parser$spaces));
-}
-function $author$project$Parser$Delta$cyclic$dTuple() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$ignorer,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed($author$project$Syntax$DTuple),
-					$elm$parser$Parser$symbol('(')),
-				$elm$parser$Parser$spaces),
-			A2(
-				$elm$parser$Parser$ignorer,
-				A2(
-					$elm$parser$Parser$ignorer,
-					A2(
-						$elm$parser$Parser$ignorer,
-						$elm$parser$Parser$lazy(
-							function (_v1) {
-								return $author$project$Parser$Delta$cyclic$delta();
-							}),
-						$elm$parser$Parser$spaces),
-					$elm$parser$Parser$symbol(',')),
-				$elm$parser$Parser$spaces)),
-		A2(
-			$elm$parser$Parser$ignorer,
-			A2(
-				$elm$parser$Parser$ignorer,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$lazy(
-						function (_v2) {
-							return $author$project$Parser$Delta$cyclic$delta();
-						}),
-					$elm$parser$Parser$spaces),
-				$elm$parser$Parser$symbol(')')),
-			$elm$parser$Parser$spaces));
-}
-function $author$project$Parser$Delta$cyclic$delta() {
-	return A2(
-		$Punie$elm_parser_extras$Parser$Expression$buildExpressionParser,
-		$author$project$Parser$Delta$operators,
-		$elm$parser$Parser$lazy(
-			function (_v0) {
-				return $author$project$Parser$Delta$cyclic$temp();
-			}));
-}
-try {
-	var $author$project$Parser$Delta$temp = $author$project$Parser$Delta$cyclic$temp();
-	$author$project$Parser$Delta$cyclic$temp = function () {
-		return $author$project$Parser$Delta$temp;
-	};
-	var $author$project$Parser$Delta$dHtml = $author$project$Parser$Delta$cyclic$dHtml();
-	$author$project$Parser$Delta$cyclic$dHtml = function () {
-		return $author$project$Parser$Delta$dHtml;
-	};
-	var $author$project$Parser$Delta$dLam = $author$project$Parser$Delta$cyclic$dLam();
-	$author$project$Parser$Delta$cyclic$dLam = function () {
-		return $author$project$Parser$Delta$dLam;
-	};
-	var $author$project$Parser$Delta$dParens = $author$project$Parser$Delta$cyclic$dParens();
-	$author$project$Parser$Delta$cyclic$dParens = function () {
-		return $author$project$Parser$Delta$dParens;
-	};
-	var $author$project$Parser$Delta$dTuple = $author$project$Parser$Delta$cyclic$dTuple();
-	$author$project$Parser$Delta$cyclic$dTuple = function () {
-		return $author$project$Parser$Delta$dTuple;
-	};
-	var $author$project$Parser$Delta$delta = $author$project$Parser$Delta$cyclic$delta();
-	$author$project$Parser$Delta$cyclic$delta = function () {
-		return $author$project$Parser$Delta$delta;
-	};
-} catch ($) {
-	throw 'Some top-level definitions from `Parser.Delta` are causing infinite recursion:\n\n  ┌─────┐\n  │    temp\n  │     ↓\n  │    dHtml\n  │     ↓\n  │    dLam\n  │     ↓\n  │    dParens\n  │     ↓\n  │    dTuple\n  │     ↓\n  │    delta\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
-var $elm$core$List$drop = F2(
-	function (n, list) {
-		drop:
-		while (true) {
-			if (n <= 0) {
-				return list;
-			} else {
-				if (!list.b) {
-					return list;
-				} else {
-					var x = list.a;
-					var xs = list.b;
-					var $temp$n = n - 1,
-						$temp$list = xs;
-					n = $temp$n;
-					list = $temp$list;
-					continue drop;
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$ExpectingEnd = {$: 'ExpectingEnd'};
-var $elm$parser$Parser$Advanced$end = function (x) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return _Utils_eq(
-				$elm$core$String$length(s.src),
-				s.offset) ? A3($elm$parser$Parser$Advanced$Good, false, _Utils_Tuple0, s) : A2(
-				$elm$parser$Parser$Advanced$Bad,
-				false,
-				A2($elm$parser$Parser$Advanced$fromState, s, x));
-		});
-};
-var $elm$parser$Parser$end = $elm$parser$Parser$Advanced$end($elm$parser$Parser$ExpectingEnd);
-var $author$project$LangUtils$GUI$dropLast = function (xs) {
-	if (!xs.b) {
-		return _List_Nil;
-	} else {
-		if (!xs.b.b) {
-			var x = xs.a;
-			return _List_Nil;
-		} else {
-			var x = xs.a;
-			var ys = xs.b;
-			return A2(
-				$elm$core$List$cons,
-				x,
-				$author$project$LangUtils$GUI$dropLast(ys));
-		}
-	}
-};
-var $author$project$Ui$Controller$generateGUIDelta = F2(
-	function (events, outputDelta) {
-		var eventsWithOutputDelta = function () {
-			if (!events.b) {
-				return _List_Nil;
-			} else {
-				var _v4 = events.a;
-				var eventExp = _v4.a;
-				var tail = events.b;
-				return A2(
-					$elm$core$List$cons,
-					_Utils_Tuple2(eventExp, outputDelta),
-					tail);
-			}
-		}();
-		var initialSnapshotDelta = function () {
-			var _v1 = $author$project$Printer$Exp$listLast(eventsWithOutputDelta);
-			if (_v1.$ === 'Just') {
-				var _v2 = _v1.a;
-				var d = _v2.b;
-				return d;
-			} else {
-				return $author$project$Syntax$DZero;
-			}
-		}();
-		var triggeredEvents = $author$project$LangUtils$GUI$dropLast(eventsWithOutputDelta);
-		return A2(
-			$author$project$Syntax$DTuple,
-			initialSnapshotDelta,
-			A3(
-				$elm$core$List$foldl,
-				F2(
-					function (_v0, acc) {
-						var eventExp = _v0.a;
-						var delta = _v0.b;
-						return A2(
-							$author$project$Syntax$DLam,
-							eventExp,
-							A2($author$project$Syntax$DTuple, delta, acc));
-					}),
-				$author$project$Syntax$DZero,
-				triggeredEvents));
-	});
-var $author$project$Ui$Controller$getEventsFromTriggeredEvents = function (triggeredEvents) {
-	return A2(
-		$elm$core$List$map,
-		$elm$core$Tuple$first,
-		$author$project$LangUtils$GUI$dropLast(triggeredEvents));
-};
-var $elm$parser$Parser$DeadEnd = F3(
-	function (row, col, problem) {
-		return {col: col, problem: problem, row: row};
-	});
-var $elm$parser$Parser$problemToDeadEnd = function (p) {
-	return A3($elm$parser$Parser$DeadEnd, p.row, p.col, p.problem);
-};
-var $elm$parser$Parser$Advanced$bagToList = F2(
-	function (bag, list) {
-		bagToList:
-		while (true) {
-			switch (bag.$) {
-				case 'Empty':
-					return list;
-				case 'AddRight':
-					var bag1 = bag.a;
-					var x = bag.b;
-					var $temp$bag = bag1,
-						$temp$list = A2($elm$core$List$cons, x, list);
-					bag = $temp$bag;
-					list = $temp$list;
-					continue bagToList;
-				default:
-					var bag1 = bag.a;
-					var bag2 = bag.b;
-					var $temp$bag = bag1,
-						$temp$list = A2($elm$parser$Parser$Advanced$bagToList, bag2, list);
-					bag = $temp$bag;
-					list = $temp$list;
-					continue bagToList;
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$run = F2(
-	function (_v0, src) {
-		var parse = _v0.a;
-		var _v1 = parse(
-			{col: 1, context: _List_Nil, indent: 1, offset: 0, row: 1, src: src});
-		if (_v1.$ === 'Good') {
-			var value = _v1.b;
-			return $elm$core$Result$Ok(value);
-		} else {
-			var bag = _v1.b;
-			return $elm$core$Result$Err(
-				A2($elm$parser$Parser$Advanced$bagToList, bag, _List_Nil));
-		}
-	});
-var $elm$parser$Parser$run = F2(
-	function (parser, source) {
-		var _v0 = A2($elm$parser$Parser$Advanced$run, parser, source);
-		if (_v0.$ === 'Ok') {
-			var a = _v0.a;
-			return $elm$core$Result$Ok(a);
-		} else {
-			var problems = _v0.a;
-			return $elm$core$Result$Err(
-				A2($elm$core$List$map, $elm$parser$Parser$problemToDeadEnd, problems));
-		}
-	});
-var $author$project$Parser$Exp$parse = $elm$parser$Parser$run(
-	A2($elm$parser$Parser$ignorer, $author$project$Parser$Exp$exp, $elm$parser$Parser$end));
-var $author$project$LangUtils$Postprocess$removeParens = function (exp) {
-	if (exp.$ === 'EParens') {
-		var e = exp.b;
-		return e;
-	} else {
-		return exp;
-	}
-};
-var $author$project$LangUtils$Postprocess$postprocess = F2(
-	function (exp, h) {
-		postprocess:
-		while (true) {
-			switch (exp.$) {
-				case 'EVar':
-					var wss = exp.a;
-					var x = exp.b;
-					if (A2($elm$core$String$startsWith, 'D', x) || (A2($elm$core$String$startsWith, 'I', x) || A2($elm$core$String$startsWith, 'R', x))) {
-						var _v6 = A2($author$project$Utils$lookup, x, h);
-						if (_v6.$ === 'Just') {
-							var _v7 = _v6.a;
-							var _v8 = _v7.a;
-							var e2 = _v8.b;
-							var $temp$exp = e2,
-								$temp$h = h;
-							exp = $temp$exp;
-							h = $temp$h;
-							continue postprocess;
-						} else {
-							return A3($author$project$Syntax$EVar, wss, x, 0);
-						}
-					} else {
-						return A3($author$project$Syntax$EVar, wss, x, 0);
-					}
-				case 'ETuple':
-					if (exp.b.$ === 'TupleType') {
-						var wss = exp.a;
-						var _v9 = exp.b;
-						var e1 = exp.c;
-						var e2 = exp.d;
-						return A4(
-							$author$project$Syntax$ETuple,
-							wss,
-							$author$project$Syntax$TupleType,
-							A2(
-								$author$project$LangUtils$Postprocess$postprocess,
-								$author$project$LangUtils$Postprocess$removeParens(e1),
-								h),
-							A2(
-								$author$project$LangUtils$Postprocess$postprocess,
-								$author$project$LangUtils$Postprocess$removeParens(e2),
-								h));
-					} else {
-						var wss = exp.a;
-						var tType = exp.b;
-						var e1 = exp.c;
-						var e2 = exp.d;
-						return A4(
-							$author$project$Syntax$ETuple,
-							wss,
-							tType,
-							A2($author$project$LangUtils$Postprocess$postprocess, e1, h),
-							A2($author$project$LangUtils$Postprocess$postprocess, e2, h));
-					}
-				case 'ECons':
-					var wss = exp.a;
-					var ltype = exp.b;
-					var e1 = exp.c;
-					var e2 = exp.d;
-					if (ltype.$ === 'SquareType') {
-						return A4(
-							$author$project$Syntax$ECons,
-							wss,
-							ltype,
-							A2(
-								$author$project$LangUtils$Postprocess$postprocess,
-								$author$project$LangUtils$Postprocess$removeParens(e1),
-								h),
-							A2(
-								$author$project$LangUtils$Postprocess$postprocess,
-								$author$project$LangUtils$Postprocess$removeParens(e2),
-								h));
-					} else {
-						return A4(
-							$author$project$Syntax$ECons,
-							wss,
-							ltype,
-							A2($author$project$LangUtils$Postprocess$postprocess, e1, h),
-							A2($author$project$LangUtils$Postprocess$postprocess, e2, h));
-					}
-				case 'EParens':
-					var wss = exp.a;
-					var e = exp.b;
-					return A2(
-						$author$project$Syntax$EParens,
-						wss,
-						A2($author$project$LangUtils$Postprocess$postprocess, e, h));
-				case 'ELam':
-					var wss = exp.a;
-					var x = exp.b;
-					var e = exp.c;
-					return A3(
-						$author$project$Syntax$ELam,
-						wss,
-						x,
-						A2($author$project$LangUtils$Postprocess$postprocess, e, h));
-				case 'EApp':
-					var e1 = exp.a;
-					var e2 = exp.b;
-					return A2(
-						$author$project$Syntax$EApp,
-						A2($author$project$LangUtils$Postprocess$postprocess, e1, h),
-						A2($author$project$LangUtils$Postprocess$postprocess, e2, h));
-				case 'ELet':
-					var wss = exp.a;
-					var h_ = exp.b;
-					var e = exp.c;
-					return A3(
-						$author$project$Syntax$ELet,
-						wss,
-						A2($author$project$LangUtils$Postprocess$postprocessHeap, h_, h),
-						A2($author$project$LangUtils$Postprocess$postprocess, e, h));
-				case 'ECase':
-					var wss = exp.a;
-					var e = exp.b;
-					var b = exp.c;
-					return A3(
-						$author$project$Syntax$ECase,
-						wss,
-						A2($author$project$LangUtils$Postprocess$postprocess, e, h),
-						A2($author$project$LangUtils$Postprocess$postprocessBranch, b, h));
-				case 'EUPrim':
-					var wss = exp.a;
-					var u = exp.b;
-					var e = exp.c;
-					return A3(
-						$author$project$Syntax$EUPrim,
-						wss,
-						u,
-						A2($author$project$LangUtils$Postprocess$postprocess, e, h));
-				case 'EBPrim':
-					var wss = exp.a;
-					var b = exp.b;
-					var e1 = exp.c;
-					var e2 = exp.d;
-					return A4(
-						$author$project$Syntax$EBPrim,
-						wss,
-						b,
-						A2($author$project$LangUtils$Postprocess$postprocess, e1, h),
-						A2($author$project$LangUtils$Postprocess$postprocess, e2, h));
-				case 'EHtml':
-					var wss = exp.a;
-					var s = exp.b;
-					var e1 = exp.c;
-					var e2 = exp.d;
-					var e3 = exp.e;
-					return A5(
-						$author$project$Syntax$EHtml,
-						wss,
-						s,
-						A2($author$project$LangUtils$Postprocess$postprocess, e1, h),
-						A2($author$project$LangUtils$Postprocess$postprocess, e2, h),
-						A2($author$project$LangUtils$Postprocess$postprocess, e3, h));
-				default:
-					return exp;
-			}
-		}
-	});
-var $author$project$LangUtils$Postprocess$postprocessBranch = F2(
-	function (b, h) {
-		if (b.$ === 'BSin') {
-			var wss = b.a;
-			var p = b.b;
-			var e = b.c;
-			return A3(
-				$author$project$Syntax$BSin,
-				wss,
-				p,
-				A2($author$project$LangUtils$Postprocess$postprocess, e, h));
-		} else {
-			var wss = b.a;
-			var b1 = b.b;
-			var b2 = b.c;
-			return A3(
-				$author$project$Syntax$BCom,
-				wss,
-				A2($author$project$LangUtils$Postprocess$postprocessBranch, b1, h),
-				A2($author$project$LangUtils$Postprocess$postprocessBranch, b2, h));
-		}
-	});
-var $author$project$LangUtils$Postprocess$postprocessHeap = F2(
-	function (h, h1) {
-		if (h.b) {
-			var _v1 = h.a;
-			var x = _v1.a;
-			var _v2 = _v1.b;
-			var _v3 = _v2.a;
-			var nE = _v3.b;
-			var h_ = h.b;
-			var exp = A2($author$project$LangUtils$Postprocess$postprocess, nE, h1);
-			return A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(
-					x,
-					_Utils_Tuple3(
-						_Utils_Tuple2(exp, exp),
-						$author$project$Syntax$DZero,
-						_Utils_Tuple2($elm$core$Maybe$Nothing, false))),
-				A2($author$project$LangUtils$Postprocess$postprocessHeap, h_, h1));
-		} else {
-			return _List_Nil;
-		}
-	});
-var $author$project$LangUtils$Preprocess$desugar = function (dv) {
-	switch (dv.$) {
-		case 'DInsert':
-			var n = dv.a;
-			var x = dv.b;
-			return (!n) ? A3(
-				$author$project$Syntax$DCons,
-				$elm$core$Maybe$Just(x),
-				$author$project$Syntax$DId,
-				$author$project$Syntax$DId) : A3(
-				$author$project$Syntax$DCons,
-				$elm$core$Maybe$Nothing,
-				$author$project$Syntax$DId,
-				$author$project$LangUtils$Preprocess$desugar(
-					A2($author$project$Syntax$DInsert, n - 1, x)));
-		case 'DDelete':
-			var n = dv.a;
-			return (!n) ? A3($author$project$Syntax$DCons, $elm$core$Maybe$Nothing, $author$project$Syntax$DRem, $author$project$Syntax$DId) : A3(
-				$author$project$Syntax$DCons,
-				$elm$core$Maybe$Nothing,
-				$author$project$Syntax$DId,
-				$author$project$LangUtils$Preprocess$desugar(
-					$author$project$Syntax$DDelete(n - 1)));
-		case 'DCons':
-			var me = dv.a;
-			var dv1 = dv.b;
-			var dv2 = dv.c;
-			return A3(
-				$author$project$Syntax$DCons,
-				me,
-				$author$project$LangUtils$Preprocess$desugar(dv1),
-				$author$project$LangUtils$Preprocess$desugar(dv2));
-		case 'DTuple':
-			var dv1 = dv.a;
-			var dv2 = dv.b;
-			return A2(
-				$author$project$Syntax$DTuple,
-				$author$project$LangUtils$Preprocess$desugar(dv1),
-				$author$project$LangUtils$Preprocess$desugar(dv2));
-		case 'DCom':
-			var dv1 = dv.a;
-			var dv2 = dv.b;
-			return A2(
-				$author$project$Syntax$DCom,
-				$author$project$LangUtils$Preprocess$desugar(dv1),
-				$author$project$LangUtils$Preprocess$desugar(dv2));
-		case 'DLam':
-			var e = dv.a;
-			var dv1 = dv.b;
-			return A2(
-				$author$project$Syntax$DLam,
-				e,
-				$author$project$LangUtils$Preprocess$desugar(dv1));
-		case 'DHtml':
-			var n = dv.a;
-			var dv1 = dv.b;
-			var dv2 = dv.c;
-			var dv3 = dv.d;
-			return A4(
-				$author$project$Syntax$DHtml,
-				n,
-				$author$project$LangUtils$Preprocess$desugar(dv1),
-				$author$project$LangUtils$Preprocess$desugar(dv2),
-				$author$project$LangUtils$Preprocess$desugar(dv3));
-		default:
-			return dv;
-	}
-};
-var $author$project$LangUtils$Preprocess$introHeap = F2(
-	function (dv, id) {
-		switch (dv.$) {
-			case 'DInsert':
-				var n = dv.a;
-				var v = dv.b;
-				var x = 'D' + $elm$core$Debug$toString(id);
-				return _Utils_Tuple3(
-					A2(
-						$author$project$Syntax$DInsert,
-						n,
-						A3(
-							$author$project$Syntax$EVar,
-							_List_fromArray(
-								[' ']),
-							x,
-							0)),
-					_List_fromArray(
-						[
-							_Utils_Tuple2(
-							x,
-							_Utils_Tuple3(
-								_Utils_Tuple2(v, v),
-								$author$project$Syntax$DId,
-								_Utils_Tuple2($elm$core$Maybe$Nothing, false)))
-						]),
-					id + 1);
-			case 'DLam':
-				var v = dv.a;
-				var dv1 = dv.b;
-				var _v1 = A2($author$project$LangUtils$Preprocess$introHeap, dv1, id);
-				var dv1_ = _v1.a;
-				var heap = _v1.b;
-				var id1 = _v1.c;
-				var x = 'D' + $elm$core$Debug$toString(id1);
-				return _Utils_Tuple3(
-					A2(
-						$author$project$Syntax$DLam,
-						A3(
-							$author$project$Syntax$EVar,
-							_List_fromArray(
-								[' ']),
-							x,
-							0),
-						dv1_),
-					A2(
-						$elm$core$List$cons,
-						_Utils_Tuple2(
-							x,
-							_Utils_Tuple3(
-								_Utils_Tuple2(v, v),
-								$author$project$Syntax$DId,
-								_Utils_Tuple2($elm$core$Maybe$Nothing, false))),
-						heap),
-					id1 + 1);
-			case 'DCons':
-				var x = dv.a;
-				var dv1 = dv.b;
-				var dv2 = dv.c;
-				var _v2 = A2($author$project$LangUtils$Preprocess$introHeap, dv1, id);
-				var dv1_ = _v2.a;
-				var heap1 = _v2.b;
-				var id1 = _v2.c;
-				var _v3 = A2($author$project$LangUtils$Preprocess$introHeap, dv2, id1);
-				var dv2_ = _v3.a;
-				var heap2 = _v3.b;
-				var id2 = _v3.c;
-				return _Utils_Tuple3(
-					A3($author$project$Syntax$DCons, x, dv1_, dv2_),
-					_Utils_ap(heap1, heap2),
-					id2);
-			case 'DTuple':
-				var dv1 = dv.a;
-				var dv2 = dv.b;
-				var _v4 = A2($author$project$LangUtils$Preprocess$introHeap, dv1, id);
-				var dv1_ = _v4.a;
-				var heap1 = _v4.b;
-				var id1 = _v4.c;
-				var _v5 = A2($author$project$LangUtils$Preprocess$introHeap, dv2, id1);
-				var dv2_ = _v5.a;
-				var heap2 = _v5.b;
-				var id2 = _v5.c;
-				return _Utils_Tuple3(
-					A2($author$project$Syntax$DTuple, dv1_, dv2_),
-					_Utils_ap(heap1, heap2),
-					id2);
-			case 'DCom':
-				var dv1 = dv.a;
-				var dv2 = dv.b;
-				var _v6 = A2($author$project$LangUtils$Preprocess$introHeap, dv1, id);
-				var dv1_ = _v6.a;
-				var heap1 = _v6.b;
-				var id1 = _v6.c;
-				var _v7 = A2($author$project$LangUtils$Preprocess$introHeap, dv2, id1);
-				var dv2_ = _v7.a;
-				var heap2 = _v7.b;
-				var id2 = _v7.c;
-				return _Utils_Tuple3(
-					A2($author$project$Syntax$DCom, dv1_, dv2_),
-					_Utils_ap(heap1, heap2),
-					id2);
-			case 'DHtml':
-				var n = dv.a;
-				var dv1 = dv.b;
-				var dv2 = dv.c;
-				var dv3 = dv.d;
-				var _v8 = A2($author$project$LangUtils$Preprocess$introHeap, dv1, id);
-				var dv1_ = _v8.a;
-				var heap1 = _v8.b;
-				var id1 = _v8.c;
-				var _v9 = A2($author$project$LangUtils$Preprocess$introHeap, dv2, id1);
-				var dv2_ = _v9.a;
-				var heap2 = _v9.b;
-				var id2 = _v9.c;
-				var _v10 = A2($author$project$LangUtils$Preprocess$introHeap, dv3, id2);
-				var dv3_ = _v10.a;
-				var heap3 = _v10.b;
-				var id3 = _v10.c;
-				return _Utils_Tuple3(
-					A4($author$project$Syntax$DHtml, n, dv1_, dv2_, dv3_),
-					_Utils_ap(
-						heap1,
-						_Utils_ap(heap2, heap3)),
-					id3);
-			default:
-				return _Utils_Tuple3(dv, _List_Nil, id);
-		}
-	});
-var $author$project$LangUtils$Preprocess$preproc = F2(
-	function (dv, id) {
-		var _v0 = A2($author$project$LangUtils$Preprocess$introHeap, dv, id);
-		var dv1 = _v0.a;
-		var heap = _v0.b;
-		var id1 = _v0.c;
-		return _Utils_Tuple3(
-			$author$project$LangUtils$Preprocess$desugar(dv1),
-			heap,
-			id1);
-	});
-var $author$project$Ui$Controller$forwardExecute = F4(
-	function (model, initHeap, initExp, initID) {
-		return A2(
-			$elm$core$Result$andThen,
-			function (_v0) {
-				var runningHeap = _v0.a;
-				var output = _v0.b;
-				var runningID = _v0.c;
-				if ((output.$ === 'ETuple') && (output.b.$ === 'GuiType')) {
-					var _v2 = output.b;
-					var snapshotExp = output.c;
-					var guiExp = output.d;
-					return A2(
-						$elm$core$Result$andThen,
-						function (_v3) {
-							var runningHeapGUI = _v3.a;
-							var snapshot = _v3.b;
-							var runningIDGUI = _v3.c;
-							return $elm$core$Result$Ok(
-								_Utils_update(
-									model,
-									{output: snapshot, runningExp: guiExp, runningHeap: runningHeapGUI, runningID: runningIDGUI}));
-						},
-						A3($author$project$Eval$fwd, runningHeap, snapshotExp, runningID));
-				} else {
-					return $elm$core$Result$Ok(
-						_Utils_update(
-							model,
-							{output: output, runningExp: output, runningHeap: runningHeap, runningID: runningID}));
-				}
-			},
-			A3($author$project$Eval$fwd, initHeap, initExp, initID));
-	});
-var $author$project$Ui$Controller$runEventsFromScratch = F2(
-	function (code, events) {
-		var _v0 = $author$project$Parser$Exp$parse(code);
-		if (_v0.$ === 'Ok') {
-			var gui = _v0.a;
-			var model = _Utils_update(
-				$author$project$Ui$Model$initModel,
-				{runningExp: gui});
-			var modelResAcc = A4($author$project$Ui$Controller$forwardExecute, model, model.runningHeap, model.runningExp, model.runningID);
-			return A3(
-				$elm$core$List$foldr,
-				F2(
-					function (eventExp, acc) {
-						return A2(
-							$elm$core$Result$andThen,
-							function (modelAcc) {
-								var model1 = _Utils_update(
-									modelAcc,
-									{
-										runningExp: A2($author$project$Syntax$EApp, modelAcc.runningExp, eventExp)
-									});
-								return A4($author$project$Ui$Controller$forwardExecute, model1, model1.runningHeap, model1.runningExp, model1.runningID);
-							},
-							acc);
-					}),
-				modelResAcc,
-				events);
-		} else {
-			return $elm$core$Result$Err('ERROR #11 Exp Parse Error: ' + code);
-		}
-	});
-var $author$project$Ui$Controller$backwardController = function (model) {
-	var _v0 = _Utils_Tuple2(
-		$author$project$Parser$Exp$parse(model.code),
-		A2(
-			$elm$parser$Parser$run,
-			A2($elm$parser$Parser$ignorer, $author$project$Parser$Delta$delta, $elm$parser$Parser$end),
-			model.delta));
-	if (_v0.a.$ === 'Ok') {
-		if (_v0.b.$ === 'Ok') {
-			var code_prev = _v0.a.a;
-			var delta_prev = _v0.b.a;
-			var events = A2($elm$core$List$drop, model.eventIndex, model.triggeredEvents);
-			var model1 = _Utils_update(
-				model,
-				{eventIndex: $author$project$Ui$Model$defaultEventIndex, triggeredEvents: events});
-			var deltaPassedToBWD = A2($author$project$LangUtils$Equality$eqExp, model1.runningExp, model1.output) ? delta_prev : A2($author$project$Ui$Controller$generateGUIDelta, model1.triggeredEvents, delta_prev);
-			var _v1 = A2($author$project$LangUtils$Preprocess$preproc, deltaPassedToBWD, 0);
-			var dv = _v1.a;
-			var heap1 = _v1.b;
-			var _v2 = A4($author$project$Eval$bwd, dv, heap1, code_prev, 0);
-			var h_bwd = _v2.a;
-			var exp_bwd = _v2.b;
-			var h_post = A2($author$project$LangUtils$Postprocess$postprocessHeap, h_bwd, h_bwd);
-			var exp_post = A2($author$project$LangUtils$Postprocess$postprocess, exp_bwd, h_post);
-			var newCode = $author$project$Printer$Exp$print(exp_post);
-			var _v3 = A2($elm$core$Debug$log, 'delta', deltaPassedToBWD);
-			return A2(
-				$elm$core$Result$andThen,
-				function (model2) {
-					return $elm$core$Result$Ok(
-						_Utils_update(
-							model1,
-							{code: newCode, output: model2.output, runningExp: model2.runningExp, runningHeap: model2.runningHeap, runningID: model2.runningID}));
-				},
-				A2(
-					$author$project$Ui$Controller$runEventsFromScratch,
-					newCode,
-					$author$project$Ui$Controller$getEventsFromTriggeredEvents(model1.triggeredEvents)));
-		} else {
-			return $elm$core$Result$Err('ERROR #12 Delta Parse Error: ' + model.delta);
-		}
-	} else {
-		return $elm$core$Result$Err('ERROR #11 Exp Parse Error: ' + model.code);
-	}
-};
-var $author$project$Ui$Controller$forwardController = function (model) {
-	var _v0 = $author$project$Parser$Exp$parse(model.code);
-	if (_v0.$ === 'Ok') {
-		var code = _v0.a;
-		return A4($author$project$Ui$Controller$forwardExecute, model, model.runningHeap, code, 0);
-	} else {
-		return $elm$core$Result$Err('ERROR #11 Exp Parse Error: ' + model.code);
-	}
-};
-var $author$project$Syntax$eListDefaultWSS = _List_fromArray(
-	[' ', ' ']);
-var $author$project$LangUtils$GUI$strToBool = function (str) {
-	switch (str) {
-		case 'True':
-			return $elm$core$Maybe$Just(true);
-		case 'False':
-			return $elm$core$Maybe$Just(false);
-		default:
-			return $elm$core$Maybe$Nothing;
-	}
-};
-var $author$project$LangUtils$GUI$argsToExp = function (ss) {
-	var argToExp = function (s) {
-		var _v0 = $elm$core$String$toInt(s);
-		if (_v0.$ === 'Just') {
-			var intValue = _v0.a;
-			return A2($author$project$Syntax$EInt, $author$project$Syntax$eIntDefaultWSS, intValue);
-		} else {
-			var _v1 = $author$project$LangUtils$GUI$strToBool(s);
-			if (_v1.$ === 'Just') {
-				var boolValue = _v1.a;
-				return A2($author$project$Syntax$EBool, $author$project$Syntax$eBoolDefaultWSS, boolValue);
-			} else {
-				return $author$project$LangUtils$GUI$strToExpr(s);
-			}
-		}
-	};
-	return A2(
-		$author$project$Parser$Utils$repWS,
-		$author$project$Syntax$eListDefaultWSS,
-		A3(
-			$elm$core$List$foldr,
-			F2(
-				function (s, acc) {
-					return A4(
-						$author$project$Syntax$ECons,
-						$author$project$Syntax$eConsDefaultWSS,
-						$author$project$Syntax$SquareType,
-						argToExp(s),
-						acc);
-				}),
-			A2($author$project$Syntax$ENil, _List_Nil, $author$project$Syntax$SquareType),
-			ss));
-};
-var $author$project$Syntax$eTupleEventDefaultWSS = _List_fromArray(
-	[' ']);
-var $author$project$LangUtils$GUI$eventToExp = F2(
-	function (eventNameStr, args) {
-		var eventNameExpr = $author$project$LangUtils$GUI$strToExpr(eventNameStr);
-		var argsExpr = $author$project$LangUtils$GUI$argsToExp(args);
-		return A4($author$project$Syntax$ETuple, $author$project$Syntax$eTupleEventDefaultWSS, $author$project$Syntax$EventType, eventNameExpr, argsExpr);
-	});
-var $author$project$Ui$Controller$guiEventController = F3(
-	function (eventName, args, model) {
-		var eventExp = A2($author$project$LangUtils$GUI$eventToExp, eventName, args);
-		var newModel = _Utils_update(
-			model,
-			{
-				triggeredEvents: A2(
-					$elm$core$List$cons,
-					_Utils_Tuple2(eventExp, $author$project$Syntax$DZero),
-					model.triggeredEvents)
-			});
-		var newRunningExp = A2($author$project$Syntax$EApp, model.runningExp, eventExp);
-		return A4($author$project$Ui$Controller$forwardExecute, newModel, model.runningHeap, newRunningExp, model.runningID);
-	});
-var $author$project$Printer$Html$evalExpToWHNFInRunning = F2(
-	function (exp, model) {
-		var _v0 = A3($author$project$Eval$fwd, model.runningHeap, exp, model.runningID);
-		if (_v0.$ === 'Ok') {
-			var _v1 = _v0.a;
-			var heap_fwd = _v1.a;
-			var value = _v1.b;
-			var id_fwd = _v1.c;
-			var newModel = _Utils_update(
-				model,
-				{runningHeap: heap_fwd, runningID: id_fwd});
-			return _Utils_Tuple2(value, newModel);
-		} else {
-			var info = _v0.a;
-			return _Utils_Tuple2(
-				$author$project$Syntax$EError(info),
-				model);
-		}
-	});
-var $author$project$Printer$Html$printStrWithoutQuo = function (str_value) {
-	_v0$2:
-	while (true) {
-		switch (str_value.$) {
-			case 'ECons':
-				if ((str_value.b.$ === 'StringType') && (str_value.c.$ === 'EChar')) {
-					var _v1 = str_value.b;
-					var _v2 = str_value.c;
-					var c = _v2.b;
-					var cs = str_value.d;
-					return _Utils_ap(
-						$elm$core$String$fromChar(c),
-						$author$project$Printer$Html$printStrWithoutQuo(cs));
-				} else {
-					break _v0$2;
-				}
-			case 'ENil':
-				if (str_value.b.$ === 'StringType') {
-					var _v3 = str_value.b;
-					return '';
-				} else {
-					break _v0$2;
-				}
-			default:
-				break _v0$2;
-		}
-	}
-	return 'ERROR #23: Print str error, str value = ' + $elm$core$Debug$toString(str_value);
-};
 var $elm$core$String$replace = F3(
 	function (before, after, string) {
 		return A2(
@@ -14626,518 +9855,6 @@ var $elm$core$String$replace = F3(
 			after,
 			A2($elm$core$String$split, before, string));
 	});
-var $author$project$Printer$Html$removeParens = function (num) {
-	return A3(
-		$elm$core$String$replace,
-		')',
-		'',
-		A3($elm$core$String$replace, '(', '', num));
-};
-var $author$project$Printer$Html$printOtherPro = F2(
-	function (pro, model) {
-		var _v0 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, pro, model);
-		var pro_value = _v0.a;
-		var model1 = _v0.b;
-		if ((pro_value.$ === 'ETuple') && (pro_value.b.$ === 'TupleType')) {
-			var _v2 = pro_value.b;
-			var n = pro_value.c;
-			var v = pro_value.d;
-			var _v3 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, n, model1);
-			var n_value = _v3.a;
-			var model2 = _v3.b;
-			var _v4 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, v, model2);
-			var v_value = _v4.a;
-			var model3 = _v4.b;
-			var v_str = function () {
-				switch (v_value.$) {
-					case 'EInt':
-						return $author$project$Printer$Html$removeParens(
-							$author$project$Printer$Exp$print(v_value));
-					case 'EBool':
-						return $author$project$Printer$Exp$print(v_value);
-					default:
-						return $author$project$Printer$Html$printStrWithoutQuo(v_value);
-				}
-			}();
-			var n_str = $author$project$Printer$Html$printStrWithoutQuo(n_value);
-			var v_str_post = A2($elm$core$String$startsWith, 'on', n_str) ? ('eventForward(\'' + (n_str + ('\', \'' + (v_str + '\', event)')))) : v_str;
-			return _Utils_Tuple2(n_str + ('=\"' + (v_str_post + '\"')), model3);
-		} else {
-			return _Utils_Tuple2(
-				'ERROR #21: Print HTML attr error, attr value = ' + $elm$core$Debug$toString(pro_value),
-				model);
-		}
-	});
-var $author$project$Printer$Html$printAttr = F2(
-	function (attr, model) {
-		var _v0 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, attr, model);
-		var attr_value = _v0.a;
-		var model1 = _v0.b;
-		switch (attr_value.$) {
-			case 'ENil':
-				return _Utils_Tuple2('', model1);
-			case 'ECons':
-				var x = attr_value.c;
-				var xs = attr_value.d;
-				var _v2 = A2($author$project$Printer$Html$printOtherPro, x, model1);
-				var xStr = _v2.a;
-				var model2 = _v2.b;
-				var _v3 = A2($author$project$Printer$Html$printAttr, xs, model2);
-				var xsStr = _v3.a;
-				var model3 = _v3.b;
-				return _Utils_Tuple2(xStr + (' ' + xsStr), model3);
-			default:
-				return _Utils_Tuple2(
-					'ERROR #20: Print HTML attrs error, attrs value = ' + $elm$core$Debug$toString(attr_value),
-					model);
-		}
-	});
-var $author$project$Printer$Html$colorTypeStyleList = _List_fromArray(
-	['background-color', 'color']);
-var $author$project$Printer$Html$intTypeStyleList = _List_fromArray(
-	['z-index', 'font-weight', 'line-height']);
-var $elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
-		}
-	});
-var $elm$core$List$member = F2(
-	function (x, xs) {
-		return A2(
-			$elm$core$List$any,
-			function (a) {
-				return _Utils_eq(a, x);
-			},
-			xs);
-	});
-var $author$project$Printer$Html$pxTypeStyleList = _List_fromArray(
-	['width', 'height', 'top', 'bottom', 'left', 'right', 'margin', 'margin-top', 'margin-bottom', 'margin-left', 'margin-right', 'padding', 'padding-top', 'padding-bottom', 'padding-left', 'padding-right', 'border-radius', 'border-width', 'border-top-width', 'border-bottom-width', 'border-left-width', 'border-right-width', 'font-size']);
-var $author$project$Printer$Html$getUnit = function (name) {
-	return A2($elm$core$List$member, name, $author$project$Printer$Html$pxTypeStyleList) ? 'px' : (A2($elm$core$List$member, name, $author$project$Printer$Html$intTypeStyleList) ? '' : ('ERROR #27: Unknown name=' + name));
-};
-var $author$project$Printer$Html$intStyleList = _Utils_ap($author$project$Printer$Html$pxTypeStyleList, $author$project$Printer$Html$intTypeStyleList);
-var $author$project$Printer$Html$printProperty = F2(
-	function (pro, model) {
-		var _v0 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, pro, model);
-		var pro_value = _v0.a;
-		var model1 = _v0.b;
-		if ((pro_value.$ === 'ETuple') && (pro_value.b.$ === 'TupleType')) {
-			var _v2 = pro_value.b;
-			var n = pro_value.c;
-			var v = pro_value.d;
-			var _v3 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, n, model1);
-			var n_value = _v3.a;
-			var model2 = _v3.b;
-			var _v4 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, v, model2);
-			var v_value = _v4.a;
-			var model3 = _v4.b;
-			var n_str = $author$project$Printer$Html$printStrWithoutQuo(n_value);
-			var v_str = function () {
-				if (A2($elm$core$List$member, n_str, $author$project$Printer$Html$intStyleList)) {
-					if (v_value.$ === 'EInt') {
-						return _Utils_ap(
-							$author$project$Printer$Html$removeParens(
-								$author$project$Printer$Exp$print(v_value)),
-							$author$project$Printer$Html$getUnit(n_str));
-					} else {
-						return 'ERROR #25: Print HTML int Style Attr Error, name=' + n_str;
-					}
-				} else {
-					if (A2($elm$core$List$member, n_str, $author$project$Printer$Html$colorTypeStyleList)) {
-						if (v_value.$ === 'EInt') {
-							var num = v_value.b;
-							var r = $elm$core$String$fromInt(
-								A2($elm$core$Basics$modBy, 1000000, (num / 1000000) | 0));
-							var g = $elm$core$String$fromInt(
-								A2($elm$core$Basics$modBy, 1000, (num / 1000) | 0));
-							var b = $elm$core$String$fromInt(
-								A2($elm$core$Basics$modBy, 1000, num));
-							return 'rgb(' + (r + (' ' + (g + (' ' + (b + ')')))));
-						} else {
-							return 'ERROR #26: Incorrect HTML color Style Attr Error, name=' + n_str;
-						}
-					} else {
-						return $author$project$Printer$Html$printStrWithoutQuo(v_value);
-					}
-				}
-			}();
-			return _Utils_Tuple2(n_str + (':' + (v_str + ';')), model3);
-		} else {
-			return _Utils_Tuple2(
-				'ERROR #19: Print HTML style error, style value = ' + $elm$core$Debug$toString(pro_value),
-				model);
-		}
-	});
-var $author$project$Printer$Html$printStyle = F2(
-	function (style, model) {
-		var _v0 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, style, model);
-		var style_value = _v0.a;
-		var model1 = _v0.b;
-		switch (style_value.$) {
-			case 'ENil':
-				return _Utils_Tuple2('', model1);
-			case 'ECons':
-				var x = style_value.c;
-				var xs = style_value.d;
-				var _v2 = A2($author$project$Printer$Html$printProperty, x, model1);
-				var str1 = _v2.a;
-				var model2 = _v2.b;
-				var _v3 = A2($author$project$Printer$Html$printStyle, xs, model2);
-				var str2 = _v3.a;
-				var model3 = _v3.b;
-				return _Utils_Tuple2(str1 + (' ' + str2), model3);
-			default:
-				return _Utils_Tuple2(
-					'ERROR #18: Print HTML styles error, styles value = ' + $elm$core$Debug$toString(style_value),
-					model);
-		}
-	});
-var $author$project$Printer$Html$printChild = F2(
-	function (child, model) {
-		var _v10 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, child, model);
-		var child_value = _v10.a;
-		var model1 = _v10.b;
-		if (child_value.$ === 'EHtml') {
-			return A2($author$project$Printer$Html$printHTML, child, model1);
-		} else {
-			var _v12 = function () {
-				_v13$4:
-				while (true) {
-					switch (child_value.$) {
-						case 'ECons':
-							if (child_value.b.$ === 'StringType') {
-								var _v14 = child_value.b;
-								return _Utils_Tuple2(
-									'str',
-									$author$project$Printer$Html$printStrWithoutQuo(child_value));
-							} else {
-								break _v13$4;
-							}
-						case 'EInt':
-							return _Utils_Tuple2(
-								'int',
-								$author$project$Printer$Html$removeParens(
-									$author$project$Printer$Exp$print(child_value)));
-						case 'EBool':
-							return _Utils_Tuple2(
-								'bool',
-								$author$project$Printer$Exp$print(child_value));
-						case 'EChar':
-							return _Utils_Tuple2(
-								'char',
-								$author$project$Printer$Exp$print(child_value));
-						default:
-							break _v13$4;
-					}
-				}
-				return _Utils_Tuple2(
-					'unsupport',
-					$author$project$Printer$Exp$print(child_value));
-			}();
-			var spanType = _v12.a;
-			var spanContent = _v12.b;
-			return _Utils_Tuple2('<span class=\'' + (spanType + ('\'>' + (spanContent + '</span>'))), model1);
-		}
-	});
-var $author$project$Printer$Html$printChilds = F2(
-	function (childs, model) {
-		var _v6 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, childs, model);
-		var childs_value = _v6.a;
-		var model1 = _v6.b;
-		switch (childs_value.$) {
-			case 'ENil':
-				return _Utils_Tuple2('', model1);
-			case 'ECons':
-				var c = childs_value.c;
-				var cs = childs_value.d;
-				var _v8 = A2($author$project$Printer$Html$printChild, c, model1);
-				var childStr = _v8.a;
-				var model2 = _v8.b;
-				var _v9 = A2($author$project$Printer$Html$printChilds, cs, model2);
-				var childsStr = _v9.a;
-				var model3 = _v9.b;
-				return _Utils_Tuple2(
-					_Utils_ap(childStr, childsStr),
-					model3);
-			default:
-				return _Utils_Tuple2(
-					'ERROR #22: Print HTML childs error, childs value = ' + $elm$core$Debug$toString(childs_value),
-					model);
-		}
-	});
-var $author$project$Printer$Html$printHTML = F2(
-	function (exp, model) {
-		var _v0 = A2($author$project$Printer$Html$evalExpToWHNFInRunning, exp, model);
-		var exp_value = _v0.a;
-		var model1 = _v0.b;
-		if (exp_value.$ === 'EHtml') {
-			var nodeName = exp_value.b;
-			var style = exp_value.c;
-			var attr = exp_value.d;
-			var childs = exp_value.e;
-			if (nodeName === 'br') {
-				return _Utils_Tuple2('<br>', model1);
-			} else {
-				var _v2 = A2($author$project$Printer$Html$printStyle, style, model1);
-				var strStyle = _v2.a;
-				var model2 = _v2.b;
-				var _v3 = A2($author$project$Printer$Html$printAttr, attr, model2);
-				var strAttr = _v3.a;
-				var model3 = _v3.b;
-				var _v4 = A2($author$project$Printer$Html$printChilds, childs, model3);
-				var strChilds = _v4.a;
-				var model4 = _v4.b;
-				var formatStyle = function () {
-					if (style.$ === 'ENil') {
-						return '';
-					} else {
-						return ' style=\"' + (strStyle + '\"');
-					}
-				}();
-				var output = (nodeName === 'input') ? ('<' + (nodeName + (formatStyle + (' ' + (strAttr + '/>'))))) : ('<' + (nodeName + (formatStyle + (' ' + (strAttr + ('>' + (strChilds + ('</' + (nodeName + '>')))))))));
-				return _Utils_Tuple2(output, model4);
-			}
-		} else {
-			return _Utils_Tuple2('Print HTML Error.', model1);
-		}
-	});
-var $author$project$Ui$Controller$printOutput = function (model) {
-	var _v0 = model.output;
-	if (_v0.$ === 'EHtml') {
-		return A2($author$project$Printer$Html$printHTML, model.output, model);
-	} else {
-		return _Utils_Tuple2(
-			$author$project$Printer$Exp$print(model.output),
-			model);
-	}
-};
-var $elm$json$Json$Encode$string = _Json_wrap;
-var $author$project$Ui$Main$sendAlert = _Platform_outgoingPort('sendAlert', $elm$json$Json$Encode$string);
-var $author$project$Ui$Main$sendCode = _Platform_outgoingPort('sendCode', $elm$json$Json$Encode$string);
-var $author$project$Ui$Main$sendDelta = _Platform_outgoingPort('sendDelta', $elm$json$Json$Encode$string);
-var $author$project$Ui$Main$sendFileName = _Platform_outgoingPort('sendFileName', $elm$json$Json$Encode$string);
-var $author$project$Ui$Main$sendOutput = _Platform_outgoingPort('sendOutput', $elm$json$Json$Encode$string);
-var $author$project$Ui$Main$update = F2(
-	function (msg, model) {
-		switch (msg.$) {
-			case 'SaveCode':
-				var newCode = msg.a;
-				var newModelRes = $author$project$Ui$Controller$forwardController(
-					_Utils_update(
-						model,
-						{code: newCode, eventIndex: $author$project$Ui$Model$defaultEventIndex, mode: $author$project$Ui$Model$RUNNING, runningExp: $author$project$Ui$Model$defaultRunningExp, runningHeap: $author$project$Ui$Model$defaultRunningHeap, runningID: $author$project$Ui$Model$defaultRunningID, triggeredEvents: $author$project$Ui$Model$defaultTriggeredEvents}));
-				if (newModelRes.$ === 'Ok') {
-					var model1 = newModelRes.a;
-					var _v2 = $author$project$Ui$Controller$printOutput(model1);
-					var output = _v2.a;
-					var model2 = _v2.b;
-					return _Utils_Tuple2(
-						model2,
-						$author$project$Ui$Main$sendOutput(output));
-				} else {
-					var err = newModelRes.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{code: newCode}),
-						$author$project$Ui$Main$sendOutput(err));
-				}
-			case 'Backward':
-				var newModelRes = $author$project$Ui$Controller$backwardController(model);
-				if (newModelRes.$ === 'Ok') {
-					var model1 = newModelRes.a;
-					var _v4 = $author$project$Ui$Controller$printOutput(model1);
-					var output = _v4.a;
-					var model2 = _v4.b;
-					return _Utils_Tuple2(
-						model2,
-						$elm$core$Platform$Cmd$batch(
-							_List_fromArray(
-								[
-									$author$project$Ui$Main$sendCode(model2.code),
-									$author$project$Ui$Main$sendOutput(output)
-								])));
-				} else {
-					var err = newModelRes.a;
-					return _Utils_Tuple2(
-						model,
-						$author$project$Ui$Main$sendCode(err));
-				}
-			case 'BackwardPreview':
-				var newModelRes = $author$project$Ui$Controller$backwardController(model);
-				if (newModelRes.$ === 'Ok') {
-					var newModel = newModelRes.a;
-					return _Utils_Tuple2(
-						model,
-						$author$project$Ui$Main$sendCode(newModel.code));
-				} else {
-					var err = newModelRes.a;
-					return _Utils_Tuple2(
-						model,
-						$author$project$Ui$Main$sendCode(err));
-				}
-			case 'BackwardPreviewRevert':
-				return _Utils_Tuple2(
-					model,
-					$author$project$Ui$Main$sendCode(model.code));
-			case 'SetDelta':
-				var delta = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{delta: delta}),
-					$author$project$Ui$Main$sendDelta(delta));
-			case 'SelectPreEx':
-				var f = msg.a;
-				return _Utils_Tuple2(
-					model,
-					$author$project$Ui$Main$sendFileName(f));
-			case 'CatchGUIEvent':
-				var _v6 = msg.a;
-				var eventName = _v6.a;
-				var args = _v6.b;
-				var newModelRes = A3($author$project$Ui$Controller$guiEventController, eventName, args, model);
-				if (newModelRes.$ === 'Ok') {
-					var model1 = newModelRes.a;
-					var _v8 = $author$project$Ui$Controller$printOutput(model1);
-					var output = _v8.a;
-					var model2 = _v8.b;
-					return _Utils_Tuple2(
-						model2,
-						$author$project$Ui$Main$sendOutput(output));
-				} else {
-					var info = newModelRes.a;
-					return _Utils_Tuple2(
-						model,
-						$author$project$Ui$Main$sendOutput(info));
-				}
-			case 'ChangeMode':
-				var mode = msg.a;
-				var model1 = _Utils_update(
-					model,
-					{
-						eventIndex: $author$project$Ui$Model$defaultEventIndex,
-						mode: mode,
-						triggeredEvents: function () {
-							if (mode.$ === 'EDITING') {
-								var _v11 = model.triggeredEvents;
-								if (_v11.b) {
-									var _v12 = _v11.a;
-									var exp = _v12.a;
-									var tails = _v11.b;
-									return A2(
-										$elm$core$List$cons,
-										_Utils_Tuple2(exp, $author$project$Syntax$DId),
-										tails);
-								} else {
-									return _List_Nil;
-								}
-							} else {
-								return model.triggeredEvents;
-							}
-						}()
-					});
-				var _v9 = $author$project$Ui$Controller$printOutput(model1);
-				var output = _v9.a;
-				var model2 = _v9.b;
-				return _Utils_Tuple2(
-					model2,
-					$author$project$Ui$Main$sendOutput(output));
-			default:
-				var newEventIndexStr = msg.a;
-				var newEventIndex = function () {
-					var _v15 = $elm$core$String$toInt(newEventIndexStr);
-					if (_v15.$ === 'Just') {
-						var i = _v15.a;
-						return i;
-					} else {
-						return model.eventIndex;
-					}
-				}();
-				if (_Utils_cmp(
-					newEventIndex,
-					$elm$core$List$length(model.triggeredEvents)) > -1) {
-					return _Utils_Tuple2(
-						model,
-						$author$project$Ui$Main$sendAlert('No more events!'));
-				} else {
-					if (newEventIndex < 0) {
-						return _Utils_Tuple2(
-							model,
-							$author$project$Ui$Main$sendAlert('No more events!'));
-					} else {
-						var events = A2($elm$core$List$drop, newEventIndex, model.triggeredEvents);
-						var modelPrevRes = A2(
-							$author$project$Ui$Controller$runEventsFromScratch,
-							model.code,
-							$author$project$Ui$Controller$getEventsFromTriggeredEvents(events));
-						if (modelPrevRes.$ === 'Ok') {
-							var modelPrev = modelPrevRes.a;
-							var _v14 = $author$project$Ui$Controller$printOutput(modelPrev);
-							var tmpOutput = _v14.a;
-							return _Utils_Tuple2(
-								_Utils_update(
-									model,
-									{eventIndex: newEventIndex}),
-								$author$project$Ui$Main$sendOutput(tmpOutput));
-						} else {
-							var info = modelPrevRes.a;
-							return _Utils_Tuple2(
-								model,
-								$author$project$Ui$Main$sendOutput(info));
-						}
-					}
-				}
-		}
-	});
-var $author$project$Ui$Model$Backward = {$: 'Backward'};
-var $author$project$Ui$Model$BackwardPreview = {$: 'BackwardPreview'};
-var $author$project$Ui$Model$BackwardPreviewRevert = {$: 'BackwardPreviewRevert'};
-var $author$project$Ui$Model$ChangeEventIndex = function (a) {
-	return {$: 'ChangeEventIndex', a: a};
-};
-var $author$project$Ui$Model$ChangeMode = function (a) {
-	return {$: 'ChangeMode', a: a};
-};
-var $author$project$Ui$Model$EDITING = {$: 'EDITING'};
-var $author$project$Ui$Model$SelectPreEx = function (a) {
-	return {$: 'SelectPreEx', a: a};
-};
-var $elm$virtual_dom$VirtualDom$attribute = F2(
-	function (key, value) {
-		return A2(
-			_VirtualDom_attribute,
-			_VirtualDom_noOnOrFormAction(key),
-			_VirtualDom_noJavaScriptOrHtmlUri(value));
-	});
-var $elm$html$Html$Attributes$attribute = $elm$virtual_dom$VirtualDom$attribute;
-var $elm$html$Html$button = _VirtualDom_node('button');
-var $elm$html$Html$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$string(string));
-	});
-var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
-var $elm$html$Html$div = _VirtualDom_node('div');
-var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $author$project$LangUtils$GUI$eventExpToStr = function (eventExp) {
 	if ((eventExp.$ === 'ETuple') && (eventExp.b.$ === 'EventType')) {
 		var _v1 = eventExp.b;
@@ -15152,6 +9869,10 @@ var $author$project$LangUtils$GUI$eventExpToStr = function (eventExp) {
 	}
 };
 var $elm$html$Html$option = _VirtualDom_node('option');
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
+};
 var $elm$json$Json$Encode$bool = _Json_wrap;
 var $elm$html$Html$Attributes$boolProperty = F2(
 	function (key, bool) {
@@ -15326,7 +10047,7 @@ var $author$project$Ui$View$view = function (model) {
 											$elm$html$Html$text(s)
 										]));
 							},
-							model.preExs)),
+							$author$project$Ui$Model$defaultPreExs)),
 						A2(
 						$elm$html$Html$button,
 						_List_fromArray(
@@ -15433,7 +10154,7 @@ var $author$project$Ui$View$view = function (model) {
 								A2($elm$html$Html$Attributes$style, 'width', '125px'),
 								A2($elm$html$Html$Attributes$style, 'display', editDisplayStr)
 							]),
-						A2($author$project$LangUtils$GUI$makeSelectListForEvents, model.eventIndex, model.triggeredEvents))
+						A2($author$project$LangUtils$GUI$makeSelectListForEvents, 0, _List_Nil))
 					])),
 				A2(
 				$elm$html$Html$div,
