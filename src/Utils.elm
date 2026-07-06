@@ -1,7 +1,7 @@
 module Utils exposing (..)
 
 import List exposing (..)
-import Maybe
+
 
 findIndex : String -> List (Int, String) -> Int
 findIndex s env =
@@ -21,16 +21,3 @@ nth n ls =
             case (tail ls) of
                 Just ls_ -> nth (n - 1) ls_
                 _ -> Nothing
-
-
-replace : Int -> a -> List a -> Maybe (List a)
-replace n v l =
-    case l of
-        e::es -> 
-            if n == 0
-            then 
-                Just (v::es)
-            else
-                Maybe.map (\res -> e::res) (replace (n - 1) v es)
-        [] ->
-            Nothing

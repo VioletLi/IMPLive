@@ -14,8 +14,10 @@ view : Model -> Html Msg
 view model =
     Html.div [ Attr.id "bi-preview" ]
             [ Html.div [Attr.id "menu-bar"]
-                        [ Html.div [ Attr.class "title" ]
+
+                        [ Html.div [ Attr.id "title" ]
                                     [ Html.text "Bidirectional Preview" ]
+
                         , Html.button [ Attr.id "run-program"
                                     , Attr.class "btn" ]
                                     [Html.text "Eval"]

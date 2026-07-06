@@ -14,7 +14,7 @@
     height: 4.5%;
 }
 
-.title {
+#title {
     color: white;
     font-family: "Verdana";
     font-size: 20px;
@@ -190,18 +190,4 @@ table td {
     width: 100%;
     border: none;
     padding: 0;
-}
-
-#oop-output {
-    position: absolute;
-    text-align: left;
-    background-color: white;
-    top: 4.5%;
-    left: 55%;
-    width: 42%;
-    height: 69%;
-    margin-top: 1%;
-    margin-left: 1%;
-    border-radius: 5px;
-    box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2); 
 }
