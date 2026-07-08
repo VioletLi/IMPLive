@@ -58,19 +58,19 @@ ifId : number
 ifId = 2
 
 type Expr
-    = EParens WS Expr
+    = EParens WS Expr --
     | EVar WS String
     | ELam WS Pattern Expr
     | ELet WS Pattern Expr Expr
     | ELetrec WS Pattern Expr Expr
     | EApp WS Expr Expr
-    | EInt WS Int
-    | EFloat WS Float
-    | ETrue WS
-    | EFalse WS
-    | EChar WS Char
-    | ECons WS Expr Expr
-    | ENil WS
+    | EInt WS Int      --
+    | EFloat WS Float  --
+    | ETrue WS         --
+    | EFalse WS        --
+    | EChar WS Char    --
+    | ECons WS Expr Expr --
+    | ENil WS          --
     | EHole WS HoleName
     | EBPrim WS Bop Expr Expr
     | EUPrim WS Uop Expr
@@ -78,8 +78,10 @@ type Expr
     | EFix WS Expr
     | EBTuple WS Expr Expr
     | ETTuple WS Expr Expr Expr
-    | EHtml WS String Expr Expr Expr
-    | EToStr WS Expr
+    | EPrint WS Expr
+    | ERead WS
+    -- | EHtml WS String Expr Expr Expr
+    -- | EToStr WS Expr
     | EError Info
 
 type Bop = Add | Sub | Mul | Div | Eq | Lt | Gt | Le | Ge | And | Or | Cat | DDiv
@@ -98,7 +100,7 @@ type Value
     | VChar Char
     | VCons Int Value Value
     | VNil Int
-    | VHole HoleName VEnv
+    | VHole HoleName VEnv 
     | IndexedHole HoleName (List (Int, String, Value))
     | VFix Expr
     | VClosure Pattern Expr VEnv
@@ -114,11 +116,15 @@ type HoleName
     | HId Int
     | HInst HoleName Int
 
-type alias VEnv = List (String, Value)
+type alias VEnv = List (String, Loc)
+
+type alias Loc = Int
+
+type alias SEnv = List Value
 
 type alias IndexedVEnv = List (Int, String, Value)
 
-type alias HEnv = List (HoleName, VEnv, Value)
+type alias HEnv = List (HoleName, (VEnv, SEnv), Value)
 
 type Pattern
     = PVar WS String
@@ -134,24 +140,25 @@ type Pattern
 
 type alias HTotal = Int
 
-type alias UnEvalRes = 
-    { henv : HEnv
-    , venv : VEnv
-    , expr : Expr
-    , htotal : Int
-    }
+-- type alias UnEvalRes = 
+--     { henv : HEnv
+--     , venv : VEnv
+--     , expr : Expr
+--     , htotal : Int
+--     }
 
-type alias TryUnevalRes =
-    { ei     : Expr
-    , venv   : VEnv
-    , henv   : HEnv
-    , htotal : HTotal
-    , choice : Int
-    , pi     : Pattern
-    }
+-- type alias TryUnevalRes =
+--     { ei     : Expr
+--     , venv   : VEnv
+--     , henv   : HEnv
+--     , htotal : HTotal
+--     , choice : Int
+--     , pi     : Pattern
+--     }
 
 type alias MatchCaseRes =
     { venvm : VEnv
+    , senvm : SEnv
     , choice: Int
     , ei : Expr
     , pi : Pattern
