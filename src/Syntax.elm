@@ -58,24 +58,24 @@ ifId : number
 ifId = 2
 
 type Expr
-    = EParens WS Expr --
+    = EParens WS Expr 
     | EVar WS String
     | ELam WS Pattern Expr
     | ELet WS Pattern Expr Expr
     | ELetrec WS Pattern Expr Expr
     | EApp WS Expr Expr
-    | EInt WS Int      --
-    | EFloat WS Float  --
-    | ETrue WS         --
-    | EFalse WS        --
-    | EChar WS Char    --
-    | ECons WS Expr Expr --
-    | ENil WS          --
+    | EInt WS Int      
+    | EFloat WS Float  
+    | ETrue WS         
+    | EFalse WS        
+    | EChar WS Char    
+    | ECons WS Expr Expr 
+    | ENil WS          
     | EHole WS HoleName
     | EBPrim WS Bop Expr Expr
     | EUPrim WS Uop Expr
     | ECase WS Expr Branch
-    | EFix WS Expr
+    -- | EFix WS Expr
     | EBTuple WS Expr Expr
     | ETTuple WS Expr Expr Expr
     | EPrint WS Expr
@@ -100,14 +100,15 @@ type Value
     | VChar Char
     | VCons Int Value Value
     | VNil Int
-    | VHole HoleName VEnv 
+    | VHole HoleName (VEnv, SEnv)
     | IndexedHole HoleName (List (Int, String, Value))
-    | VFix Expr
+    -- | VFix Expr
     | VClosure Pattern Expr VEnv
     | VBTuple Value Value
     | VTTuple Value Value Value 
     | VHtml String Value Value Value
     | VError Info
+    | VUnit
 
 type HoleName
     = HOri Int
@@ -125,6 +126,12 @@ type alias SEnv = List Value
 type alias IndexedVEnv = List (Int, String, Value)
 
 type alias HEnv = List (HoleName, (VEnv, SEnv), Value)
+
+type alias Stdin = (List Value, StreamState)
+
+type alias Stdout = (List Value, StreamState)
+
+type StreamState = Normal | Blocked
 
 type Pattern
     = PVar WS String
@@ -157,8 +164,7 @@ type alias HTotal = Int
 --     }
 
 type alias MatchCaseRes =
-    { venvm : VEnv
-    , senvm : SEnv
+    { venvm : List (String, Value)
     , choice: Int
     , ei : Expr
     , pi : Pattern
