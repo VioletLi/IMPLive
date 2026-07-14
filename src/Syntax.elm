@@ -163,6 +163,14 @@ type alias HTotal = Int
 --     , pi     : Pattern
 --     }
 
+type alias Context = 
+    { henv : HEnv
+    , venv : VEnv
+    , senv : SEnv
+    , stdin : Stdin
+    , stdout : Stdout
+    }
+
 type alias MatchCaseRes =
     { venvm : List (String, Value)
     , choice: Int

@@ -25,197 +25,207 @@ defaultEvalRes =
     , stdout = ([], Normal)
     }
 
-eval : Expr -> VEnv -> SEnv -> HEnv -> List (HoleName, Int) -> Stdin -> Stdout -> EvalRes
-eval expr venv senv henv count stdin stdout =
+eval : Context -> Expr -> List (HoleName, Int) -> EvalRes
+eval context expr count =
     case expr of
         EParens _ e ->
-            eval e venv senv henv count stdin stdout
+            eval context e count
         EVar _ x ->
-            case findVarByName x venv of
+            case findVarByName x context.venv of
                 Just l -> 
-                    let val = findValByLoc l senv in
-                    { value = val, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+                    let val = findValByLoc l context.senv in
+                    { value = val, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = context.stdin, stdout = context.stdout }
                 Nothing ->
-                    { value = VError "Variable not found", venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+                    { defaultEvalRes | value = VError "Variable not found" }
         ELam _ p e ->
-            { value = VClosure p e venv, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+            { value = VClosure p e context.venv, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = context.stdin, stdout = context.stdout }
         ELet _ p e1 e2 ->
-            let res = eval e1 venv senv henv count stdin stdout in
+            let res = eval context e1 count in
             let matchResult = match p res.value in
-            let (venv_, senv_) = applyMatchResult matchResult venv senv in
-            eval e2 venv_ senv_ henv res.count res.stdin res.stdout
+            case matchResult of
+                [(_, VError info)] -> { defaultEvalRes | value = VError info }
+                _ -> 
+                    let (venv_, senv_) = applyMatchResult matchResult context.venv context.senv in
+                    eval { venv = venv_, senv = senv_, henv = context.henv, stdin = res.stdin, stdout = res.stdout} e2 res.count
         ELetrec _ p e1 e2 ->
             case p of
                 PVar _ x ->
-                    let venv_ = (x, length senv) :: venv in
-                    let res = eval e1 venv_ senv henv count stdin stdout in
-                    eval e2 venv_ (senv++[res.value]) henv res.count res.stdin res.stdout
-                _ -> {value = VError "Recursive binding is only allowed for single variable", venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+                    let venv_ = (x, length context.senv) :: context.venv in
+                    let res = eval { context | venv = venv_ } e1 count in
+                    case res.value of
+                        VClosure _ _ _ -> 
+                            eval { venv = venv_, senv = context.senv ++ [res.value], henv = context.henv, stdin = res.stdin, stdout = res.stdout} e2 res.count
+                        _ -> { defaultEvalRes | value = VError "Recursive binding is only allowed for single variable" }
+                _ -> { defaultEvalRes | value = VError "Recursive binding is only allowed for single variable" }
         EApp _ e1 e2 ->
-            let res1 = eval e1 venv senv henv count stdin stdout in
+            let res1 = eval context e1 count in
             case res1.value of
                 VClosure p e venvf ->
-                    eval (ELet defaultWS p e2 e) venvf res1.senv henv res1.count res1.stdin res1.stdout
-                _ -> {value = VError "Function application error", venv = venv, senv = senv, henv = henv, count = count, stdin = res1.stdin, stdout = res1.stdout }
+                    eval { venv = venvf, senv = res1.senv, henv = context.henv, stdin = res1.stdin, stdout = res1.stdout} (ELet defaultWS p e2 e) res1.count
+                _ -> { defaultEvalRes | value = VError "Function application error" }
         EInt _ n ->
-            { value = VInt n, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+            { value = VInt n, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = context.stdin, stdout = context.stdout }
         EFloat _ f ->
-            { value = VFloat f, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+            { value = VFloat f, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = context.stdin, stdout = context.stdout }
         ETrue _ ->
-            { value = VTrue, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+            { value = VTrue, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = context.stdin, stdout = context.stdout }
         EFalse _ ->
-            { value = VFalse, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+            { value = VFalse, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = context.stdin, stdout = context.stdout }
         EChar _ c ->
-            { value = VChar c, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+            { value = VChar c, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = context.stdin, stdout = context.stdout }
         ECons (_, id) e1 e2 ->
             let
-                res1 = eval e1 venv senv henv count stdin stdout
-                res2 = eval e2 venv res1.senv henv res1.count res1.stdin res1.stdout
-            in
-            case res2.value of
-                VHole _ _ -> 
-                    let 
-                        c = 
-                            findCount tempHoleCount count 
-                    in
-                        { value = VHole (HInter (c+1)) (venv, senv), venv = venv, senv = senv, henv = henv, count = (tempHoleCount, c+1)::count, stdin = res2.stdin, stdout = res2.stdout }
+                res1 = eval context e1 count in
+            case res1.value of
+                VError info -> { defaultEvalRes | value = VError info }
                 _ ->
-                    if id == esQuo || id == esElm then
-                        { value = VCons vsId res1.value res2.value, venv = venv, senv = senv, henv = henv, count = count, stdin = res2.stdin, stdout = res2.stdout }
-                    else
-                        { value = VCons voId res1.value res2.value, venv = venv, senv = senv, henv = henv, count = count, stdin = res2.stdin, stdout = res2.stdout }
+                    let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count
+                    in
+                    case res2.value of
+                        VError info -> { defaultEvalRes | value = VError info }
+                        VHole _ _ -> 
+                            let 
+                                c = 
+                                    findCount tempHoleCount count 
+                            in
+                                { value = VHole (HInter (c+1)) (context.venv, context.senv), venv = context.venv, senv = res2.senv, henv = context.henv, count = (tempHoleCount, c+1)::count, stdin = res2.stdin, stdout = res2.stdout }
+                        _ ->
+                            if id == esQuo || id == esElm then
+                                { value = VCons vsId res1.value res2.value, venv = context.venv, senv = res2.senv, henv = context.henv, count = count, stdin = res2.stdin, stdout = res2.stdout }
+                            else
+                                { value = VCons voId res1.value res2.value, venv = context.venv, senv = res2.senv, henv = context.henv, count = count, stdin = res2.stdin, stdout = res2.stdout }
         ENil (_, id) ->
             if id == 3 || id == 4 then
-                { value = VNil 1, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+                { value = VNil 1, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = context.stdin, stdout = context.stdout }
             else
-                { value = VNil 0, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+                { value = VNil 0, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = context.stdin, stdout = context.stdout }
         EHole _ hn ->
-            let v = findValue hn venv senv henv in
+            let v = findValue hn context.venv context.senv context.henv in
             case v of
-                Just v_ -> { value = v_, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+                Just v_ -> { value = v_, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = context.stdin, stdout = context.stdout }
                 Nothing ->
                     let c = findCount hn count in
-                    { value = VHole (HInter (c+1)) (venv, senv), venv = venv, senv = senv, henv = henv, count = (hn, c+1)::count, stdin = stdin, stdout = stdout }
+                    { value = VHole (HInter (c+1)) (context.venv, context.senv), venv = context.venv, senv = context.senv, henv = context.henv, count = (hn, c+1)::count, stdin = context.stdin, stdout = context.stdout }
         EBPrim _ bop e1 e2 ->
-            let res1 = eval e1 venv senv henv count stdin stdout in
-            let res2 = eval e2 venv res1.senv henv res1.count res1.stdin res1.stdout in
+            let res1 = eval context e1 count in
+            let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count in
             case res1.value of
                 VInt n1 ->
                     case res2.value of
                         VInt n2 ->
                             case bop of
-                                Add -> { value = VInt (n1 + n2), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Sub -> { value = VInt (n1 - n2), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Mul -> { value = VInt (n1 * n2), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Div -> { value = VInt (n1 // n2), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                DDiv -> { value = VFloat (Round.roundNumCom 2 <| ((toFloat n1) / (toFloat n2))), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Eq -> { value = boolOp (n1 == n2), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Lt -> { value = boolOp (n1 < n2), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Gt -> { value = boolOp (n1 > n2), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Le -> { value = boolOp (n1 <= n2), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Ge -> { value = boolOp (n1 >= n2), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                _ -> { value = VError "Unknown binary operation error: 01", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                        VFloat n2 -> { value = floatOp bop (toFloat n1) n2, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Add -> { value = VInt (n1 + n2), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Sub -> { value = VInt (n1 - n2), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Mul -> { value = VInt (n1 * n2), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Div -> { value = VInt (n1 // n2), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                DDiv -> { value = VFloat (Round.roundNumCom 2 <| ((toFloat n1) / (toFloat n2))), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Eq -> { value = boolOp (n1 == n2), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Lt -> { value = boolOp (n1 < n2), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Gt -> { value = boolOp (n1 > n2), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Le -> { value = boolOp (n1 <= n2), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Ge -> { value = boolOp (n1 >= n2), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                _ -> { defaultEvalRes | value = VError "Unknown binary operation error: 01" }
+                        VFloat n2 -> { value = floatOp bop (toFloat n1) n2, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
                         VHole _ _ ->
                             let c = findCount tempHoleCount res2.count in
-                            { value = VHole (HInter (c+1)) (venv, res2.senv), venv = venv, senv = res2.senv, henv = henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                        _ -> { value = VError "Unsupported operand error: 01", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                            { value = VHole (HInter (c+1)) (context.venv, res2.senv), venv = context.venv, senv = res2.senv, henv = context.henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                        _ -> { defaultEvalRes | value = VError "Unsupported operand error: 01" }
                 VFloat n1 ->
                     case res2.value of
-                        VInt n2 -> { value = floatOp bop n1 (toFloat n2), venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                        VFloat n2 -> { value = floatOp bop n1 n2, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                        VInt n2 -> { value = floatOp bop n1 (toFloat n2), venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                        VFloat n2 -> { value = floatOp bop n1 n2, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
                         VHole _ _ ->
                             let c = findCount tempHoleCount res2.count in
-                            { value = VHole (HInter (c+1)) (venv, res2.senv), venv = venv, senv = res2.senv, henv = henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                        _ -> { value = VError "Unsupported operand error: 02", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                            { value = VHole (HInter (c+1)) (context.venv, res2.senv), venv = context.venv, senv = res2.senv, henv = context.henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                        _ -> { defaultEvalRes | value = VError "Unsupported operand error: 02" }
                 VTrue ->
                     case res2.value of
                         VTrue -> 
                             case bop of
-                                And -> { value = VTrue, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Or -> { value = VTrue, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                _ -> { value = VError "Unknown binary operation error: 02", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                And -> { value = VTrue, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Or -> { value = VTrue, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                _ -> { defaultEvalRes | value = VError "Unknown binary operation error: 02" }
                         VFalse ->
                             case bop of
-                                And -> { value = VFalse, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Or -> { value = VTrue, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                _ -> { value = VError "Unknown binary operation error: 03", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                And -> { value = VFalse, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Or -> { value = VTrue, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                _ -> { defaultEvalRes | value = VError "Unknown binary operation error: 03" }
                         VHole _ _ ->
                             let c = findCount tempHoleCount res2.count in
-                            { value = VHole (HInter (c+1)) (venv, res2.senv), venv = venv, senv = res2.senv, henv = henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                        _ -> { value = VError "Unsupported operand error: 03", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                            { value = VHole (HInter (c+1)) (context.venv, res2.senv), venv = context.venv, senv = res2.senv, henv = context.henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                        _ -> { defaultEvalRes | value = VError "Unsupported operand error: 03" }
                 VFalse ->
                     case res2.value of
                         VTrue ->
                             case bop of
-                                And -> { value = VFalse, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Or -> { value = VTrue, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                _ -> { value = VError "Unknown binary operation error: 04", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                And -> { value = VFalse, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Or -> { value = VTrue, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                _ -> { defaultEvalRes | value = VError "Unknown binary operation error: 04" }
                         VFalse ->
                             case bop of
-                                And -> { value = VFalse, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                Or -> { value = VTrue, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                _ -> { value = VError "Unknown binary operation error: 05", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                And -> { value = VFalse, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Or -> { value = VTrue, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                _ -> { defaultEvalRes | value = VError "Unknown binary operation error: 05" }
                         VHole _ _ ->
                             let c = findCount tempHoleCount res2.count in
-                            { value = VHole (HInter (c+1)) (venv, res2.senv), venv = venv, senv = res2.senv, henv = henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                        _ -> { value = VError "Unsupported operand error: 04", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                            { value = VHole (HInter (c+1)) (context.venv, res2.senv), venv = context.venv, senv = res2.senv, henv = context.henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                        _ -> { defaultEvalRes | value = VError "Unsupported operand error: 04" }
                 VCons _ _ _ ->
                     case res2.value of
                         VCons _ _ _ ->
                             case bop of
-                                Cat -> { value = append res1.value res2.value, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                _ -> { value = VError "Unknown binary operation error: 06", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Cat -> { value = append res1.value res2.value, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                _ -> { defaultEvalRes | value = VError "Unknown binary operation error: 06" }
                         VNil _ ->
-                            { value = append res1.value res2.value, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                            { value = append res1.value res2.value, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
                         VHole _ _ ->
                             let c = findCount tempHoleCount res2.count in
-                            { value = VHole (HInter (c+1)) (venv, res2.senv), venv = venv, senv = res2.senv, henv = henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                        _ -> { value = VError "Unsupported operand error: 05", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                            { value = VHole (HInter (c+1)) (context.venv, res2.senv), venv = context.venv, senv = res2.senv, henv = context.henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                        _ -> { defaultEvalRes | value = VError "Unsupported operand error: 05" }
                 VNil _ ->
                     case res2.value of
                         VCons _ _ _ ->
                             case bop of
-                                Cat -> { value = append res1.value res2.value, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                                _ -> { value = VError "Unknown binary operation error: 07", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                Cat -> { value = append res1.value res2.value, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                                _ -> { defaultEvalRes | value = VError "Unknown binary operation error: 07" }
                         VNil _ ->
-                            { value = append res1.value res2.value, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                            { value = append res1.value res2.value, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
                         VHole _ _ ->
                             let c = findCount tempHoleCount res2.count in
-                            { value = VHole (HInter (c+1)) (venv, res2.senv), venv = venv, senv = res2.senv, henv = henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                        _ -> { value = VError "Unsupported operand error: 06", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                            { value = VHole (HInter (c+1)) (context.venv, res2.senv), venv = context.venv, senv = res2.senv, henv = context.henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                        _ -> { defaultEvalRes | value = VError "Unsupported operand error: 06" }
                 VHole _ _ ->
                     let c = findCount tempHoleCount res2.count in
-                    { value = VHole (HInter (c+1)) (venv, res2.senv), venv = venv, senv = res2.senv, henv = henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
-                _ -> { value = VError "Unsupported operand error: 07", venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                    { value = VHole (HInter (c+1)) (context.venv, res2.senv), venv = context.venv, senv = res2.senv, henv = context.henv, count = (tempHoleCount, c+1)::res2.count, stdin = res2.stdin, stdout = res2.stdout }
+                _ -> { defaultEvalRes | value = VError "Unsupported operand error: 07" }
         EUPrim _ uop e ->
             case uop of
                 Neg ->
-                    let res = eval e venv senv henv count stdin stdout in
+                    let res = eval context e count in
                     case res.value of
-                        VInt n -> { value = VInt (0-n), venv = venv, senv = res.senv, henv = henv, count = res.count, stdin = res.stdin, stdout = res.stdout }
-                        VFloat n -> { value = VFloat (0-n), venv = venv, senv = res.senv, henv = henv, count = res.count, stdin = res.stdin, stdout = res.stdout }
+                        VInt n -> { value = VInt (0-n), venv = context.venv, senv = res.senv, henv = context.henv, count = res.count, stdin = res.stdin, stdout = res.stdout }
+                        VFloat n -> { value = VFloat (0-n), venv = context.venv, senv = res.senv, henv = context.henv, count = res.count, stdin = res.stdin, stdout = res.stdout }
                         VHole _ _ ->
                             let c = findCount tempHoleCount res.count in
-                            { value = VHole (HInter (c+1)) (venv, res.senv), venv = venv, senv = res.senv, henv = henv, count = (tempHoleCount, c+1)::res.count, stdin = res.stdin, stdout = res.stdout }
-                        _ -> { value = VError "Unsupported unary operation error: 01", venv = venv, senv = res.senv, henv = henv, count = res.count, stdin = res.stdin, stdout = res.stdout }
+                            { value = VHole (HInter (c+1)) (context.venv, res.senv), venv = context.venv, senv = res.senv, henv = context.henv, count = (tempHoleCount, c+1)::res.count, stdin = res.stdin, stdout = res.stdout }
+                        _ -> { defaultEvalRes | value = VError "Unsupported unary operation error: 01" }
                 Not ->
-                    let res = eval e venv senv henv count stdin stdout in
+                    let res = eval context e count in
                     case res.value of
-                        VTrue -> { value = VFalse, venv = venv, senv = res.senv, henv = henv, count = res.count, stdin = res.stdin, stdout = res.stdout }
-                        VFalse -> { value = VTrue, venv = venv, senv = res.senv, henv = henv, count = res.count, stdin = res.stdin, stdout = res.stdout }
+                        VTrue -> { value = VFalse, venv = context.venv, senv = res.senv, henv = context.henv, count = res.count, stdin = res.stdin, stdout = res.stdout }
+                        VFalse -> { value = VTrue, venv = context.venv, senv = res.senv, henv = context.henv, count = res.count, stdin = res.stdin, stdout = res.stdout }
                         VHole _ _ ->
                             let c = findCount tempHoleCount res.count in
-                            { value = VHole (HInter (c+1)) (venv, res.senv), venv = venv, senv = res.senv, henv = henv, count = (tempHoleCount, c+1)::res.count, stdin = res.stdin, stdout = res.stdout }
-                        _ -> { value = VError "Unsupported unary operation error: 02", venv = venv, senv = res.senv, henv = henv, count = res.count, stdin = res.stdin, stdout = res.stdout }
+                            { value = VHole (HInter (c+1)) (context.venv, res.senv), venv = context.venv, senv = res.senv, henv = context.henv, count = (tempHoleCount, c+1)::res.count, stdin = res.stdin, stdout = res.stdout }
+                        _ -> { defaultEvalRes | value = VError "Unsupported unary operation error: 02" }
         ECase _ e branches ->
-            let res = eval e venv senv henv count stdin stdout in
+            let res = eval context e count in
             case res.value of
                 VHole _ _ ->
                     let modvars = modVarsinExpr expr |> unique in
-                    let (senv_, count_) = updateIntersect modvars venv senv count in
+                    let (senv_, count_) = updateIntersect modvars context.venv context.senv count in
                     let c = findCount tempHoleCount count_ in
-                    let (curRead, curWrite, (stdin__, stdout__)) = case (stdin, stdout) of
+                    let (curRead, curWrite, (stdin__, stdout__)) = case (context.stdin, context.stdout) of
                             ((stdin_, Blocked), (stdout_, Blocked)) -> (True, True, (stdin_, stdout_))
                             ((stdin_, Blocked), (stdout_, Normal)) -> (True, False, (stdin_, stdout_))
                             ((stdin_, Normal), (stdout_, Blocked)) -> (False, True, (stdin_, stdout_))
@@ -223,46 +233,67 @@ eval expr venv senv henv count stdin stdout =
                     in
                     let (read, write) = checkIOState expr (curRead, curWrite) in
                     case (read, write) of
-                        (True, True) -> { value = VHole (HInter (c+1)) (venv, senv), venv = venv, senv = senv_, henv = henv, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Blocked), stdout = (stdout__, Blocked) }               
-                        (True, False) -> { value = VHole (HInter (c+1)) (venv, senv), venv = venv, senv = senv_, henv = henv, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Blocked), stdout = (stdout__, Normal) } 
-                        (False, True) -> { value = VHole (HInter (c+1)) (venv, senv), venv = venv, senv = senv_, henv = henv, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Normal), stdout = (stdout__, Blocked) } 
-                        (False, False) -> { value = VHole (HInter (c+1)) (venv, senv), venv = venv, senv = senv_, henv = henv, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Normal), stdout = (stdout__, Normal) } 
+                        (True, True) -> { value = VHole (HInter (c+1)) (context.venv, context.senv), venv = context.venv, senv = senv_, henv = context.henv, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Blocked), stdout = (stdout__, Blocked) }               
+                        (True, False) -> { value = VHole (HInter (c+1)) (context.venv, context.senv), venv = context.venv, senv = senv_, henv = context.henv, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Blocked), stdout = (stdout__, Normal) } 
+                        (False, True) -> { value = VHole (HInter (c+1)) (context.venv, context.senv), venv = context.venv, senv = senv_, henv = context.henv, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Normal), stdout = (stdout__, Blocked) } 
+                        (False, False) -> { value = VHole (HInter (c+1)) (context.venv, context.senv), venv = context.venv, senv = senv_, henv = context.henv, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Normal), stdout = (stdout__, Normal) } 
                 _ ->
                     let matchResult = matchCase res.value branches in
-                    let (venv_, senv_) = applyMatchResult matchResult.venvm venv senv in
-                    eval matchResult.ei venv_ senv_ henv res.count res.stdin res.stdout
+                    case matchResult.venvm of
+                        [(_, VError info)] -> { defaultEvalRes | value = VError info }
+                        _ -> 
+                            let (venv_, senv_) = applyMatchResult matchResult.venvm context.venv context.senv in
+                            eval { context | venv = venv_, senv = senv_, stdin = res.stdin, stdout = res.stdout} matchResult.ei res.count
+        -- EFix _ e ->
+        --     defaultEvalRes
         -- EFix _ e ->
         --     defaultEvalRes
         EBTuple _ e1 e2 ->
-            let res1 = eval e1 venv senv henv count stdin stdout in
-            let res2 = eval e2 venv res1.senv henv res1.count res1.stdin res1.stdout in
-            { value = VBTuple res1.value res2.value, venv = venv, senv = res2.senv, henv = henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
+            let res1 = eval context e1 count in
+            case res1.value of
+                VError info -> { defaultEvalRes | value = VError info }
+                _ ->
+                    let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count in
+                    case res2.value of
+                        VError info -> { defaultEvalRes | value = VError info }
+                        _ ->
+                            { value = VBTuple res1.value res2.value, venv = context.venv, senv = res2.senv, henv = context.henv, count = res2.count, stdin = res2.stdin, stdout = res2.stdout }
         ETTuple _ e1 e2 e3 ->
-            let res1 = eval e1 venv senv henv count stdin stdout in
-            let res2 = eval e2 venv res1.senv henv res1.count res1.stdin res1.stdout in
-            let res3 = eval e3 venv res2.senv henv res2.count res2.stdin res2.stdout in
-            { value = VTTuple res1.value res2.value res3.value, venv = venv, senv = res3.senv, henv = henv, count = res3.count, stdin = res3.stdin, stdout = res3.stdout }
+            let res1 = eval context e1 count in
+            case res1.value of
+                VError info -> { defaultEvalRes | value = VError info }
+                _ ->
+                    let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count in
+                    case res2.value of
+                        VError info -> { defaultEvalRes | value = VError info }
+                        _ ->
+                            let res3 = eval { context | senv = res2.senv, stdin = res2.stdin, stdout = res2.stdout} e3 res2.count in
+                            case res3.value of
+                                VError info -> { defaultEvalRes | value = VError info }
+                                _ ->
+                                    { value = VTTuple res1.value res2.value res3.value, venv = context.venv, senv = res3.senv, henv = context.henv, count = res3.count, stdin = res3.stdin, stdout = res3.stdout }
         EPrint _ e ->
-            let res = eval e venv senv henv count stdin stdout in
-            case res.stdout of
-                (stdout_, Blocked) -> 
+            let res = eval context e count in
+            case (res.value, res.stdout) of
+                (VError info, _) -> { defaultEvalRes | value = VError info }
+                (_, (stdout_, Blocked)) -> 
                     let
                         c = findCount tempHoleCount count
                     in
-                    { value = VUnit, venv = venv, senv = res.senv, henv = henv, count = (tempHoleCount, c+1)::res.count, stdin = res.stdin, stdout = (stdout_ ++ [VHole (HInter (c+1)) (venv, senv)], Blocked) }
-                (stdout_, Normal) -> 
-                    { value = VUnit, venv = venv, senv = res.senv, henv = henv, count = res.count, stdin = res.stdin, stdout = (stdout_ ++ [res.value], Normal) }
+                    { value = VUnit, venv = context.venv, senv = res.senv, henv = context.henv, count = (tempHoleCount, c+1)::res.count, stdin = res.stdin, stdout = (stdout_ ++ [VHole (HInter (c+1)) (context.venv, context.senv)], Blocked) }
+                (_, (stdout_, Normal)) -> 
+                    { value = VUnit, venv = context.venv, senv = res.senv, henv = context.henv, count = res.count, stdin = res.stdin, stdout = (stdout_ ++ [res.value], Normal) }
         ERead _ ->
-            case stdin of
+            case context.stdin of
                 (_, Blocked) -> 
                     let
                         c = findCount tempHoleCount count
                     in
-                    { value = VHole (HInter (c+1)) (venv, senv), venv = venv, senv = senv, henv = henv, count = (tempHoleCount, c+1)::count, stdin = stdin, stdout = stdout }
-                (val :: ls, _) -> { value = val, venv = venv, senv = senv, henv = henv, count = count, stdin = (ls, Normal), stdout = stdout }
-                ([], _) -> { value = VError "No input found", venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+                    { value = VHole (HInter (c+1)) (context.venv, context.senv), venv = context.venv, senv = context.senv, henv = context.henv, count = (tempHoleCount, c+1)::count, stdin = context.stdin, stdout = context.stdout }
+                (val :: ls, _) -> { value = val, venv = context.venv, senv = context.senv, henv = context.henv, count = count, stdin = (ls, Normal), stdout = context.stdout }
+                ([], _) -> { defaultEvalRes | value = VError "No input found" }
         EError info ->
-            { value = VError info, venv = venv, senv = senv, henv = henv, count = count, stdin = stdin, stdout = stdout }
+            { defaultEvalRes | value = VError info }
         
 
 findCount : HoleName -> List (HoleName, Int) -> Int
