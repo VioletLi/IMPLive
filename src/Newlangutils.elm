@@ -485,3 +485,25 @@ insert (u, env, v) henv =
             if u1 == u && isEqualEnv env env1
             then (u1, env1, v)::hv
             else (u1, env1, v1)::(insert (u, env, v) hv)
+
+applyArgs : List (String, Value) -> Int -> (VEnv, SEnv)
+applyArgs args n =
+    case args of
+        [] -> ([], [])
+        (x, v) :: args_ ->
+            let (venv_, senv_) = applyArgs args_ (n+1) in
+            (venv_ ++ [(x, n)], v :: senv_ )
+
+
+updateBranch : Branch -> Int -> Expr -> Branch
+updateBranch branch choice e =
+    case branch of
+        BNSin ws n p expr ->
+            if choice == n
+            then BNSin ws n p e
+            else BNSin ws n p expr
+
+        BCom ws b1 b2 ->
+            BCom ws (updateBranch b1 choice e) (updateBranch b2 choice e)
+        
+        b -> b

@@ -4,6 +4,7 @@ import Syntax exposing (..)
 import Neweval exposing (eval)
 import Newlangutils exposing (..)
 
+
 type alias UnevalRes =
     { henv : HEnv
     , venv : VEnv
@@ -29,6 +30,12 @@ defaultUnevalRes =
 type alias UpdateVal =
     { value : Value
     , senv : SEnv
+    }
+
+type alias TryUnevalRes =
+    { res : UnevalRes
+    , choice : Int
+    , pi : Pattern
     }
 
 uneval : Context -> Expr -> UpdateVal -> HTotal -> UnevalRes
@@ -71,9 +78,143 @@ uneval context expr updateval htotal =
                     }
                 _ ->
                     { defaultUnevalRes | expr = EError "Expected Closure." }
-        ELet ws p e1 e2 -> defaultUnevalRes
-        ELetrec ws p e1 e2 -> defaultUnevalRes
-        EApp ws e1 e2 -> defaultUnevalRes
+        ELet ws p e1 e2 -> 
+            let fres = eval context e1 [] in
+            let matchResult = match p fres.value in
+            case matchResult of
+                [(_, VError info)] -> { defaultUnevalRes | expr = EError info }
+                _ -> 
+                    let vars = collectVars p in
+                    let (venv, senv) = applyMatchResult matchResult context.venv context.senv in
+                    let res2 = uneval { venv = venv, senv = senv, henv = context.henv, stdin = fres.stdin, stdout = fres.stdout } e2 updateval htotal in
+                    let senv4e1 = rollbackSEnv context.venv context.senv res2.senv vars in
+                    case senv4e1 of
+                        [VError info] -> { defaultUnevalRes | expr = EError info }
+                        _ ->
+                            let newval = pattern2val p res2.venv res2.senv in
+                            let res1 = uneval context e1 { value = newval, senv = senv4e1 } res2.htotal in
+                            {
+                                henv = mergeHEnv3 context.henv res1.henv res2.henv
+                                , venv = context.venv
+                                , senv = res1.senv
+                                , expr = ELet ws p res1.expr res2.expr
+                                , stdin = context.stdin
+                                , stdout = context.stdout
+                                , htotal = res1.htotal
+                            }
+            
+        ELetrec ws p e1 e2 -> 
+            let res = uneval context (EApp defaultWS (ELam defaultWS p e2) (EFix defaultWS (ELam defaultWS p e1))) updateval htotal in
+            case res.expr of
+                EError info -> {defaultUnevalRes | expr = EError info}
+                EApp _ (ELam _ p_ e2_) (EFix _ (ELam _ _ e1_)) ->
+                    {res | expr = ELetrec ws p_ e1_ e2_}
+                _ -> {defaultUnevalRes | expr = EError "Wrong Result When Updating Letrec Statement."}
+            -- case p of
+            --     PVar _ x ->
+            --         let venv_ = (x, length context.senv) :: context.venv in
+            --         let fres = eval context e1 [] in
+            --         case fres.value of
+            --             VClosure _ _ _ ->
+            --                 let res2 = uneval { venv = venv_, senv = fres.senv ++ [fres.value], henv = context.henv, stdin = fres.stdin, stdout = fres.stdout } e2 updateval htotal in
+            --                 let newval = List.head (List.reverse (List.take ((List.length context.senv) + 1) res2.senv)) in
+            --                 case newval of
+            --                     Just val ->
+            --                         let res1 = uneval context e1 { value = val, senv = List.take (List.length context.senv) res2.senv } res2.htotal in
+            --                         {
+            --                             henv = mergeHEnv3 context.henv res1.henv res2.henv
+            --                             , venv = context.venv
+            --                             , senv = res1.senv
+            --                             , expr = ELetrec ws p res1.expr res2.expr
+            --                             , stdin = context.stdin
+            --                             , stdout = context.stdout
+            --                             , htotal = res1.htotal
+            --                         }
+            --                     _ -> { defaultUnevalRes | expr = EError "Update Error in Letrec." }
+            --             _ ->
+            --                 {defaultUnevalRes | expr = EError "Expected Recursive Function in Letrec." }
+            --     _ ->
+            --         {defaultUnevalRes | expr = EError "Expected Recursive Function in Letrec." }
+        EApp ws1 e1 (EFix ws2 e2) -> 
+            let fres = eval context e1 [] in
+            case fres.value of
+                VClosure (PVar ws s) e venv -> 
+                    let res = uneval {context | venv = (s, length context.senv) :: context.venv, senv = fres.senv ++ [VFix e2],stdin = fres.stdin,stdout = fres.stdout} e updateval htotal in
+                    case res.expr of 
+                        EError info -> {defaultUnevalRes | expr = EError info}
+                        _ -> 
+                            let 
+                                resf = uneval context e1 {value = VClosure (PVar ws s) res.expr venv, senv = List.take (List.length fres.senv) res.senv} res.htotal
+                            in
+                            case resf.expr of
+                                EError info -> {defaultUnevalRes | expr = EError info}
+                                _ ->
+                                    case findVarByName s res.venv of
+                                        Just l ->
+                                            case (findValByLoc l res.senv) of
+                                                VClosure fixP fixT fixEnv -> 
+                                                    let resfixclosure = uneval context (EFix defaultWS e2) {value = VClosure fixP fixT fixEnv, senv = context.senv} resf.htotal
+                                                    in 
+                                                    {
+                                                        henv = mergeHEnv3 context.henv res.henv resfixclosure.henv,
+                                                        venv = context.venv,
+                                                        senv = resf.senv,
+                                                        expr = EApp ws1 resf.expr resfixclosure.expr,
+                                                        stdin = context.stdin,
+                                                        stdout = context.stdout,
+                                                        htotal = resfixclosure.htotal
+                                                    }
+                                                VFix e2_ -> 
+                                                    {
+                                                        henv = res.henv,
+                                                        venv = context.venv,
+                                                        senv = resf.senv,
+                                                        expr = EApp ws1 resf.expr (EFix ws2 e2_),
+                                                        stdin = context.stdin,
+                                                        stdout = context.stdout,
+                                                        htotal = resf.htotal
+                                                    }
+                                                _ -> {defaultUnevalRes | expr = EError "Error in update recusive function." }
+                                        _ -> {defaultUnevalRes | expr = EError "Variable not found in uneval." }
+                _ -> {defaultUnevalRes | expr = EError "Expected Closure in EApp." }
+        EApp ws e1 e2 -> 
+            let fres1 = eval context e1 [] in
+            case fres1.value of
+                VClosure p e venv ->
+                    let fres2 = eval {context | senv = fres1.senv, stdin = fres1.stdin, stdout = fres1.stdout} e2 [] in
+                    let matchResult = match p fres2.value in
+                            case matchResult of
+                                [(_, VError info)] -> { defaultUnevalRes | expr = EError ("In EApp Update: "++info) }
+                                _ ->
+                                    let (venv_, senv_) = applyArgs matchResult (length fres2.senv) in
+                                    let resf = uneval {venv = venv_ ++ venv, senv = fres2.senv ++ senv_, henv = context.henv, stdin = fres2.stdin, stdout = fres2.stdout} e {updateval | senv = updateval.senv ++ senv_} htotal in
+                                    case resf.expr of
+                                        EError info -> { defaultUnevalRes | expr = EError ("Error In EApp Update: "++info) }
+                                        _ -> 
+                                            let newval = pattern2val p resf.venv resf.senv in
+                                            let resargs = uneval {context | senv = fres1.senv, stdin = fres1.stdin, stdout = fres1.stdout} e2 {value = newval, senv = List.take (List.length fres1.senv) resf.senv} resf.htotal in
+                                            case resargs.expr of
+                                                EError info -> { defaultUnevalRes | expr = EError ("Error In application args Update: "++info) }
+                                                _ -> 
+                                                    let newclosure = VClosure p resf.expr venv in
+                                                    let resfunc = uneval context e1 {value = newclosure, senv = resargs.senv} resargs.htotal in
+                                                    {
+                                                        henv = mergeHEnv3 context.henv resargs.henv resf.henv,
+                                                        venv = context.venv,
+                                                        senv = resfunc.senv,
+                                                        expr = EApp ws resfunc.expr resargs.expr,
+                                                        stdin = context.stdin,
+                                                        stdout = context.stdout,
+                                                        htotal = resfunc.htotal
+                                                    }
+                _ -> {defaultUnevalRes | expr = EError "Expected Closure in eapp update." }
+        EFix ws e -> 
+            let res = uneval context (EApp defaultWS e (EFix defaultWS e)) updateval htotal in
+            let newe = case res.expr of
+                    EApp _ e1 (EFix _ e2) -> if e2 /= e then e2 else e1
+                    _ -> EError "Wrong Result When Updating Fix Statement."
+            in
+            { res | expr = EFix ws newe }
         EInt ws _ -> 
             case updateval.value of
                 VInt i_ ->
@@ -331,8 +472,7 @@ uneval context expr updateval htotal =
                     , htotal = htotal1 }
                 _ -> {defaultUnevalRes | expr = EError "Expected List in Nil." }
         EHole ws u -> 
-            let save = 
-                case updateval.value of
+            let save = case updateval.value of
                     VInt _        -> updateval.value
                     VFloat _      -> updateval.value
                     VTrue         -> updateval.value
@@ -341,10 +481,13 @@ uneval context expr updateval htotal =
                     VNil _        -> updateval.value
                     VBTuple _ _   -> updateval.value
                     VTTuple _ _ _ -> updateval.value
+                    VHole _ _ -> updateval.value
                     _         -> VError ""
             in
             case save of
                 VError _ ->
+                    { defaultUnevalRes | expr = EError "Expected Value or Hole in EHole." }
+                _ ->
                     case updateval.value of
                         VHole _ (venv_, senv_) ->
                             let
@@ -371,8 +514,7 @@ uneval context expr updateval htotal =
                             , stdout = context.stdout
                             , htotal = htotal + 1
                             }
-                _ ->
-                    { defaultUnevalRes | expr = EError "Expected Value or Hole in EHole." }
+                    
         EBPrim ws op e1 e2 -> 
             let
                 logic_ =
@@ -698,7 +840,45 @@ uneval context expr updateval htotal =
 
                         
                         _ -> { defaultUnevalRes | expr = EError "Unary Expression Error: 08" }
-        ECase ws e branches -> defaultUnevalRes
+        ECase ws e branches -> 
+            let eres = eval context e [] in
+            case (eres.value, updateval.value) of
+                (VHole _ _, VHole _ (venv_, senv_)) -> 
+                    {
+                        henv = context.henv,
+                        venv = venv_,
+                        senv = senv_,
+                        expr = ECase ws e branches,
+                        stdin = context.stdin,
+                        stdout = context.stdout,
+                        htotal = htotal
+                    }
+                _ -> 
+                    let 
+                        tryRes = 
+                            case eres.value of
+                                VHole _ _ -> tryuneval eres.value context branches updateval htotal
+                                _ -> 
+                                    let matchRes = matchCase eres.value branches in
+                                    let (venv_, senv_) = applyArgs matchRes.venvm (length eres.senv) in
+                                    let bres = uneval {venv = venv_ ++ context.venv, senv = eres.senv ++ senv_, henv = context.henv, stdin = eres.stdin, stdout = eres.stdout} matchRes.ei { updateval | senv = updateval.senv ++ senv_} htotal in
+                                    {res = bres, choice = matchRes.choice, pi = matchRes.pi}
+                    in
+                    case tryRes.res.expr of
+                        EError info -> {defaultUnevalRes | expr = EError info}
+                        _ -> 
+                            let branches_ = updateBranch branches tryRes.choice tryRes.res.expr in
+                            let newv = pattern2val tryRes.pi tryRes.res.venv tryRes.res.senv in
+                            let rese = uneval context e {value = newv, senv = List.take (List.length eres.senv) tryRes.res.senv} tryRes.res.htotal in
+                            {
+                                henv = mergeHEnv3 context.henv tryRes.res.henv rese.henv
+                                , venv = rese.venv
+                                , senv = rese.senv
+                                , expr = ECase ws rese.expr branches_
+                                , stdin = rese.stdin
+                                , stdout = rese.stdout
+                                , htotal = rese.htotal
+                            }
         EBTuple ws e1 e2 -> 
             case updateval.value of
                 VBTuple v1 v2 ->
@@ -706,7 +886,7 @@ uneval context expr updateval htotal =
                         res1 = eval context e1 []
                         res2_ = uneval {context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 { value = v2, senv = updateval.senv } htotal
                         res1_ = uneval context e1 { value = v1, senv = res2_.senv } res2_.htotal
-                        henv = mergeHEnv3 context.henv res1.henv res2_.henv
+                        henv = mergeHEnv3 context.henv res1_.henv res2_.henv
                     in
                         { henv = henv
                         , venv = res1_.venv
@@ -726,7 +906,7 @@ uneval context expr updateval htotal =
                         res3_ = uneval {context | senv = res2.senv, stdin = res2.stdin, stdout = res2.stdout} e3 { value = v3, senv = updateval.senv } htotal
                         res2_ = uneval {context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 { value = v2, senv = res3_.senv } res3_.htotal
                         res1_ = uneval context e1 { value = v1, senv = res2_.senv } res2_.htotal
-                        henv = mergeHEnv4 context.henv res1.henv res2_.henv res3_.henv
+                        henv = mergeHEnv4 context.henv res1_.henv res2_.henv res3_.henv
                     in
                         { henv = henv
                         , venv = res1_.venv
@@ -1174,7 +1354,7 @@ comp ws e1 e2 context updateval htotal op =
                         res2_ =
                             uneval {context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 { value = (VHole hn (venv_, senv_)), senv = updateval.senv } htotal
                         res1_ = uneval context e1 { value = res1.value, senv = res2_.senv} res2_.htotal
-                        henv = mergeHEnv3 context.henv res1.henv res2_.henv
+                        henv = mergeHEnv3 context.henv res1_.henv res2_.henv
                     in
                         { henv = henv
                         , venv = res1_.venv
@@ -1206,3 +1386,100 @@ operationUpdate context htotal ws op e1 e2 updateval newv1 newv2 =
     , htotal = res1.htotal
     }
     
+
+collectVars : Pattern -> List String
+collectVars p = 
+    case p of
+        PVar _ x -> [x]
+        PBTuple _ p1 p2 -> collectVars p1 ++ collectVars p2
+        PTTuple _ p1 p2 p3 -> collectVars p1 ++ collectVars p2 ++ collectVars p3
+        PCons _ p1 p2 -> collectVars p1 ++ collectVars p2
+        _ -> []
+
+divideVars : List String -> List (String, Int) -> (List String, List String)
+divideVars vars venv =
+    let
+        envvars = unique (List.map (\(x, _) -> x) venv)
+        newVars = List.filter (\x -> not (List.member x envvars)) vars
+    in
+    (newVars, List.filter (\x -> not (List.member x newVars)) vars)
+
+rollbackSEnv : VEnv -> SEnv -> SEnv -> List String -> SEnv
+rollbackSEnv venv oldSenv newSenv vars =
+    case vars of
+        [] -> newSenv
+        x :: xs ->
+            case findVarByName x venv of
+                Just loc ->
+                    let oriVal = findValByLoc loc oldSenv in
+                    case oriVal of
+                        VError info -> [VError info]
+                        _ ->
+                            rollbackSEnv venv oldSenv (updStore loc oriVal newSenv) xs
+                Nothing ->
+                    rollbackSEnv venv oldSenv (List.take (List.length newSenv - 1) newSenv) xs
+
+pattern2val : Pattern -> VEnv -> SEnv -> Value
+pattern2val p venv senv =
+    case p of
+        PVar _ x ->
+            case findVarByName x venv of
+                Just loc -> findValByLoc loc senv
+                Nothing -> VError "Pattern2Val: Variable not found"
+        PBTuple _ p1 p2 ->
+            VBTuple (pattern2val p1 venv senv) (pattern2val p2 venv senv)
+        PTTuple _ p1 p2 p3 ->
+            VTTuple (pattern2val p1 venv senv) (pattern2val p2 venv senv) (pattern2val p3 venv senv)
+        PCons _ p1 p2 ->
+            VCons 0 (pattern2val p1 venv senv) (pattern2val p2 venv senv)
+        PNil _ ->
+            VNil 0
+        PInt _ n ->
+            VInt n
+        PFloat _ f ->
+            VFloat f
+        PTrue _ ->
+            VTrue
+        PFalse _ ->
+            VFalse
+        PChar _ c ->
+            VChar c
+
+tryuneval : Value -> Context -> Branch -> UpdateVal -> HTotal -> TryUnevalRes
+tryuneval v context b updateval htotal =
+    case b of
+        BNSin _ n pi ei ->
+            let
+                matchRes =
+                    match pi v
+            in
+
+            case matchRes of
+                [(_, VError info)] -> 
+                    let r = {defaultUnevalRes | expr = EError info} in
+                    {res = r, choice = 0, pi = PNil defaultWS}
+                _ ->
+                    let (venv_, senv_) = applyArgs matchRes (length context.senv) in
+                    let bres = uneval {context | venv = venv_ ++ context.venv, senv = context.senv ++ senv_} ei { updateval | senv = updateval.senv ++ senv_} htotal in
+                    case bres.expr of
+                        EError info -> {res = {defaultUnevalRes | expr = EError info}, choice = 0, pi = PNil defaultWS}
+                        _ -> 
+                            let (venv__, senv__) = (List.take (List.length context.senv) bres.venv, List.take (List.length bres.senv) bres.senv) in
+                            let bres_ = {bres | venv = venv__, senv = senv__} in
+                            {res = bres_, choice = n, pi = pi}
+                
+
+        BCom _ b1 b2 ->
+            let
+                tryres =
+                    tryuneval v context b1 updateval htotal
+            in
+            case tryres.res.expr of
+                EError _ ->
+                    tryuneval v context b2 updateval htotal
+
+                _ -> tryres
+
+        _ ->
+            {res = {defaultUnevalRes | expr = EError "Try Uneval Error."}, choice = 0, pi = PNil defaultWS}
+

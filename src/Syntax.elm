@@ -75,7 +75,7 @@ type Expr
     | EBPrim WS Bop Expr Expr
     | EUPrim WS Uop Expr
     | ECase WS Expr Branch
-    -- | EFix WS Expr
+    | EFix WS Expr
     | EBTuple WS Expr Expr
     | ETTuple WS Expr Expr Expr
     | EPrint WS Expr
@@ -92,21 +92,21 @@ type Branch
     | BNSin WS Int Pattern Expr
     | BCom WS Branch Branch
 
-type Value
+type MValue
     = VInt Int
     | VFloat Float
     | VTrue
     | VFalse
     | VChar Char
-    | VCons Int Value Value
+    | VCons Int MValue MValue
     | VNil Int
     | VHole HoleName (VEnv, SEnv)
-    | IndexedHole HoleName (List (Int, String, Value))
+    | IndexedHole HoleName (List (Int, String, MValue))
     -- | VFix Expr
-    | VClosure Pattern Expr VEnv
-    | VBTuple Value Value
-    | VTTuple Value Value Value 
-    | VHtml String Value Value Value
+    -- | VClosure Pattern Expr VEnv
+    | VBTuple MValue MValue
+    | VTTuple MValue MValue MValue 
+    -- | VHtml String MValue MValue MValue
     | VError Info
     | VUnit
 
@@ -117,19 +117,26 @@ type HoleName
     | HId Int
     | HInst HoleName Int
 
-type alias VEnv = List (String, Loc)
+type alias VEnv = List (String, IMValue)
 
-type alias Loc = Int
+-- Immutable Value
+type IMValue 
+    = Loc Int 
+    | VClosure Pattern Expr VEnv
+    | VFix Expr
 
-type alias SEnv = List Value
+type Value = M MValue | IM IMValue
 
-type alias IndexedVEnv = List (Int, String, Value)
+type alias SEnv = List MValue
 
-type alias HEnv = List (HoleName, (VEnv, SEnv), Value)
+type alias IndexedVEnv = List (Int, String, MValue)
 
-type alias Stdin = (List Value, StreamState)
+type alias HEnv = List (HoleName, (VEnv, SEnv), MValue)
 
-type alias Stdout = (List Value, StreamState)
+type alias Stdin = (List MValue, StreamState)
+
+-- todo: 可能out不需要block
+type alias Stdout = (List MValue, StreamState)
 
 type StreamState = Normal | Blocked
 
@@ -172,7 +179,7 @@ type alias Context =
     }
 
 type alias MatchCaseRes =
-    { venvm : List (String, Value)
+    { venvm : List (String, MValue)
     , choice: Int
     , ei : Expr
     , pi : Pattern
