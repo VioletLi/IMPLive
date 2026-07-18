@@ -518,3 +518,51 @@ updateBranch branch choice e =
             BCom ws (updateBranch b1 choice e) (updateBranch b2 choice e)
         
         b -> b
+
+mergeVEnv3 : VEnv -> VEnv -> VEnv -> VEnv
+mergeVEnv3 venv1 venv2 venv3 =
+
+    case (venv1, venv2, venv3) of
+
+        ((s1, v1)::env1, (s2, v2)::env2, (_, v3)::env3) ->
+            case (v1, v3) of
+                (VClosure _ b1 _, VFix (ELam _ _ (ELam _ _ b2))) ->
+                    if (b1 /= b2) 
+                    then (s1, v1) :: mergeVEnv3 env1 env2 env3
+                    else (s2, v2) :: mergeVEnv3 env1 env2 env3
+
+                _ ->
+                    if (v1 /= v3) 
+                    then (s1, v1) :: mergeVEnv3 env1 env2 env3
+                    else (s2, v2) :: mergeVEnv3 env1 env2 env3
+        
+        _ -> []
+
+
+mergeVEnv4 : VEnv -> VEnv -> VEnv -> VEnv -> VEnv
+mergeVEnv4 venv1 venv2 venv3 venv4 =
+
+    case ((venv1, venv2, venv3), venv4) of
+
+        (((s1, v1)::env1, (s2, v2)::env2, (s3, v3)::env3), (_, v4)::env4) ->
+            case (v1, v4) of
+                (VClosure _ b1 _, VFix (ELam _ _ (ELam _ _ b2))) ->
+                    if (b1 /= b2) 
+                    then (s1, v1) :: mergeVEnv4 env1 env2 env3 env4
+                    else (s2, v2) :: mergeVEnv4 env1 env2 env3 env4
+                _ ->
+                    if (v1 /= v4) then
+                        (s1, v1) :: mergeVEnv4 env1 env2 env3 env4
+                    else
+                        case (v2, v4) of
+                            (VClosure _ b1 _, VFix (ELam _ _ (ELam _ _ b2))) ->
+                                if (b1 /= b2) 
+                                then (s2, v2) :: mergeVEnv4 env1 env2 env3 env4
+                                else (s3, v3) :: mergeVEnv4 env1 env2 env3 env4
+                            _ ->
+                                if (v2 /= v4) then
+                                    (s2, v2) :: mergeVEnv4 env1 env2 env3 env4
+                                else
+                                    (s3, v3):: mergeVEnv4 env1 env2 env3 env4
+
+        _ -> []
