@@ -3,7 +3,8 @@ module Newlangutils exposing (..)
 import Syntax exposing (..)
 import Debug exposing (toString)
 
-findVarByName : String -> VEnv -> Maybe Loc
+
+findVarByName : String -> VEnv -> Maybe IMValue
 findVarByName x venv =
     case venv of
         [] -> Nothing
@@ -14,7 +15,7 @@ findVarByName x venv =
             else
                 findVarByName x ls
 
-findValByLoc : Loc -> SEnv -> Value
+findValByLoc : Int -> SEnv -> MValue
 findValByLoc l senv =
     case senv of
         [] -> VError "Value not found in store"
@@ -25,7 +26,8 @@ findValByLoc l senv =
             else
                 findValByLoc (l - 1) vs
 
-match : Pattern -> Value -> List (String, Value)
+
+match : Pattern -> MValue -> List (String, MValue)
 match pat val =
     case (pat, val) of
         (_, VError info) -> [("ERROR", VError info)]
@@ -148,24 +150,28 @@ match pat val =
         (PNil _, VHole _ _) -> []
 
         (PVar _ s, v) -> [(s, v)]
+        (PUnit _, VUnit) -> []
 
         _ -> [("ERROR", VError "Match Failed.")]
 
-applyMatchResult : List (String, Value) -> VEnv -> SEnv -> (VEnv, SEnv)
+-- todo: 需要改mvalue
+applyMatchResult : List (String, MValue) -> VEnv -> SEnv -> (VEnv, SEnv)
 applyMatchResult matchResult venv senv =
     case matchResult of
         [] -> (venv, senv)
         (s, v) :: ms ->
             let loc = findVarByName s venv in
             case loc of
-                Just l ->
+                Just (Loc l) ->
                     let senv_ = updStore l v senv in
                     applyMatchResult ms venv senv_
+                Just _ ->
+                    (venv, senv)
                 Nothing ->
                     let l_ = length senv in
-                    applyMatchResult ms ((s, l_)::venv) (senv++[v])
+                    applyMatchResult ms ((s, Loc l_)::venv) (senv++[v])
 
-updStore : Loc -> Value -> SEnv -> SEnv
+updStore : Int -> MValue -> SEnv -> SEnv
 updStore l v senv =
     case senv of
         [] -> []
@@ -181,7 +187,7 @@ length ls =
         [] -> 0
         _ :: ls_ -> 1 + length ls_
 
-append : Value -> Value -> Value
+append : MValue -> MValue -> MValue
 append l1 l2 =
     case l1 of
         VNil _ ->
@@ -193,7 +199,7 @@ append l1 l2 =
         _ ->
             VError "List Concat Error."
 
-matchCase : Value -> Branch -> MatchCaseRes
+matchCase : MValue -> Branch -> MatchCaseRes
 matchCase v b =
     case b of
         BNSin _ n p e ->
@@ -314,7 +320,7 @@ mergeHEnv4 henv henv1 henv2 henv3 =
 
         [] -> union (union henv1 henv2) henv3
 
-getElem : HoleName -> (VEnv, SEnv) -> HEnv -> (Value, HEnv)
+getElem : HoleName -> (VEnv, SEnv) -> HEnv -> (MValue, HEnv)
 getElem hn env henv =
     case henv of
         (hn1, env1, v1)::henv1 ->
@@ -345,7 +351,7 @@ isEqualEnv : (VEnv, SEnv) -> (VEnv, SEnv) -> Bool
 isEqualEnv (venv1, senv1) (venv2, senv2) =
     case (venv1, venv2) of
         ([], []) -> True
-        ((x1, l1)::venv1_, (x2, l2)::venv2_) ->
+        ((x1, Loc l1)::venv1_, (x2, Loc l2)::venv2_) ->
             if x1 == x2 && l1 == l2 && getItem l1 senv1 == getItem l2 senv2 then
                 let v1 = getItem l1 senv1
                     v2 = getItem l2 senv2
@@ -356,15 +362,20 @@ isEqualEnv (venv1, senv1) (venv2, senv2) =
                         _ -> if v1 == v2 then isEqualEnv (venv1_, senv1) (venv2_, senv2) else False
             else
                 False
+        ((x1, v1)::venv1_, (x2, v2)::venv2_) ->
+            if x1 == x2 && v1 == v2 then 
+                isEqualEnv (venv1_, senv1) (venv2_, senv2)
+            else
+                False
         _ -> False
 
-getItem : Loc -> SEnv -> Value
+getItem : Int -> SEnv -> MValue
 getItem l senv =
     case senv of
         [] -> VError "Item not found in store"
         v :: vs -> if l == 0 then v else getItem (l - 1) vs
 
-valueToExpr : Value -> HTotal -> (Expr, HTotal)
+valueToExpr : MValue -> HTotal -> (Expr, HTotal)
 valueToExpr v htotal =
     case v of
         VNil id ->
@@ -444,7 +455,7 @@ changeWsForList ws expr =
         _ ->
             EError "Impossible!"
 
-deAppend : Value -> Int -> (Value, Value)
+deAppend : MValue -> Int -> (MValue, MValue)
 deAppend nl n1 =
     case (nl, n1) of
         (VCons nid _ _, 0) ->
@@ -464,7 +475,7 @@ deAppend nl n1 =
             ( VError "New Value for Updating Concat Type Error"
             , VError "")
 
-vlength : Value -> Int
+vlength : MValue -> Int
 vlength v =
     case v of
         VNil _ ->
@@ -476,7 +487,7 @@ vlength v =
         _ ->
             -1
 
-insert : (HoleName, (VEnv, SEnv), Value) -> HEnv -> HEnv
+insert : (HoleName, (VEnv, SEnv), MValue) -> HEnv -> HEnv
 insert (u, env, v) henv =
     case henv of
         [] -> [(u, env, v)]
@@ -486,13 +497,13 @@ insert (u, env, v) henv =
             then (u1, env1, v)::hv
             else (u1, env1, v1)::(insert (u, env, v) hv)
 
-applyArgs : List (String, Value) -> Int -> (VEnv, SEnv)
+applyArgs : List (String, MValue) -> Int -> (VEnv, SEnv)
 applyArgs args n =
     case args of
         [] -> ([], [])
         (x, v) :: args_ ->
             let (venv_, senv_) = applyArgs args_ (n+1) in
-            (venv_ ++ [(x, n)], v :: senv_ )
+            (venv_ ++ [(x, (Loc n))], v :: senv_ )
 
 
 updateBranch : Branch -> Int -> Expr -> Branch

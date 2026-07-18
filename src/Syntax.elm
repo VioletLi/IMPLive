@@ -151,6 +151,7 @@ type Pattern
     | PChar WS Char
     | PBTuple WS Pattern Pattern
     | PTTuple WS Pattern Pattern Pattern
+    | PUnit WS
 
 type alias HTotal = Int
 
