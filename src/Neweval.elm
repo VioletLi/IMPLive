@@ -46,26 +46,26 @@ eval context expr count funcSummary =
             { value = IM (VClosure p e context.venv), senv = context.senv, count = count, stdin = context.stdin, stdout = context.stdout }
         ELet _ p e1 e2 ->
             let res = eval context e1 count funcSummary in
-            case (p, res.value) of
-                (PVar _ s, IM val) ->
+            case (p, res.value, e1) of
+                (PVar _ s, IM val, ELam ws1 p1 e1_) ->
                     -- only vfix or vclosure, stored in venv as immutable value
-                    let (vs, r, w) = analyzeEffect funcSummary e1 in
+                    let (vs, r, w) = analyzeEffect funcSummary e1_ in
                     let factvs = unique (findCurVars vs context.venv) in
                     eval { venv = (s, val) :: context.venv, senv = res.senv, stdin = res.stdin, stdout = res.stdout, henv = context.henv} e2 res.count ((s, (factvs, r, w))::funcSummary)
-                (_, IM _) -> 
+                (_, IM _, _) -> 
                     { defaultEvalRes | value = M (VError "Pattern of function is not a variable") }
-                (_, M (VError info)) -> { defaultEvalRes | value = M (VError ("eval let:"++info)) }
-                (_, M val) ->
+                (_, M (VError info), _) -> { defaultEvalRes | value = M (VError ("eval let:"++info)) }
+                (_, M val, _) ->
                     let matchResult = match p val in
                     case matchResult of
                         [(_, VError info)] -> { defaultEvalRes | value = M (VError ("pattern matching in let:"++info)) }
                         _ -> 
                             let (venv_, senv_) = applyMatchResult matchResult context.venv context.senv in
                             eval { venv = venv_, senv = senv_, henv = context.henv, stdin = res.stdin, stdout = res.stdout} e2 res.count funcSummary
-        ELetrec _ (PVar ws x) e1 e2 ->
+        ELetrec _ (PVar ws x) (ELam ws1 p e1) e2 ->
             let (vs, r, w) = analyzeEffect ((x, ([], False, False))::funcSummary) e1 in
             let factvs = unique (findCurVars vs context.venv) in
-            eval context (EApp defaultWS (ELam defaultWS (PVar ws x) e2) (EFix defaultWS (ELam defaultWS (PVar ws x) e1))) count ((x, (factvs, r, w))::funcSummary)
+            eval context (EApp defaultWS (ELam defaultWS (PVar ws x) e2) (EFix defaultWS (ELam defaultWS (PVar ws x) (ELam ws1 p e1)))) count ((x, (factvs, r, w))::funcSummary)
             -- case p of
             --     PVar _ x ->
             --         let venv_ = (x, length context.senv) :: context.venv in
@@ -144,7 +144,7 @@ eval context expr count funcSummary =
                 Just v_ -> { value = M v_, senv = context.senv, count = count, stdin = context.stdin, stdout = context.stdout }
                 Nothing ->
                     let c = findCount hn count in
-                    { value = M (VHole (HInter (c+1)) (context.venv, context.senv)), senv = context.senv, count = (hn, c+1)::count, stdin = context.stdin, stdout = context.stdout }
+                    { value = M (VHole (HInst hn (c+1)) (context.venv, context.senv)), senv = context.senv, count = (hn, c+1)::count, stdin = context.stdin, stdout = context.stdout }
         EBPrim _ bop e1 e2 ->
             let res1 = eval context e1 count funcSummary in
             let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count funcSummary in
@@ -278,12 +278,12 @@ eval context expr count funcSummary =
                                 ((stdin_, _), True) -> (stdin_, Blocked)
                                 _ -> context.stdin
 
-                        (stdout__, count__) = 
+                        (stdout__, count__, c_) = 
                             case (context.stdout, w) of
-                                ((stdout_, _), True) -> ((stdout_++[VHole (HInter (c+1)) (context.venv, context.senv)], Blocked), (tempHoleCount, c+1)::count_)
-                                _ -> (context.stdout, count_)
+                                ((stdout_, _), True) -> (((VHole (HInter (c+1)) (context.venv, context.senv))::stdout_, Blocked), (tempHoleCount, c+1)::count_, c+1)
+                                _ -> (context.stdout, count_, c)
                     in
-                    { value = M (VHole (HInter (c+1)) (context.venv, context.senv)), senv = senv_, count = count__, stdin = stdin__, stdout = stdout__ }               
+                    { value = M (VHole (HInter (c_+1)) (context.venv, context.senv)), senv = senv_, count = (tempHoleCount, c_+1)::count__, stdin = stdin__, stdout = stdout__ }               
                 M val ->
                     let matchResult = matchCase val branches in
                     case matchResult.venvm of
@@ -558,7 +558,7 @@ analyzeEffect funcSummary expr =
         EVar _ x -> 
             case findFuncByName x funcSummary of
                 Just (vs, r, w) -> (vs, r, w)
-                Nothing -> (["error"], False, False)
+                Nothing -> ([], False, False)
         EApp _ e1 e2 ->
             case analyzeEffect funcSummary e1 of
                 (["error"], _, _) -> (["error"], False, False)
@@ -566,6 +566,20 @@ analyzeEffect funcSummary expr =
                     case analyzeEffect funcSummary e2 of
                         (["error"], _, _) -> (["error"], False, False)
                         (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        EInt _ _ -> ([], False, False)
+        EFloat _ _ -> ([], False, False)
+        ETrue _ -> ([], False, False)
+        EFalse _ -> ([], False, False)
+        EChar _ _ -> ([], False, False)
+        ECons _ e1 e2 ->
+            case analyzeEffect funcSummary e1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffect funcSummary e2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        ENil _ -> ([], False, False)
+        EHole _ _ -> ([], False, False)
         EBPrim _ _ e1 e2 ->
             case analyzeEffect funcSummary e1 of
                 (["error"], _, _) -> (["error"], False, False)
@@ -598,7 +612,10 @@ analyzeEffect funcSummary expr =
                             case analyzeEffect funcSummary e3 of
                                 (["error"], _, _) -> (["error"], False, False)
                                 (vs3, r3, w3) -> (vs ++ vs2 ++ vs3, r || r2 || r3, w || w2 || w3)
-        EPrint _ e -> ([], False, True)
+        EPrint _ e -> 
+            case analyzeEffect funcSummary e of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> (vs, r, w || True)
         ERead _ -> ([], True, False)
         _ -> (["error"], False, False)
 
@@ -612,7 +629,7 @@ analyzeEffectinBranches : FuncSummary -> Branch -> (List String, Bool, Bool)
 analyzeEffectinBranches funcSummary branches =
     case branches of
         BSin _ _ e -> analyzeEffect funcSummary e
-        BNSin _ _ p e -> analyzeEffect funcSummary e
+        BNSin _ _ _ e -> analyzeEffect funcSummary e
         BCom _ b1 b2 -> 
             case analyzeEffectinBranches funcSummary b1 of
                 (["error"], _, _) -> (["error"], False, False)
