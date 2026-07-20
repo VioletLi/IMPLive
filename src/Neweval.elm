@@ -21,11 +21,14 @@ defaultEvalRes =
     , stdout = ([], Normal)
     }
 
-eval : Context -> Expr -> List (HoleName, Int) -> EvalRes
-eval context expr count =
+type alias FuncSummary = List (String, (List String, Bool, Bool))
+
+
+eval : Context -> Expr -> List (HoleName, Int) -> FuncSummary -> EvalRes
+eval context expr count funcSummary =
     case expr of
         EParens _ e ->
-            eval context e count
+            eval context e count funcSummary
         EVar _ x ->
             case findVarByName x context.venv of
                 Just (Loc l) -> 
@@ -35,18 +38,20 @@ eval context expr count =
                         _ -> { value = M val, senv = context.senv, count = count, stdin = context.stdin, stdout = context.stdout }
                 Just v -> 
                     case v of
-                        VFix e -> eval context (EFix defaultWS e) count
+                        VFix e -> eval context (EFix defaultWS e) count funcSummary
                         _ -> { value = IM v, senv = context.senv, count = count, stdin = context.stdin, stdout = context.stdout }
                 Nothing ->
                     { defaultEvalRes | value = M (VError "Variable not found") }
         ELam _ p e ->
             { value = IM (VClosure p e context.venv), senv = context.senv, count = count, stdin = context.stdin, stdout = context.stdout }
         ELet _ p e1 e2 ->
-            let res = eval context e1 count in
+            let res = eval context e1 count funcSummary in
             case (p, res.value) of
                 (PVar _ s, IM val) ->
                     -- only vfix or vclosure, stored in venv as immutable value
-                    eval { venv = (s, val) :: context.venv, senv = res.senv, stdin = res.stdin, stdout = res.stdout, henv = context.henv} e2 res.count
+                    let (vs, r, w) = analyzeEffect funcSummary e1 in
+                    let factvs = unique (findCurVars vs context.venv) in
+                    eval { venv = (s, val) :: context.venv, senv = res.senv, stdin = res.stdin, stdout = res.stdout, henv = context.henv} e2 res.count ((s, (factvs, r, w))::funcSummary)
                 (_, IM _) -> 
                     { defaultEvalRes | value = M (VError "Pattern of function is not a variable") }
                 (_, M (VError info)) -> { defaultEvalRes | value = M (VError ("eval let:"++info)) }
@@ -56,9 +61,11 @@ eval context expr count =
                         [(_, VError info)] -> { defaultEvalRes | value = M (VError ("pattern matching in let:"++info)) }
                         _ -> 
                             let (venv_, senv_) = applyMatchResult matchResult context.venv context.senv in
-                            eval { venv = venv_, senv = senv_, henv = context.henv, stdin = res.stdin, stdout = res.stdout} e2 res.count
-        ELetrec _ p e1 e2 ->
-            eval context (EApp defaultWS (ELam defaultWS p e2) (EFix defaultWS (ELam defaultWS p e1))) count
+                            eval { venv = venv_, senv = senv_, henv = context.henv, stdin = res.stdin, stdout = res.stdout} e2 res.count funcSummary
+        ELetrec _ (PVar ws x) e1 e2 ->
+            let (vs, r, w) = analyzeEffect ((x, ([], False, False))::funcSummary) e1 in
+            let factvs = unique (findCurVars vs context.venv) in
+            eval context (EApp defaultWS (ELam defaultWS (PVar ws x) e2) (EFix defaultWS (ELam defaultWS (PVar ws x) e1))) count ((x, (factvs, r, w))::funcSummary)
             -- case p of
             --     PVar _ x ->
             --         let venv_ = (x, length context.senv) :: context.venv in
@@ -68,18 +75,19 @@ eval context expr count =
             --                 eval { venv = venv_, senv = context.senv ++ [res.value], henv = context.henv, stdin = res.stdin, stdout = res.stdout} e2 res.count
             --             _ -> { defaultEvalRes | value = VError "Recursive binding is only allowed for single variable" }
             --     _ -> { defaultEvalRes | value = VError "Recursive binding is only allowed for single variable" }
+        ELetrec _ _ _ _ -> { defaultEvalRes | value = M (VError "Recursive binding is only allowed for single variable") }
         EApp _ e1 e2 ->
-            let res1 = eval context e1 count in
+            let res1 = eval context e1 count funcSummary in
             case res1.value of
                 IM (VClosure p e venvf) ->
                     case e2 of
                         EFix _ e_ -> 
                             case p of
                                 PVar _ x ->
-                                    eval { context | venv = (x, VFix e_) :: context.venv, senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout } e res1.count
+                                    eval { context | venv = (x, VFix e_) :: context.venv, senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout } e res1.count funcSummary
                                 _ -> { defaultEvalRes | value = M (VError "Recursive binding is only allowed for single variable") }
                         _ ->
-                            let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count in
+                            let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count funcSummary in
                             case res2.value of
                                 M (VError info) -> { defaultEvalRes | value = M (VError ("function application:"++info)) }
                                 M val ->
@@ -88,7 +96,7 @@ eval context expr count =
                                         [(_, VError info)] -> { defaultEvalRes | value = M (VError ("pattern matching in function application:"++info)) }
                                         _ -> 
                                             let (venv_, senv_) = applyArgs matchResult (length res2.senv) in
-                                            let resf = eval { venv = venv_ ++ venvf, senv = res2.senv ++ senv_, henv = context.henv, stdin = res2.stdin, stdout = res2.stdout} e res2.count in
+                                            let resf = eval { venv = venv_ ++ venvf, senv = res2.senv ++ senv_, henv = context.henv, stdin = res2.stdin, stdout = res2.stdout} e res2.count funcSummary in
                                             { resf | senv = List.take (List.length context.senv) resf.senv }
                                 _ -> { defaultEvalRes | value = M (VError "Function application error: vclosure or vfix as argument") }
                 _ -> { defaultEvalRes | value = M (VError "Function application error") }
@@ -104,11 +112,11 @@ eval context expr count =
             { value = M (VChar c), senv = context.senv, count = count, stdin = context.stdin, stdout = context.stdout }
         ECons (_, id) e1 e2 ->
             let
-                res1 = eval context e1 count in
+                res1 = eval context e1 count funcSummary in
             case res1.value of
                 M (VError info) -> { defaultEvalRes | value = M (VError ("eval cons head:"++info)) }
                 M val1 ->
-                    let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count
+                    let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count funcSummary
                     in
                     case res2.value of
                         M (VError info) -> { defaultEvalRes | value = M (VError ("eval cons tail:"++info)) }
@@ -138,8 +146,8 @@ eval context expr count =
                     let c = findCount hn count in
                     { value = M (VHole (HInter (c+1)) (context.venv, context.senv)), senv = context.senv, count = (hn, c+1)::count, stdin = context.stdin, stdout = context.stdout }
         EBPrim _ bop e1 e2 ->
-            let res1 = eval context e1 count in
-            let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count in
+            let res1 = eval context e1 count funcSummary in
+            let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count funcSummary in
             case res1.value of
                 M (VInt n1) ->
                     case res2.value of
@@ -232,7 +240,7 @@ eval context expr count =
         EUPrim _ uop e ->
             case uop of
                 Neg ->
-                    let res = eval context e count in
+                    let res = eval context e count funcSummary in
                     case res.value of
                         M (VInt n) -> { value = M (VInt (0-n)), senv = res.senv, count = res.count, stdin = res.stdin, stdout = res.stdout }
                         M (VFloat n) -> { value = M (VFloat (0-n)), senv = res.senv, count = res.count, stdin = res.stdin, stdout = res.stdout }
@@ -241,7 +249,7 @@ eval context expr count =
                             { value = M (VHole (HInter (c+1)) (context.venv, context.senv)), senv = res.senv, count = (tempHoleCount, c+1)::res.count, stdin = res.stdin, stdout = res.stdout }
                         _ -> { defaultEvalRes | value = M (VError "Unsupported unary operation error: 01") }
                 Not ->
-                    let res = eval context e count in
+                    let res = eval context e count funcSummary in
                     case res.value of
                         M VTrue -> { value = M VFalse, senv = res.senv, count = res.count, stdin = res.stdin, stdout = res.stdout }
                         M VFalse -> { value = M VTrue, senv = res.senv, count = res.count, stdin = res.stdin, stdout = res.stdout }
@@ -250,40 +258,48 @@ eval context expr count =
                             { value = M (VHole (HInter (c+1)) (context.venv, context.senv)), senv = res.senv, count = (tempHoleCount, c+1)::res.count, stdin = res.stdin, stdout = res.stdout }
                         _ -> { defaultEvalRes | value = M (VError "Unsupported unary operation error: 02") }
         ECase _ e branches ->
-            let res = eval context e count in
+            let res = eval context e count funcSummary in
             case res.value of
                 M (VHole _ _) ->
-                    let modvars = modVarsinExpr expr |> unique in
-                    let (senv_, count_) = updateIntersect modvars context.venv context.senv count in
+                    let (vs, r, w) = analyzeEffectinBranches funcSummary branches in
+                    let factvs = unique (findCurVars vs context.venv) in
+                    -- let modvars = modVarsinExpr context expr |> unique in
+                    let (senv_, count_) = update2Hole factvs context.venv context.senv count in
                     let c = findCount tempHoleCount count_ in
-                    let (curRead, curWrite, (stdin__, stdout__)) = case (context.stdin, context.stdout) of
-                            ((stdin_, Blocked), (stdout_, Blocked)) -> (True, True, (stdin_, stdout_))
-                            ((stdin_, Blocked), (stdout_, Normal)) -> (True, False, (stdin_, stdout_))
-                            ((stdin_, Normal), (stdout_, Blocked)) -> (False, True, (stdin_, stdout_))
-                            ((stdin_, Normal), (stdout_, Normal)) -> (False, False, (stdin_, stdout_))
+                    -- let (curRead, stdin__) = case context.stdin of
+                    --         (stdin_, Blocked) -> (True, stdin_)
+                    --         (stdin_, Normal) -> (False, stdin_)
+                    -- in
+                    -- let (read, write) = checkIOState context branches in
+                    let 
+                        stdin__ = 
+                            case (context.stdin, r) of
+                                ((stdin_, Blocked), _) -> (stdin_, Blocked)
+                                ((stdin_, _), True) -> (stdin_, Blocked)
+                                _ -> context.stdin
+
+                        (stdout__, count__) = 
+                            case (context.stdout, w) of
+                                ((stdout_, _), True) -> ((stdout_++[VHole (HInter (c+1)) (context.venv, context.senv)], Blocked), (tempHoleCount, c+1)::count_)
+                                _ -> (context.stdout, count_)
                     in
-                    let (read, write) = checkIOState expr (curRead, curWrite) in
-                    case (read, write) of
-                        (True, True) -> { value = M (VHole (HInter (c+1)) (context.venv, context.senv)), senv = senv_, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Blocked), stdout = (stdout__, Blocked) }               
-                        (True, False) -> { value = M (VHole (HInter (c+1)) (context.venv, context.senv)), senv = senv_, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Blocked), stdout = (stdout__, Normal) } 
-                        (False, True) -> { value = M (VHole (HInter (c+1)) (context.venv, context.senv)), senv = senv_, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Normal), stdout = (stdout__, Blocked) } 
-                        (False, False) -> { value = M (VHole (HInter (c+1)) (context.venv, context.senv)), senv = senv_, count = (tempHoleCount, c+1)::count_, stdin = (stdin__, Normal), stdout = (stdout__, Normal) } 
+                    { value = M (VHole (HInter (c+1)) (context.venv, context.senv)), senv = senv_, count = count__, stdin = stdin__, stdout = stdout__ }               
                 M val ->
                     let matchResult = matchCase val branches in
                     case matchResult.venvm of
                         [(_, VError info)] -> { defaultEvalRes | value = M (VError ("guard of case evalution:"++info)) }
                         _ -> 
                             let (venv_, senv_) = applyMatchResult matchResult.venvm context.venv context.senv in
-                            eval { context | venv = venv_, senv = senv_, stdin = res.stdin, stdout = res.stdout} matchResult.ei res.count
+                            eval { context | venv = venv_, senv = senv_, stdin = res.stdin, stdout = res.stdout} matchResult.ei res.count funcSummary
                 _ -> { defaultEvalRes | value = M (VError "Guard of case expression is a function closure") }
         EFix _ e ->
-            eval context (EApp defaultWS e (EFix defaultWS e)) count
+            eval context (EApp defaultWS e (EFix defaultWS e)) count funcSummary
         EBTuple _ e1 e2 ->
-            let res1 = eval context e1 count in
+            let res1 = eval context e1 count funcSummary in
             case res1.value of
                 M (VError info) -> { defaultEvalRes | value = M (VError ("Error in 1st element of BTuple:" ++ info)) }
                 M val1 ->
-                    let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count in
+                    let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count funcSummary in
                     case res2.value of
                         M(VError info) -> { defaultEvalRes | value = M (VError ("Error in 2nd element of BTuple:" ++ info)) }
                         M val2 ->
@@ -291,15 +307,15 @@ eval context expr count =
                         _ -> { defaultEvalRes | value = M (VError "Function closure as 2nd element of BTuple") }
                 _ -> { defaultEvalRes | value = M (VError "Function closure as 1st element of BTuple") }
         ETTuple _ e1 e2 e3 ->
-            let res1 = eval context e1 count in
+            let res1 = eval context e1 count funcSummary in
             case res1.value of
                 M (VError info) -> { defaultEvalRes | value = M (VError ("Error in 1st element of TTuple:" ++ info)) }
                 M val1 ->
-                    let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count in
+                    let res2 = eval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 res1.count funcSummary in
                     case res2.value of
                         M(VError info) -> { defaultEvalRes | value = M (VError ("Error in 2nd element of TTuple:" ++ info)) }
                         M val2 ->
-                            let res3 = eval { context | senv = res2.senv, stdin = res2.stdin, stdout = res2.stdout} e3 res2.count in
+                            let res3 = eval { context | senv = res2.senv, stdin = res2.stdin, stdout = res2.stdout} e3 res2.count funcSummary in
                             case res3.value of
                                 M(VError info) -> { defaultEvalRes | value = M (VError ("Error in 3rd element of TTuple:" ++ info)) }
                                 M val3 ->
@@ -308,16 +324,22 @@ eval context expr count =
                         _ -> { defaultEvalRes | value = M (VError "Function closure as 2nd element of TTuple") }
                 _ -> { defaultEvalRes | value = M (VError "Function closure as 1st element of TTuple") }
         EPrint _ e ->
-            let res = eval context e count in
-            case (res.value, res.stdout) of
-                (M (VError info), _) -> { defaultEvalRes | value = M (VError info) }
-                (_, (stdout_, Blocked)) -> 
-                    let
-                        c = findCount tempHoleCount count
-                    in
-                    { value = M VUnit, senv = res.senv, count = (tempHoleCount, c+1)::res.count, stdin = res.stdin, stdout = (stdout_ ++ [VHole (HInter (c+1)) (context.venv, context.senv)], Blocked) }
-                (M val, (stdout_, Normal)) -> 
-                    { value = M VUnit, senv = res.senv, count = res.count, stdin = res.stdin, stdout = (stdout_ ++ [val], Normal) }
+            let res = eval context e count funcSummary in
+            -- case (res.value, res.stdout) of
+            --     (M (VError info), _) -> { defaultEvalRes | value = M (VError info) }
+            --     (_, (stdout_, Blocked)) -> 
+            --         let
+            --             c = findCount tempHoleCount count
+            --         in
+            --         { value = M VUnit, senv = res.senv, count = (tempHoleCount, c+1)::res.count, stdin = res.stdin, stdout = (stdout_ ++ [VHole (HInter (c+1)) (context.venv, context.senv)], Blocked) }
+            --     (M val, (stdout_, Normal)) -> 
+            --         { value = M VUnit, senv = res.senv, count = res.count, stdin = res.stdin, stdout = (stdout_ ++ [val], Normal) }
+            --     _ -> { defaultEvalRes | value = M (VError "Error in Print") }
+            case res.value of
+                M (VError info) -> { defaultEvalRes | value = M (VError info) }
+                M val ->
+                    case res.stdout of
+                        (stdout_, state) -> { value = M VUnit, senv = res.senv, count = res.count, stdin = res.stdin, stdout = (stdout_ ++ [val], state) }
                 _ -> { defaultEvalRes | value = M (VError "Error in Print") }
         ERead _ ->
             case context.stdin of
@@ -373,28 +395,51 @@ floatOp op n1 n2 =
         Ge -> boolOp (n1 >= n2)
         _  -> VError "Float Operation Error: 01"
 
-modVarsinExpr : Expr -> List String
-modVarsinExpr expr =
-    case expr of
-        EParens _ e -> modVarsinExpr e
-        ELam _ _ e -> modVarsinExpr e
-        ELet _ p e1 e2 ->
-            modVarsinPat p ++ modVarsinExpr e1 ++ modVarsinExpr e2
-        ELetrec _ p e1 e2 ->
-            modVarsinPat p ++ modVarsinExpr e1 ++ modVarsinExpr e2
-        EApp _ e1 e2 ->
-            modVarsinExpr e1 ++ modVarsinExpr e2
-        EBPrim _ _ e1 e2 ->
-            modVarsinExpr e1 ++ modVarsinExpr e2
-        EUPrim _ _ e ->
-            modVarsinExpr e
-        ECase _ e branches ->
-            modVarsinExpr e ++ modVarsinBranch branches
-        EBTuple _ e1 e2 ->
-            modVarsinExpr e1 ++ modVarsinExpr e2
-        ETTuple _ e1 e2 e3 ->
-            modVarsinExpr e1 ++ modVarsinExpr e2 ++ modVarsinExpr e3
-        _ -> []
+-- modVarsinExpr : Context ->Expr -> List String
+-- modVarsinExpr context expr =
+--     case expr of
+--         EParens _ e -> modVarsinExpr context e
+--         ELam _ _ _ -> [] -- No execution, only function closure
+--         ELet _ p e1 e2 ->
+--             case (p, e1) of
+--                 (PVar _ x, ELam _ p_ e_) -> modVarsinExpr { context | venv = (x, VClosure p_ e_ context.venv)::context.venv} e2
+--                 (_, ELam _ _ _) -> ["error"]
+--                 _ -> 
+--                     let 
+--                         v1 = modVarsinPat p 
+--                         v2 = modVarsinExpr context e1
+--                         v3 = modVarsinExpr context e2
+--                     in
+--                     case (v1, v2, v3) of
+--                         (["error"], _, _) -> ["error"]
+--                         (_, ["error"], _) -> ["error"]
+--                         (_, _, ["error"]) -> ["error"]
+--                         _ -> v1 ++ v2 ++ v3
+--         ELetrec _ p e1 e2 ->
+--             case (p, e1) of
+--                 (PVar _ x, ELam _ p_ e_) -> modVarsinExpr { context | venv = (x, VFix (ELam p_ e_ context.venv))::context.venv} e2
+--                 _ -> ["error"]
+--         EApp _ e1 e2 ->
+--             -- 不考虑高阶函数，那么e1是不是就不需要计算？
+--             case e1 of
+--                 EVar _ x -> 
+--                     let clo = findVarByName x context.venv in
+--                     case clo of
+--                         Just (VClosure p_ e_ venv_) -> (modVarsinExpr { context | venv = venv_} e_) ++ modVarsinExpr context e2
+--                         Just (VFix (ELam p_ e_ venv_)) -> []
+--                         _ -> modVarsinExpr e2
+--                 _ -> ["error"]
+--         EBPrim _ _ e1 e2 ->
+--             modVarsinExpr e1 ++ modVarsinExpr e2
+--         EUPrim _ _ e ->
+--             modVarsinExpr e
+--         ECase _ e branches ->
+--             modVarsinExpr e ++ modVarsinBranch branches
+--         EBTuple _ e1 e2 ->
+--             modVarsinExpr e1 ++ modVarsinExpr e2
+--         ETTuple _ e1 e2 e3 ->
+--             modVarsinExpr e1 ++ modVarsinExpr e2 ++ modVarsinExpr e3
+--         _ -> []
 
 
 modVarsinPat : Pattern -> List String
@@ -406,76 +451,181 @@ modVarsinPat p =
         PTTuple _ p1 p2 p3 -> modVarsinPat p1 ++ modVarsinPat p2 ++ modVarsinPat p3
         _ -> []
 
-modVarsinBranch : Branch -> List String
-modVarsinBranch branch =
-    case branch of
-        BSin _ _ e -> modVarsinExpr e
-        BNSin _ _ p e -> modVarsinExpr e
-        BCom _ b1 b2 -> modVarsinBranch b1 ++ modVarsinBranch b2
+-- modVarsinBranch : Branch -> List String
+-- modVarsinBranch branch =
+--     case branch of
+--         BSin _ _ e -> modVarsinExpr e
+--         BNSin _ _ p e -> modVarsinExpr e
+--         BCom _ b1 b2 -> modVarsinBranch b1 ++ modVarsinBranch b2
 
-updateIntersect : List String -> VEnv -> SEnv -> List (HoleName, Int) -> (SEnv, List (HoleName, Int))
-updateIntersect modvars venv senv count =
+update2Hole : List String -> VEnv -> SEnv -> List (HoleName, Int) -> (SEnv, List (HoleName, Int))
+update2Hole modvars venv senv count =
     case venv of
         [] -> (senv, count)
         (x, Loc l) :: vs ->
             if List.member x modvars then
                 let c = findCount tempHoleCount count in
                 let senv_ = updStore l (VHole (HInter (c+1)) (venv, senv)) senv in
-                updateIntersect modvars vs senv_ ((tempHoleCount, c+1)::count)
+                update2Hole modvars vs senv_ ((tempHoleCount, c+1)::count)
             else
-                updateIntersect modvars vs senv count
-        (x, v) :: vs -> updateIntersect modvars vs senv count
+                update2Hole modvars vs senv count
+        _ :: vs -> update2Hole modvars vs senv count
 
 
-checkIOState : Expr -> (Bool, Bool) -> (Bool, Bool)
-checkIOState expr (read, write) =
-    case expr of
-        EPrint _ _ -> (read, True)
-        ERead _ -> (True, write)
-        EParens _ e -> checkIOState e (read, write)
-        EVar _ _ -> (read, write)
-        ELam _ _ e -> checkIOState e (read, write)
-        ELet _ _ e1 e2 -> 
-            let (read1, write1) = checkIOState e1 (read, write) in
-            let (read2, write2) = checkIOState e2 (read1, write1) in
-            (read1 || read2, write1 || write2)
-        ELetrec _ _ e1 e2 -> 
-            let (read1, write1) = checkIOState e1 (read, write) in
-            let (read2, write2) = checkIOState e2 (read1, write1) in
-            (read1 || read2, write1 || write2)
-        EApp _ e1 e2 -> 
-            let (read1, write1) = checkIOState e1 (read, write) in
-            let (read2, write2) = checkIOState e2 (read1, write1) in
-            (read1 || read2, write1 || write2)
-        EBPrim _ _ e1 e2 -> 
-            let (read1, write1) = checkIOState e1 (read, write) in
-            let (read2, write2) = checkIOState e2 (read1, write1) in
-            (read1 || read2, write1 || write2)
-        EUPrim _ _ e -> 
-            checkIOState e (read, write)
-        ECase _ e branches -> 
-            let (read1, write1) = checkIOState e (read, write) in
-            checkIOStateBranch branches (read1, write1)
-        EBTuple _ e1 e2 -> 
-            let (read1, write1) = checkIOState e1 (read, write) in
-            let (read2, write2) = checkIOState e2 (read1, write1) in
-            (read1 || read2, write1 || write2)
-        ETTuple _ e1 e2 e3 -> 
-            let (read1, write1) = checkIOState e1 (read, write) in
-            let (read2, write2) = checkIOState e2 (read1, write1) in
-            let (read3, write3) = checkIOState e3 (read2, write2) in
-            (read1 || read2 || read3, write1 || write2 || write3)
-        _ -> (read, write)
+-- checkIOState : Context -> Branch -> (Bool, Bool)
+-- checkIOState context expr =
+--     case expr of
+--         EPrint _ _ -> (read, True)
+--         ERead _ -> (True, False)
+--         EParens _ e -> 
+--             let (read_, write_) = checkIOState context e read in
+--             (read_ || read, write_)
+--         EVar _ s -> (read, False)
+--         ELam _ _ e -> (read, False)
+--         ELet _ _ e1 e2 -> 
+--             let (read1, write1) = checkIOState e1 (read, write) in
+--             let (read2, write2) = checkIOState e2 (read1, write1) in
+--             (read1 || read2, write1 || write2)
+--         ELetrec _ _ e1 e2 -> 
+--             let (read1, write1) = checkIOState e1 (read, write) in
+--             let (read2, write2) = checkIOState e2 (read1, write1) in
+--             (read1 || read2, write1 || write2)
+--         EApp _ e1 e2 -> 
+--             let (read1, write1) = checkIOState e1 (read, write) in
+--             let (read2, write2) = checkIOState e2 (read1, write1) in
+--             (read1 || read2, write1 || write2)
+--         EBPrim _ _ e1 e2 -> 
+--             let (read1, write1) = checkIOState e1 (read, write) in
+--             let (read2, write2) = checkIOState e2 (read1, write1) in
+--             (read1 || read2, write1 || write2)
+--         EUPrim _ _ e -> 
+--             checkIOState e (read, write)
+--         ECase _ e branches -> 
+--             let (read1, write1) = checkIOState e (read, write) in
+--             checkIOStateBranch branches (read1, write1)
+--         EBTuple _ e1 e2 -> 
+--             let (read1, write1) = checkIOState e1 (read, write) in
+--             let (read2, write2) = checkIOState e2 (read1, write1) in
+--             (read1 || read2, write1 || write2)
+--         ETTuple _ e1 e2 e3 -> 
+--             let (read1, write1) = checkIOState e1 (read, write) in
+--             let (read2, write2) = checkIOState e2 (read1, write1) in
+--             let (read3, write3) = checkIOState e3 (read2, write2) in
+--             (read1 || read2 || read3, write1 || write2 || write3)
+--         _ -> (read, write)
         
 
-checkIOStateBranch : Branch -> (Bool, Bool) -> (Bool, Bool)
-checkIOStateBranch branch (read, write) =
-    case branch of
-        BSin _ _ e -> checkIOState e (read, write)
-        BNSin _ _ _ e -> checkIOState e (read, write)
+-- checkIOStateBranch : Branch -> (Bool, Bool) -> (Bool, Bool)
+-- checkIOStateBranch branch (read, write) =
+--     case branch of
+--         BSin _ _ e -> checkIOState e (read, write)
+--         BNSin _ _ _ e -> checkIOState e (read, write)
+--         BCom _ b1 b2 -> 
+--             let (read1, write1) = checkIOStateBranch b1 (read, write) in
+--             let (read2, write2) = checkIOStateBranch b2 (read1, write1) in
+--             (read1 || read2, write1 || write2)
+
+
+analyzeEffect : FuncSummary -> Expr -> (List String, Bool, Bool)
+analyzeEffect funcSummary expr =
+    case expr of
+        EParens _ e -> analyzeEffect funcSummary e
+        ELam _ _ _ -> ([], False, False)
+        ELet _ p e1 e2 -> 
+            case (p, e1) of
+                (PVar _ x, ELam _ _ e_) -> 
+                    let tempRecord = analyzeEffect funcSummary e_ in
+                    case tempRecord of
+                        (["error"], _, _) -> (["error"], False, False)
+                        _ -> analyzeEffect ((x, tempRecord)::funcSummary) e2
+                (_, ELam _ _ _) -> (["error"], False, False)
+                _ -> 
+                    let 
+                        v1 = modVarsinPat p 
+                        v2 = analyzeEffect funcSummary e1
+                        v3 = analyzeEffect funcSummary e2
+                    in
+                    case (v1, v2, v3) of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (_, (["error"], _, _), _) -> (["error"], False, False)
+                        (_, _, (["error"], _, _)) -> (["error"], False, False)
+                        (_, (v2_, r2, w2), (v3_, r3, w3)) -> (v1 ++ v2_ ++ v3_, r2 || r3, w2 || w3)
+        ELetrec _ (PVar _ x) (ELam _ _ e_) e2 ->
+            let tempRecord = (x, ([], False, False)) in
+            case analyzeEffect (tempRecord::funcSummary) e_ of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> analyzeEffect ((x, (vs, r, w))::funcSummary) e2
+        EVar _ x -> 
+            case findFuncByName x funcSummary of
+                Just (vs, r, w) -> (vs, r, w)
+                Nothing -> (["error"], False, False)
+        EApp _ e1 e2 ->
+            case analyzeEffect funcSummary e1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffect funcSummary e2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        EBPrim _ _ e1 e2 ->
+            case analyzeEffect funcSummary e1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffect funcSummary e2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        EUPrim _ _ e -> analyzeEffect funcSummary e
+        ECase _ e branches ->
+            case analyzeEffect funcSummary e of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffectinBranches funcSummary branches of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        EBTuple _ e1 e2 ->
+            case analyzeEffect funcSummary e1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffect funcSummary e2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        ETTuple _ e1 e2 e3 -> 
+            case analyzeEffect funcSummary e1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffect funcSummary e2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> 
+                            case analyzeEffect funcSummary e3 of
+                                (["error"], _, _) -> (["error"], False, False)
+                                (vs3, r3, w3) -> (vs ++ vs2 ++ vs3, r || r2 || r3, w || w2 || w3)
+        EPrint _ e -> ([], False, True)
+        ERead _ -> ([], True, False)
+        _ -> (["error"], False, False)
+
+findFuncByName : String -> FuncSummary -> Maybe (List String, Bool, Bool)
+findFuncByName x funcSummary =
+    case funcSummary of
+        [] -> Nothing
+        (x_, (vs, r, w)) :: fs -> if x_ == x then Just (vs, r, w) else findFuncByName x fs
+
+analyzeEffectinBranches : FuncSummary -> Branch -> (List String, Bool, Bool)
+analyzeEffectinBranches funcSummary branches =
+    case branches of
+        BSin _ _ e -> analyzeEffect funcSummary e
+        BNSin _ _ p e -> analyzeEffect funcSummary e
         BCom _ b1 b2 -> 
-            let (read1, write1) = checkIOStateBranch b1 (read, write) in
-            let (read2, write2) = checkIOStateBranch b2 (read1, write1) in
-            (read1 || read2, write1 || write2)
+            case analyzeEffectinBranches funcSummary b1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs1, r1, w1) ->
+                    case analyzeEffectinBranches funcSummary b2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs1 ++ vs2, r1 || r2, w1 || w2)
 
 
+
+findCurVars : List String -> VEnv -> List String
+findCurVars vs venv =
+    case vs of
+        [] -> []
+        x :: xs ->
+            if List.member x (List.map Tuple.first venv) then x :: findCurVars xs venv else findCurVars xs venv
