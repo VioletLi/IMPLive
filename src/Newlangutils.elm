@@ -566,3 +566,132 @@ mergeVEnv4 venv1 venv2 venv3 venv4 =
                                     (s3, v3):: mergeVEnv4 env1 env2 env3 env4
 
         _ -> []
+
+analyzeEffect : FuncSummary -> Expr -> (List String, Bool, Bool)
+analyzeEffect funcSummary expr =
+    case expr of
+        EParens _ e -> analyzeEffect funcSummary e
+        ELam _ _ _ -> ([], False, False)
+        ELet _ p e1 e2 -> 
+            case (p, e1) of
+                (PVar _ x, ELam _ _ e_) -> 
+                    let tempRecord = analyzeEffect funcSummary e_ in
+                    case tempRecord of
+                        (["error"], _, _) -> (["error"], False, False)
+                        _ -> analyzeEffect ((x, tempRecord)::funcSummary) e2
+                (_, ELam _ _ _) -> (["error"], False, False)
+                _ -> 
+                    let 
+                        v1 = modVarsinPat p 
+                        v2 = analyzeEffect funcSummary e1
+                        v3 = analyzeEffect funcSummary e2
+                    in
+                    case (v1, v2, v3) of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (_, (["error"], _, _), _) -> (["error"], False, False)
+                        (_, _, (["error"], _, _)) -> (["error"], False, False)
+                        (_, (v2_, r2, w2), (v3_, r3, w3)) -> (v1 ++ v2_ ++ v3_, r2 || r3, w2 || w3)
+        ELetrec _ (PVar _ x) (ELam _ _ e_) e2 ->
+            let tempRecord = (x, ([], False, False)) in
+            case analyzeEffect (tempRecord::funcSummary) e_ of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> analyzeEffect ((x, (vs, r, w))::funcSummary) e2
+        EVar _ x -> 
+            case findFuncByName x funcSummary of
+                Just (vs, r, w) -> (vs, r, w)
+                Nothing -> ([], False, False)
+        EApp _ e1 e2 ->
+            case analyzeEffect funcSummary e1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffect funcSummary e2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        EInt _ _ -> ([], False, False)
+        EFloat _ _ -> ([], False, False)
+        ETrue _ -> ([], False, False)
+        EFalse _ -> ([], False, False)
+        EChar _ _ -> ([], False, False)
+        ECons _ e1 e2 ->
+            case analyzeEffect funcSummary e1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffect funcSummary e2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        ENil _ -> ([], False, False)
+        EHole _ _ -> ([], False, False)
+        EBPrim _ _ e1 e2 ->
+            case analyzeEffect funcSummary e1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffect funcSummary e2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        EUPrim _ _ e -> analyzeEffect funcSummary e
+        ECase _ e branches ->
+            case analyzeEffect funcSummary e of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffectinBranches funcSummary branches of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        EBTuple _ e1 e2 ->
+            case analyzeEffect funcSummary e1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffect funcSummary e2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs ++ vs2, r || r2, w || w2)
+        ETTuple _ e1 e2 e3 -> 
+            case analyzeEffect funcSummary e1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> 
+                    case analyzeEffect funcSummary e2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> 
+                            case analyzeEffect funcSummary e3 of
+                                (["error"], _, _) -> (["error"], False, False)
+                                (vs3, r3, w3) -> (vs ++ vs2 ++ vs3, r || r2 || r3, w || w2 || w3)
+        EPrint _ e -> 
+            case analyzeEffect funcSummary e of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs, r, w) -> (vs, r, w || True)
+        ERead _ -> ([], True, False)
+        _ -> (["error"], False, False)
+
+analyzeEffectinBranches : FuncSummary -> Branch -> (List String, Bool, Bool)
+analyzeEffectinBranches funcSummary branches =
+    case branches of
+        BSin _ _ e -> analyzeEffect funcSummary e
+        BNSin _ _ _ e -> analyzeEffect funcSummary e
+        BCom _ b1 b2 -> 
+            case analyzeEffectinBranches funcSummary b1 of
+                (["error"], _, _) -> (["error"], False, False)
+                (vs1, r1, w1) ->
+                    case analyzeEffectinBranches funcSummary b2 of
+                        (["error"], _, _) -> (["error"], False, False)
+                        (vs2, r2, w2) -> (vs1 ++ vs2, r1 || r2, w1 || w2)
+
+
+findFuncByName : String -> FuncSummary -> Maybe (List String, Bool, Bool)
+findFuncByName x funcSummary =
+    case funcSummary of
+        [] -> Nothing
+        (x_, (vs, r, w)) :: fs -> if x_ == x then Just (vs, r, w) else findFuncByName x fs
+
+modVarsinPat : Pattern -> List String
+modVarsinPat p = 
+    case p of
+        PVar _ x -> [x]
+        PCons _ p1 p2 -> modVarsinPat p1 ++ modVarsinPat p2
+        PBTuple _ p1 p2 -> modVarsinPat p1 ++ modVarsinPat p2
+        PTTuple _ p1 p2 p3 -> modVarsinPat p1 ++ modVarsinPat p2 ++ modVarsinPat p3
+        _ -> []
+
+findCurVars : List String -> VEnv -> List String
+findCurVars vs venv =
+    case vs of
+        [] -> []
+        x :: xs ->
+            if List.member x (List.map Tuple.first venv) then x :: findCurVars xs venv else findCurVars xs venv

@@ -170,13 +170,14 @@ type alias HTotal = Int
 --     , choice : Int
 --     , pi     : Pattern
 --     }
-
+type alias FuncSummary = List (String, (List String, Bool, Bool))
 type alias Context = 
     { henv : HEnv
     , venv : VEnv
     , senv : SEnv
     , stdin : Stdin
     , stdout : Stdout
+    , funcSummary : FuncSummary
     }
 
 type alias MatchCaseRes =

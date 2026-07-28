@@ -3,7 +3,6 @@ module Newuneval exposing (..)
 import Syntax exposing (..)
 import Neweval exposing (eval)
 import Newlangutils exposing (..)
-import Neweval exposing (defaultEvalRes)
 
 
 type alias UnevalRes =
@@ -13,6 +12,7 @@ type alias UnevalRes =
     , expr : Expr
     , stdin : Stdin
     , stdout : Stdout
+    , funcSummary : FuncSummary
     , htotal : HTotal
     }
 
@@ -24,6 +24,7 @@ defaultUnevalRes =
     , expr = EError "Default Uneval Result"
     , stdin = ([], Normal)
     , stdout = ([], Normal)
+    , funcSummary = []
     , htotal = 0
     }
 
@@ -44,12 +45,13 @@ uneval context expr updateval htotal =
     case expr of
         EParens ws e -> 
             let
-                res = uneval context e updateval htotal
+                res = uneval context e updateval htotal 
             in
             { henv = res.henv
             , venv = res.venv
             , senv = res.senv
             , expr = EParens ws res.expr
+            , funcSummary = res.funcSummary
             , stdin = res.stdin
             , stdout = res.stdout
             , htotal = res.htotal
@@ -64,6 +66,7 @@ uneval context expr updateval htotal =
                     , expr = EVar ws s
                     , stdin = context.stdin
                     , stdout = context.stdout
+                    , funcSummary = context.funcSummary
                     , htotal = htotal
                     }
                 (Just _, IM val) ->
@@ -73,6 +76,7 @@ uneval context expr updateval htotal =
                     , expr = EVar ws s
                     , stdin = context.stdin
                     , stdout = context.stdout
+                    , funcSummary = context.funcSummary
                     , htotal = htotal
                     }
                 _ -> { defaultUnevalRes | expr = EError "Error in var update." }
@@ -85,6 +89,7 @@ uneval context expr updateval htotal =
                     , expr = ELam ws p_ e_
                     , stdin = context.stdin
                     , stdout = context.stdout
+                    , funcSummary = context.funcSummary
                     , htotal = htotal
                     }
                 _ ->
@@ -94,17 +99,22 @@ uneval context expr updateval htotal =
             let 
                 newcontext = 
                     case (fres.value, p) of
-                        (IM val, PVar _ s) -> 
-                            {context | senv = fres.senv, venv = (s, val) :: context.venv, stdin = fres.stdin, stdout = fres.stdout}
-
+                        (IM (VClosure pf ef venvf), PVar _ s) -> 
+                            let (vs, r, w) = analyzeEffect context.funcSummary ef in
+                            let factvs = unique (findCurVars vs context.venv) in
+                            { senv = fres.senv, venv = (s, (VClosure pf ef venvf)) :: context.venv, stdin = fres.stdin, stdout = fres.stdout, funcSummary = ((s, (factvs, r, w))::context.funcSummary), henv = context.henv }
+                        (IM (VFix ef), PVar _ s) -> 
+                            let (vs, r, w) = analyzeEffect ((s, ([], False, False))::context.funcSummary) ef in
+                            let factvs = unique (findCurVars vs context.venv) in
+                            { senv = fres.senv, venv = (s, (VFix ef)) :: context.venv, stdin = fres.stdin, stdout = fres.stdout, funcSummary = ((s, (factvs, r, w))::context.funcSummary), henv = context.henv }
                         (M val, _) ->
                             let matchResult = match p val in
                             case matchResult of
-                                [(_, VError info)] -> { context | senv = [VError info], venv = [], henv = [], stdin = ([], Normal), stdout = ([], Normal) }
+                                [(_, VError info)] -> { senv = [VError info], venv = [], henv = [], stdin = ([], Normal), stdout = ([], Normal), funcSummary = []}
                                 _ -> 
                                     let (venv, senv) = applyMatchResult matchResult context.venv context.senv in
-                                    { senv = senv, venv = venv, henv = context.henv, stdin = fres.stdin, stdout = fres.stdout }
-                        _ -> {venv = [], senv = [VError "Expected single variable when defining function"], henv = [], stdin = ([], Normal), stdout = ([], Normal)}
+                                    { senv = senv, venv = venv, henv = context.henv, stdin = fres.stdin, stdout = fres.stdout, funcSummary = context.funcSummary }
+                        _ -> {venv = [], senv = [VError "Expected single variable when defining function"], henv = [], stdin = ([], Normal), stdout = ([], Normal), funcSummary = []}
             in
             case newcontext.senv of
                 [VError info] -> { defaultUnevalRes | expr = EError info }
@@ -124,12 +134,13 @@ uneval context expr updateval htotal =
                                 _ -> 
                                     {
                                         henv = mergeHEnv3 context.henv res1.henv res2.henv
-                                        , venv = context.venv
+                                        , venv = res1.venv
                                         , senv = res1.senv
                                         , expr = ELet ws p res1.expr res2.expr
                                         , stdin = context.stdin
                                         , stdout = context.stdout
                                         , htotal = res1.htotal
+                                        , funcSummary = res1.funcSummary
                                     }
                         (M _, _) ->
                             let senv4e1 = rollbackSEnv context.venv context.senv res2.senv (collectVars p) in
@@ -140,22 +151,31 @@ uneval context expr updateval htotal =
                                     let res1 = uneval context e1 { value = M newval, senv = senv4e1 } res2.htotal in
                                     {
                                         henv = mergeHEnv3 context.henv res1.henv res2.henv
-                                        , venv = context.venv
+                                        , venv = res1.venv
                                         , senv = res1.senv
                                         , expr = ELet ws p res1.expr res2.expr
                                         , stdin = context.stdin
                                         , stdout = context.stdout
                                         , htotal = res1.htotal
+                                        , funcSummary = res1.funcSummary
                                     }
                         _ -> {defaultUnevalRes | expr = EError "Update Error in Let." }
                 
-        ELetrec ws p e1 e2 -> 
-            let res = uneval context (EApp defaultWS (ELam defaultWS p e2) (EFix defaultWS (ELam defaultWS p e1))) updateval htotal in
-            case res.expr of
-                EError info -> {defaultUnevalRes | expr = EError info}
-                EApp _ (ELam _ p_ e2_) (EFix _ (ELam _ _ e1_)) ->
-                    {res | expr = ELetrec ws p_ e1_ e2_}
-                _ -> {defaultUnevalRes | expr = EError "Wrong Result When Updating Letrec Statement."}
+        ELetrec ws (PVar ws1 s) e1 e2 -> 
+            let func = eval context e1 [] in
+            case func.value of
+                IM (VFix ef) ->
+                    let p = PVar ws1 s in
+                    let (vs, r, w) = analyzeEffect context.funcSummary ef in
+                    let factvs = unique (findCurVars vs context.venv) in
+                    let newsum = (s, (factvs, r, w))::context.funcSummary in
+                    let res = uneval {context| funcSummary = newsum} (EApp defaultWS (ELam defaultWS p e2) (EFix defaultWS (ELam defaultWS p e1))) updateval htotal in
+                    case res.expr of
+                        EError info -> {defaultUnevalRes | expr = EError info}
+                        EApp _ (ELam _ p_ e2_) (EFix _ (ELam _ _ e1_)) ->
+                            {res | expr = ELetrec ws p_ e1_ e2_}
+                        _ -> {defaultUnevalRes | expr = EError "Wrong Result When Updating Letrec Statement."}
+                _ -> {defaultUnevalRes | expr = EError "Expected Recursive Function Closure in Letrec." }
             -- case p of
             --     PVar _ x ->
             --         let venv_ = (x, length context.senv) :: context.venv in
@@ -206,7 +226,8 @@ uneval context expr updateval htotal =
                                                         expr = EApp ws1 resf.expr resfixclosure.expr,
                                                         stdin = context.stdin,
                                                         stdout = context.stdout,
-                                                        htotal = resfixclosure.htotal
+                                                        htotal = resfixclosure.htotal,
+                                                        funcSummary = resfixclosure.funcSummary
                                                     }
                                         Just (VFix e2_) -> 
                                             {
@@ -216,7 +237,8 @@ uneval context expr updateval htotal =
                                                 expr = EApp ws1 resf.expr (EFix ws2 e2_),
                                                 stdin = context.stdin,
                                                 stdout = context.stdout,
-                                                htotal = resf.htotal
+                                                htotal = resf.htotal,
+                                                funcSummary = resf.funcSummary
                                             }
                                         _ -> {defaultUnevalRes | expr = EError "Error in update recusive function." }
                 _ -> {defaultUnevalRes | expr = EError "Expected Closure in EApp." }
@@ -232,7 +254,7 @@ uneval context expr updateval htotal =
                                         [(_, VError info)] -> { defaultUnevalRes | expr = EError ("In EApp Update: "++info) }
                                         _ ->
                                             let (venv_, senv_) = applyArgs matchResult (length fres2.senv) in
-                                            let resf = uneval {venv = venv_ ++ venv, senv = fres2.senv ++ senv_, henv = context.henv, stdin = fres2.stdin, stdout = fres2.stdout} e {updateval | senv = updateval.senv ++ senv_} htotal in
+                                            let resf = uneval {venv = venv_ ++ venv, senv = fres2.senv ++ senv_, henv = context.henv, stdin = fres2.stdin, stdout = fres2.stdout, funcSummary = context.funcSummary} e {updateval | senv = updateval.senv ++ senv_} htotal in
                                             case resf.expr of
                                                 EError info -> { defaultUnevalRes | expr = EError ("Error In EApp Update: "++info) }
                                                 _ -> 
@@ -248,6 +270,7 @@ uneval context expr updateval htotal =
                                                                 venv = mergeVEnv3 resfunc.venv resargs.venv context.venv,
                                                                 senv = resfunc.senv,
                                                                 expr = EApp ws resfunc.expr resargs.expr,
+                                                                funcSummary = resfunc.funcSummary,
                                                                 stdin = context.stdin,
                                                                 stdout = context.stdout,
                                                                 htotal = resfunc.htotal
@@ -271,6 +294,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 M (VHole _ (venv_, senv_)) ->
                     let
@@ -284,6 +308,7 @@ uneval context expr updateval htotal =
                         , stdin = context.stdin
                         , stdout = context.stdout
                         , htotal = htotal + 1
+                        , funcSummary = context.funcSummary
                         }
                 _ -> 
                     { defaultUnevalRes | expr = EError "Expected Int Constant." }
@@ -297,6 +322,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 M (VFloat n_) ->
                     { henv = context.henv
@@ -306,6 +332,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 M (VHole _ (venv_, senv_)) ->
                     let
@@ -319,6 +346,7 @@ uneval context expr updateval htotal =
                         , stdin = context.stdin
                         , stdout = context.stdout
                         , htotal = htotal + 1
+                        , funcSummary = context.funcSummary
                         }
                 _ -> 
                     { defaultUnevalRes | expr = EError "Expected Float Constant." }
@@ -332,6 +360,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 M VFalse ->
                     { henv = context.henv
@@ -341,6 +370,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 M (VHole _ (venv_, senv_)) ->
                     let
@@ -354,6 +384,7 @@ uneval context expr updateval htotal =
                         , stdin = context.stdin
                         , stdout = context.stdout
                         , htotal = htotal + 1
+                        , funcSummary = context.funcSummary
                         }
                 _ -> 
                     { defaultUnevalRes | expr = EError "Expected Bool Constant." }
@@ -367,6 +398,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 M VFalse ->
                     { henv = context.henv
@@ -376,6 +408,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 M (VHole _ (venv_, senv_)) ->
                     let
@@ -389,6 +422,7 @@ uneval context expr updateval htotal =
                         , stdin = context.stdin
                         , stdout = context.stdout
                         , htotal = htotal + 1
+                        , funcSummary = context.funcSummary
                         }
                 _ -> 
                     { defaultUnevalRes | expr = EError "Expected Bool Constant." }
@@ -402,6 +436,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 M (VHole _ (venv_, senv_)) ->
                     let
@@ -415,6 +450,7 @@ uneval context expr updateval htotal =
                         , stdin = context.stdin
                         , stdout = context.stdout
                         , htotal = htotal + 1
+                        , funcSummary = context.funcSummary
                         }
                 _ -> 
                     { defaultUnevalRes | expr = EError "Expected Char Constant." }
@@ -435,6 +471,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = res2.htotal
+                    , funcSummary = res1.funcSummary
                     }
                 M (VNil id) ->
                     { henv = context.henv
@@ -444,6 +481,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 M (VHole _ (venv_, senv_)) ->
                     let
@@ -457,6 +495,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal + 1
+                    , funcSummary = context.funcSummary
                     }
                 _ -> 
                     { defaultUnevalRes | expr = EError "Expected List in Cons." }
@@ -470,6 +509,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 M (VHole _ (venv_, senv_)) ->
                     let
@@ -483,6 +523,7 @@ uneval context expr updateval htotal =
                     , stdin = context.stdin
                     , stdout = context.stdout
                     , htotal = htotal + 1
+                    , funcSummary = context.funcSummary
                     }
                 M (VCons id v1 v2) ->
                     let (ne, htotal1) = valueToExpr (VCons id v1 v2) htotal in
@@ -516,7 +557,9 @@ uneval context expr updateval htotal =
                     , expr = newe
                     , stdin = context.stdin
                     , stdout = context.stdout
-                    , htotal = htotal1 }
+                    , htotal = htotal1 
+                    , funcSummary = context.funcSummary
+                    }
                 _ -> {defaultUnevalRes | expr = EError "Expected List in Nil." }
         EHole ws u -> 
             let save = case updateval.value of
@@ -548,6 +591,7 @@ uneval context expr updateval htotal =
                                 , stdin = context.stdin
                                 , stdout = context.stdout
                                 , htotal = htotal + 1
+                                , funcSummary = context.funcSummary
                                 }
                         _ ->
                             let
@@ -560,6 +604,7 @@ uneval context expr updateval htotal =
                             , stdin = context.stdin
                             , stdout = context.stdout
                             , htotal = htotal + 1
+                            , funcSummary = context.funcSummary
                             }
                     
         EBPrim ws op e1 e2 -> 
@@ -604,6 +649,7 @@ uneval context expr updateval htotal =
                                         , stdin = res.stdin
                                         , stdout = res.stdout
                                         , htotal = res.htotal
+                                        , funcSummary = res.funcSummary
                                         }
 
                                 M VFalse ->
@@ -618,6 +664,7 @@ uneval context expr updateval htotal =
                                         , stdin = res.stdin
                                         , stdout = res.stdout
                                         , htotal = res.htotal
+                                        , funcSummary = res.funcSummary
                                         }
 
                                 M (VHole _ (venv_, senv_)) ->
@@ -632,6 +679,7 @@ uneval context expr updateval htotal =
                                         , stdin = context.stdin
                                         , stdout = context.stdout
                                         , htotal = htotal
+                                        , funcSummary = context.funcSummary
                                         }
 
                                 _ -> 
@@ -651,6 +699,7 @@ uneval context expr updateval htotal =
                                         , stdin = res.stdin
                                         , stdout = res.stdout
                                         , htotal = res.htotal
+                                        , funcSummary = res.funcSummary
                                         }
 
                                 M VFalse ->
@@ -661,6 +710,7 @@ uneval context expr updateval htotal =
                                     , stdin = context.stdin
                                     , stdout = context.stdout
                                     , htotal = htotal
+                                    , funcSummary = context.funcSummary
                                     }
 
                                 M (VHole hn (venv_, senv_)) ->
@@ -675,6 +725,7 @@ uneval context expr updateval htotal =
                                         , stdin = res.stdin
                                         , stdout = res.stdout
                                         , htotal = res.htotal
+                                        , funcSummary = res.funcSummary
                                         }
 
                                 _ -> 
@@ -691,6 +742,7 @@ uneval context expr updateval htotal =
                                     , stdin = context.stdin
                                     , stdout = context.stdout
                                     , htotal = htotal
+                                    , funcSummary = context.funcSummary
                                     }
 
                                 M VFalse ->
@@ -705,6 +757,7 @@ uneval context expr updateval htotal =
                                         , stdin = res.stdin
                                         , stdout = res.stdout
                                         , htotal = res.htotal
+                                        , funcSummary = res.funcSummary
                                         }
 
                                 M (VHole hn (venv_, senv_)) ->
@@ -719,6 +772,7 @@ uneval context expr updateval htotal =
                                         , stdin = res.stdin
                                         , stdout = res.stdout
                                         , htotal = res.htotal
+                                        , funcSummary = res.funcSummary
                                         }
 
                                 _ -> 
@@ -742,6 +796,7 @@ uneval context expr updateval htotal =
                                         , stdin = res.stdin
                                         , stdout = res.stdout
                                         , htotal = res.htotal
+                                        , funcSummary = res.funcSummary
                                         }
 
                                 M (VFloat n) ->
@@ -756,6 +811,7 @@ uneval context expr updateval htotal =
                                         , stdin = res.stdin
                                         , stdout = res.stdout
                                         , htotal = res.htotal
+                                        , funcSummary = res.funcSummary
                                         }
 
                                 M (VHole _ (venv_, senv_)) ->
@@ -770,6 +826,7 @@ uneval context expr updateval htotal =
                                         , stdin = context.stdin
                                         , stdout = context.stdout
                                         , htotal = htotal
+                                        , funcSummary = context.funcSummary
                                         }
 
                                 _ -> 
@@ -786,6 +843,7 @@ uneval context expr updateval htotal =
                                         , stdin = context.stdin
                                         , stdout = context.stdout
                                         , htotal = htotal
+                                        , funcSummary = context.funcSummary
                                         }
                                     else
                                         let
@@ -799,6 +857,7 @@ uneval context expr updateval htotal =
                                             , stdin = res.stdin
                                             , stdout = res.stdout
                                             , htotal = res.htotal
+                                            , funcSummary = res.funcSummary
                                             }
 
                                 M (VHole hn (venv_, senv_)) ->
@@ -813,6 +872,7 @@ uneval context expr updateval htotal =
                                         , stdin = res.stdin
                                         , stdout = res.stdout
                                         , htotal = res.htotal
+                                        , funcSummary = res.funcSummary
                                         }
 
                                 _ -> 
@@ -829,6 +889,7 @@ uneval context expr updateval htotal =
                                         , stdin = context.stdin
                                         , stdout = context.stdout
                                         , htotal = htotal
+                                        , funcSummary = context.funcSummary
                                         }
                                     else
                                         let 
@@ -842,6 +903,7 @@ uneval context expr updateval htotal =
                                             , stdout = res.stdout
                                             , expr = EUPrim ws Neg res.expr
                                             , htotal = res.htotal
+                                            , funcSummary = res.funcSummary
                                             }
 
                                 M (VFloat n_) ->
@@ -853,6 +915,7 @@ uneval context expr updateval htotal =
                                         , stdout = context.stdout
                                         , expr = EUPrim ws Neg e
                                         , htotal = htotal
+                                        , funcSummary = context.funcSummary
                                         }
                                     else
                                         let 
@@ -866,6 +929,7 @@ uneval context expr updateval htotal =
                                             , stdout = res.stdout
                                             , expr = EUPrim ws Neg res.expr
                                             , htotal = res.htotal
+                                            , funcSummary = res.funcSummary
                                             }
 
                                 M (VHole hn (venv_, senv_)) ->
@@ -880,6 +944,7 @@ uneval context expr updateval htotal =
                                         , stdout = res.stdout
                                         , expr = EUPrim ws Neg res.expr
                                         , htotal = res.htotal
+                                        , funcSummary = res.funcSummary
                                         }
 
                                 _ -> 
@@ -898,7 +963,8 @@ uneval context expr updateval htotal =
                         expr = ECase ws e branches,
                         stdin = context.stdin,
                         stdout = context.stdout,
-                        htotal = htotal
+                        htotal = htotal,
+                        funcSummary = context.funcSummary
                     }
                 (M eresval, M newval) -> 
                     let 
@@ -908,7 +974,7 @@ uneval context expr updateval htotal =
                                 _ -> 
                                     let matchRes = matchCase eresval branches in
                                     let (venv_, senv_) = applyArgs matchRes.venvm (length eres.senv) in
-                                    let bres = uneval {venv = venv_ ++ context.venv, senv = eres.senv ++ senv_, henv = context.henv, stdin = eres.stdin, stdout = eres.stdout} matchRes.ei { updateval | senv = updateval.senv ++ senv_} htotal in
+                                    let bres = uneval {venv = venv_ ++ context.venv, senv = eres.senv ++ senv_, henv = context.henv, stdin = eres.stdin, stdout = eres.stdout, funcSummary = context.funcSummary} matchRes.ei { updateval | senv = updateval.senv ++ senv_} htotal in
                                     {res = bres, choice = matchRes.choice, pi = matchRes.pi}
                     in
                     case tryRes.res.expr of
@@ -925,6 +991,7 @@ uneval context expr updateval htotal =
                                 , stdin = rese.stdin
                                 , stdout = rese.stdout
                                 , htotal = rese.htotal
+                                , funcSummary = rese.funcSummary
                             }
                 _ -> { defaultUnevalRes | expr = EError "Case Expression Modified Value Type Error: 01." }
         EBTuple ws e1 e2 -> 
@@ -944,6 +1011,7 @@ uneval context expr updateval htotal =
                         , stdin = res1_.stdin
                         , stdout = res1_.stdout
                         , htotal = res1_.htotal
+                        , funcSummary = res1_.funcSummary
                         }
                 _ -> { defaultUnevalRes | expr = EError "Expected BTuple." }
         ETTuple ws e1 e2 e3 -> 
@@ -965,11 +1033,13 @@ uneval context expr updateval htotal =
                         , stdin = res1_.stdin
                         , stdout = res1_.stdout
                         , htotal = res1_.htotal
+                        , funcSummary = res1_.funcSummary
                         }
                 _ -> { defaultUnevalRes | expr = EError "Expected TTuple." }
         EPrint ws e -> defaultUnevalRes
         ERead ws -> defaultUnevalRes
         EError info -> { defaultUnevalRes | expr = EError info }
+        _ -> { defaultUnevalRes | expr = EError "Unknown Expression Error." }
 
 
 logic : WS -> Expr -> Expr -> Context -> UpdateVal -> HTotal -> Bop -> UnevalRes
@@ -1086,6 +1156,7 @@ arith ws e1 e2 context updateval htotal op =
                     , stdout = context.stdout
                     , expr = EBPrim ws op e1 e2
                     , htotal = htotal
+                    , funcSummary = context.funcSummary
                     }
                 
                 _ ->
@@ -1102,6 +1173,7 @@ arith ws e1 e2 context updateval htotal op =
                             , stdout = context.stdout
                             , expr = EBPrim ws op e1 e2
                             , htotal = htotal
+                            , funcSummary = context.funcSummary
                             }
                         
                         _ ->
@@ -1117,6 +1189,7 @@ arith ws e1 e2 context updateval htotal op =
                                 , stdin = res1_.stdin
                                 , stdout = res1_.stdout
                                 , htotal = res1_.htotal
+                                , funcSummary = res1_.funcSummary
                                 }
         
         M (VInt n) ->
@@ -1342,6 +1415,7 @@ comp ws e1 e2 context updateval htotal op =
                         , stdout = context.stdout
                         , expr = newe
                         , htotal = htotal
+                        , funcSummary = context.funcSummary
                         } 
 
         M VFalse ->
@@ -1370,6 +1444,7 @@ comp ws e1 e2 context updateval htotal op =
                 , stdout = context.stdout
                 , expr = newe
                 , htotal = htotal
+                , funcSummary = context.funcSummary
                 } 
 
         M (VHole hn (venv_, senv_)) ->
@@ -1386,6 +1461,7 @@ comp ws e1 e2 context updateval htotal op =
                         , stdout = context.stdout
                         , expr = EBPrim ws op e1 e2
                         , htotal = htotal
+                        , funcSummary = context.funcSummary
                         } 
                 
                 (_, M (VHole _ _)) ->
@@ -1400,6 +1476,7 @@ comp ws e1 e2 context updateval htotal op =
                         , venv = newvenv
                         , expr = EBPrim ws op e1 e2
                         , htotal = htotal
+                        , funcSummary = context.funcSummary
                         } 
 
                 (_, _) ->
@@ -1417,6 +1494,7 @@ comp ws e1 e2 context updateval htotal op =
                         , stdin = res1_.stdin
                         , stdout = res1_.stdout
                         , htotal = res1_.htotal
+                        , funcSummary = res1_.funcSummary
                         }
 
         _ ->
@@ -1439,6 +1517,7 @@ operationUpdate context htotal ws op e1 e2 updateval newv1 newv2 =
     , stdin = res1.stdin
     , stdout = res1.stdout
     , htotal = res1.htotal
+    , funcSummary = res1.funcSummary
     }
     
 
