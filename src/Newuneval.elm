@@ -32,6 +32,8 @@ defaultUnevalRes =
 type alias UpdateVal =
     { value : Value
     , senv : SEnv
+    , stdin : Stdin
+    , stdout : Stdout
     }
 
 type alias TryUnevalRes =
@@ -125,8 +127,8 @@ uneval context expr updateval htotal =
                             let 
                                 updval = 
                                     case findVarByName s res2.venv of
-                                        Just (VClosure p_ e_ venv_) -> { value = IM (VClosure p_ e_ venv_), senv = res2.senv }
-                                        _ -> { value = M (VError "Expected variable when defining function"), senv = [] }
+                                        Just (VClosure p_ e_ venv_) -> { value = IM (VClosure p_ e_ venv_), senv = res2.senv, stdin = res2.stdin, stdout = res2.stdout}
+                                        _ -> { value = M (VError "Expected variable when defining function"), senv = [], stdin = ([], Normal), stdout = ([], Normal) }
                             in
                             let res1 = uneval context e1 updval res2.htotal in
                             case res1.expr of
@@ -148,7 +150,7 @@ uneval context expr updateval htotal =
                                 [VError info] -> { defaultUnevalRes | expr = EError info }
                                 _ ->
                                     let newval = pattern2val p res2.venv res2.senv in
-                                    let res1 = uneval context e1 { value = M newval, senv = senv4e1 } res2.htotal in
+                                    let res1 = uneval context e1 { value = M newval, senv = senv4e1, stdin = res2.stdin, stdout = res2.stdout} res2.htotal in
                                     {
                                         henv = mergeHEnv3 context.henv res1.henv res2.henv
                                         , venv = res1.venv
@@ -210,14 +212,14 @@ uneval context expr updateval htotal =
                         EError info -> {defaultUnevalRes | expr = EError info}
                         _ -> 
                             let 
-                                resf = uneval context e1 {value = IM (VClosure (PVar ws s) res.expr venv), senv = List.take (List.length fres.senv) res.senv} res.htotal
+                                resf = uneval context e1 { value = IM (VClosure (PVar ws s) res.expr venv), senv = List.take (List.length fres.senv) res.senv, stdin = res.stdin, stdout = res.stdout} res.htotal
                             in
                             case resf.expr of
                                 EError info -> {defaultUnevalRes | expr = EError info}
                                 _ ->
                                     case findVarByName s res.venv of
                                         Just (VClosure fixP fixT fixEnv) -> 
-                                                    let resfixclosure = uneval context (EFix defaultWS e2) {value = IM (VClosure fixP fixT fixEnv), senv = context.senv} resf.htotal
+                                                    let resfixclosure = uneval context (EFix defaultWS e2) {value = IM (VClosure fixP fixT fixEnv), senv = context.senv, stdin = resf.stdin, stdout = resf.stdout} resf.htotal
                                                     in 
                                                     {
                                                         henv = mergeHEnv3 context.henv res.henv resfixclosure.henv,
@@ -259,12 +261,12 @@ uneval context expr updateval htotal =
                                                 EError info -> { defaultUnevalRes | expr = EError ("Error In EApp Update: "++info) }
                                                 _ -> 
                                                     let newval = pattern2val p resf.venv resf.senv in
-                                                    let resargs = uneval {context | senv = fres1.senv, stdin = fres1.stdin, stdout = fres1.stdout} e2 {value = M newval, senv = List.take (List.length fres1.senv) resf.senv} resf.htotal in
+                                                    let resargs = uneval {context | senv = fres1.senv, stdin = fres1.stdin, stdout = fres1.stdout} e2 {value = M newval, senv = List.take (List.length fres1.senv) resf.senv, stdin = resf.stdin, stdout = resf.stdout} resf.htotal in
                                                     case resargs.expr of
                                                         EError info -> { defaultUnevalRes | expr = EError ("Error In application args Update: "++info) }
                                                         _ -> 
                                                             let newclosure = VClosure p resf.expr venv in
-                                                            let resfunc = uneval context e1 {value = IM newclosure, senv = resargs.senv} resargs.htotal in
+                                                            let resfunc = uneval context e1 {value = IM newclosure, senv = resargs.senv, stdin = resargs.stdin, stdout = resargs.stdout} resargs.htotal in
                                                             {
                                                                 henv = mergeHEnv3 context.henv resargs.henv resf.henv,
                                                                 venv = mergeVEnv3 resfunc.venv resargs.venv context.venv,
@@ -460,7 +462,7 @@ uneval context expr updateval htotal =
                     let
                         fwdres = eval context e1 []
                         res2 = uneval { context | senv = fwdres.senv } e2 { updateval | value = M v2 } htotal
-                        res1 = uneval context e1 { value = M v1, senv = res2.senv} res2.htotal
+                        res1 = uneval context e1 { value = M v1, senv = res2.senv, stdin = res2.stdin, stdout = res2.stdout} res2.htotal
                         henv = mergeHEnv3 context.henv res1.henv res2.henv
                         venv = mergeVEnv3 context.venv res1.venv res2.venv
                     in
@@ -640,7 +642,7 @@ uneval context expr updateval htotal =
                                 M VTrue ->
                                     let 
                                         res =
-                                            uneval context e { value = M VFalse, senv = updateval.senv } htotal
+                                            uneval context e { updateval | value = M VFalse } htotal
                                     in
                                         { henv = res.henv
                                         , venv = res.venv
@@ -655,7 +657,7 @@ uneval context expr updateval htotal =
                                 M VFalse ->
                                     let 
                                         res =
-                                            uneval context e { value = M VTrue, senv = updateval.senv } htotal
+                                            uneval context e { updateval | value = M VTrue } htotal
                                     in
                                         { henv = res.henv
                                         , venv = res.venv
@@ -690,7 +692,7 @@ uneval context expr updateval htotal =
                                 M VTrue ->
                                     let 
                                         res =
-                                            uneval context e { value = M VFalse, senv = updateval.senv } htotal
+                                            uneval context e { updateval | value = M VFalse } htotal
                                     in
                                         { henv = res.henv
                                         , venv = res.venv
@@ -716,7 +718,7 @@ uneval context expr updateval htotal =
                                 M (VHole hn (venv_, senv_)) ->
                                     let 
                                         res =
-                                            uneval context e { value = M (VHole hn (venv_, senv_)), senv = updateval.senv } htotal
+                                            uneval context e { updateval | value = M (VHole hn (venv_, senv_)) } htotal
                                     in
                                         { henv = res.henv
                                         , venv = res.venv
@@ -748,7 +750,7 @@ uneval context expr updateval htotal =
                                 M VFalse ->
                                     let 
                                         res =
-                                            uneval context e { value = M VTrue, senv = updateval.senv } htotal
+                                            uneval context e { updateval | value = M VTrue } htotal
                                     in
                                         { henv = res.henv
                                         , venv = res.venv
@@ -763,7 +765,7 @@ uneval context expr updateval htotal =
                                 M (VHole hn (venv_, senv_)) ->
                                     let 
                                         res =
-                                            uneval context e { value = M (VHole hn (venv_, senv_)), senv = updateval.senv } htotal
+                                            uneval context e { updateval | value = M (VHole hn (venv_, senv_)) } htotal
                                     in
                                         { henv = res.henv
                                         , venv = res.venv
@@ -787,7 +789,7 @@ uneval context expr updateval htotal =
                                 M (VInt n) ->
                                     let 
                                         res =
-                                            uneval context e { value = M (VInt (-n)), senv = updateval.senv } htotal
+                                            uneval context e { updateval | value = M (VInt (-n)) } htotal
                                     in
                                         { henv = res.henv
                                         , venv = res.venv
@@ -802,7 +804,7 @@ uneval context expr updateval htotal =
                                 M (VFloat n) ->
                                     let 
                                         res =
-                                            uneval context e { value = M (VFloat (-n)), senv = updateval.senv } htotal
+                                            uneval context e { updateval | value = M (VFloat (-n)) } htotal
                                     in
                                         { henv = res.henv
                                         , venv = res.venv
@@ -848,7 +850,7 @@ uneval context expr updateval htotal =
                                     else
                                         let
                                             res =
-                                                uneval context e { value = M (VInt (-n_)), senv = updateval.senv } htotal
+                                                uneval context e { updateval | value = M (VInt (-n_)) } htotal
                                         in
                                             { henv = res.henv
                                             , venv = res.venv
@@ -863,7 +865,7 @@ uneval context expr updateval htotal =
                                 M (VHole hn (venv_, senv_)) ->
                                     let 
                                         res =
-                                            uneval context e { value = M (VHole hn (venv_, senv_)), senv = updateval.senv } htotal
+                                            uneval context e { updateval | value = M (VHole hn (venv_, senv_)) } htotal
                                     in
                                         { henv = res.henv
                                         , venv = res.venv
@@ -894,7 +896,7 @@ uneval context expr updateval htotal =
                                     else
                                         let 
                                             res =
-                                                uneval context e { value = M (VFloat (toFloat (-n_))), senv = updateval.senv } htotal
+                                                uneval context e { updateval | value = M (VFloat (toFloat (-n_))) } htotal
                                         in
                                             { henv = res.henv
                                             , venv = res.venv
@@ -920,7 +922,7 @@ uneval context expr updateval htotal =
                                     else
                                         let 
                                             res =
-                                                uneval context e { value = M (VFloat (-n_)), senv = updateval.senv } htotal
+                                                uneval context e { updateval | value = M (VFloat (-n_)) } htotal
                                         in
                                             { henv = res.henv
                                             , venv = res.venv
@@ -935,7 +937,7 @@ uneval context expr updateval htotal =
                                 M (VHole hn (venv_, senv_)) ->
                                     let 
                                         res =
-                                            uneval context e { value = M (VHole hn (venv_, senv_)), senv = updateval.senv } htotal
+                                            uneval context e { updateval | value = M (VHole hn (venv_, senv_)) } htotal
                                     in
                                         { henv = res.henv
                                         , venv = res.venv
@@ -982,7 +984,7 @@ uneval context expr updateval htotal =
                         _ -> 
                             let branches_ = updateBranch branches tryRes.choice tryRes.res.expr in
                             let newv = pattern2val tryRes.pi tryRes.res.venv tryRes.res.senv in
-                            let rese = uneval context e {value = M newv, senv = List.take (List.length eres.senv) tryRes.res.senv} tryRes.res.htotal in
+                            let rese = uneval context e {updateval | value = M newv, senv = List.take (List.length eres.senv) tryRes.res.senv} tryRes.res.htotal in
                             {
                                 henv = mergeHEnv3 context.henv tryRes.res.henv rese.henv
                                 , venv = mergeVEnv3 context.venv tryRes.res.venv rese.venv
@@ -999,8 +1001,8 @@ uneval context expr updateval htotal =
                 M (VBTuple v1 v2) ->
                     let
                         res1 = eval context e1 []
-                        res2_ = uneval {context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 { value = M v2, senv = updateval.senv } htotal
-                        res1_ = uneval context e1 { value = M v1, senv = res2_.senv } res2_.htotal
+                        res2_ = uneval {context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 { updateval | value = M v2 } htotal
+                        res1_ = uneval context e1 { value = M v1, senv = res2_.senv, stdin = res2_.stdin, stdout = res2_.stdout} res2_.htotal
                         henv = mergeHEnv3 context.henv res1_.henv res2_.henv
                         venv = mergeVEnv3 context.venv res1_.venv res2_.venv
                     in
@@ -1020,9 +1022,9 @@ uneval context expr updateval htotal =
                     let
                         res1 = eval context e1 []
                         res2 = eval {context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 []
-                        res3_ = uneval {context | senv = res2.senv, stdin = res2.stdin, stdout = res2.stdout} e3 { value = M v3, senv = updateval.senv } htotal
-                        res2_ = uneval {context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 { value = M v2, senv = res3_.senv } res3_.htotal
-                        res1_ = uneval context e1 { value = M v1, senv = res2_.senv } res2_.htotal
+                        res3_ = uneval {context | senv = res2.senv, stdin = res2.stdin, stdout = res2.stdout} e3 { updateval | value = M v3 } htotal
+                        res2_ = uneval {context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 { value = M v2, senv = res3_.senv, stdin = res3_.stdin, stdout = res3_.stdout} res3_.htotal
+                        res1_ = uneval context e1 { value = M v1, senv = res2_.senv, stdin = res2_.stdin, stdout = res2_.stdout} res2_.htotal
                         henv = mergeHEnv4 context.henv res1_.henv res2_.henv res3_.henv
                         venv = mergeVEnv4 context.venv res1_.venv res2_.venv res3_.venv
                     in
@@ -1036,8 +1038,47 @@ uneval context expr updateval htotal =
                         , funcSummary = res1_.funcSummary
                         }
                 _ -> { defaultUnevalRes | expr = EError "Expected TTuple." }
-        EPrint ws e -> defaultUnevalRes
-        ERead ws -> defaultUnevalRes
+        EPrint ws e -> 
+            case updateval.value of
+                M VUnit ->
+                    case updateval.stdout of
+                        ([], _) -> {defaultUnevalRes | expr = EError "Empty Output List."}
+                        (output, st) ->
+                            let n = List.length output in
+                            let finval = List.drop (n - 1) output |> List.head in
+                            case finval of
+                                Just v ->
+                                    let res = uneval context e { value = M v, senv = updateval.senv, stdin = updateval.stdin, stdout = (List.take (n - 1) output, st)} htotal in
+                                    {
+                                        henv = res.henv,
+                                        venv = res.venv,
+                                        senv = res.senv,
+                                        expr = EPrint ws res.expr,
+                                        stdin = res.stdin,
+                                        stdout = res.stdout,
+                                        htotal = res.htotal,
+                                        funcSummary = res.funcSummary
+                                    }
+                                _ -> {defaultUnevalRes | expr = EError "Output Stream Error."}
+                _ -> {defaultUnevalRes | expr = EError "Expected Unit."}
+        ERead ws -> 
+            case updateval.stdin of
+                -- todo: blocked, howto update?
+                (input, Blocked) -> {defaultUnevalRes | expr = EError "Input Stream Blocked."}
+                (input, Normal) ->
+                    case updateval.value of
+                        M v ->
+                            {
+                                henv = context.henv,
+                                venv = context.venv,
+                                senv = updateval.senv,
+                                expr = ERead ws,
+                                stdin = (v::input, Normal),
+                                stdout = updateval.stdout,
+                                htotal = htotal,
+                                funcSummary = context.funcSummary
+                            }
+                        _ -> {defaultUnevalRes | expr = EError "Expected Value."}
         EError info -> { defaultUnevalRes | expr = EError info }
         _ -> { defaultUnevalRes | expr = EError "Unknown Expression Error." }
 
@@ -1180,7 +1221,7 @@ arith ws e1 e2 context updateval htotal op =
                             let
                                 res2_ =
                                     uneval { context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 updateval htotal
-                                res1_ = uneval context e1 {value = res1.value, senv = res2_.senv} res2_.htotal
+                                res1_ = uneval context e1 {value = res1.value, senv = res2_.senv, stdin = res2_.stdin, stdout = res2_.stdout} res2_.htotal
                             in
                                 { henv = res1_.henv
                                 , venv = res1_.venv
@@ -1482,8 +1523,8 @@ comp ws e1 e2 context updateval htotal op =
                 (_, _) ->
                     let 
                         res2_ =
-                            uneval {context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 { value = M (VHole hn (venv_, senv_)), senv = updateval.senv } htotal
-                        res1_ = uneval context e1 { value = res1.value, senv = res2_.senv} res2_.htotal
+                            uneval {context | senv = res1.senv, stdin = res1.stdin, stdout = res1.stdout} e2 { updateval | value = M (VHole hn (venv_, senv_)) } htotal
+                        res1_ = uneval context e1 { value = res1.value, senv = res2_.senv, stdin = res2_.stdin, stdout = res2_.stdout} res2_.htotal
                         henv = mergeHEnv3 context.henv res1_.henv res2_.henv
                         venv = mergeVEnv3 context.venv res1_.venv res2_.venv
                     in
@@ -1505,8 +1546,8 @@ operationUpdate : Context -> HTotal -> WS -> Bop ->
 operationUpdate context htotal ws op e1 e2 updateval newv1 newv2 =
     let
         fres1 = eval context e1 []
-        res2 = uneval { context | senv = fres1.senv, stdin = fres1.stdin, stdout = fres1.stdout} e2 { value = M newv2, senv = updateval.senv } htotal
-        res1 = uneval context e1 { value = M newv1, senv = res2.senv} res2.htotal
+        res2 = uneval { context | senv = fres1.senv, stdin = fres1.stdin, stdout = fres1.stdout} e2 { updateval | value = M newv2 } htotal
+        res1 = uneval context e1 { value = M newv1, senv = res2.senv, stdin = res2.stdin, stdout = res2.stdout} res2.htotal
         henv = mergeHEnv3 context.henv res1.henv res2.henv
         venv = mergeVEnv3 context.venv res1.venv res2.venv
     in
