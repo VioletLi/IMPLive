@@ -256,12 +256,12 @@ tryExec hb ris hcount scount =
                 SWhile ws e s_ -> 
                     let (e_, st) = elaborate store hb e in 
                     if st == TOP then 
-                        let res = exec store io hb [] (SWhile ws e_ s_) hcount scount in
+                        let res = exec store io hb [] (SIf [] e_ (SSeq [] s_ (SWhile ws e s_)) (SSkip [])) hcount scount in
                         let (exec_, stmt_) = tryExec hb rest res.hcount res.scount in
                         ((id, res.store, res.io)::exec_, res.riStmts++stmt_)
                     else
                         let (exec_, stmt_) = tryExec hb rest hcount scount in
-                        (exec_, (id, SWhile ws e_ s_, (store, io))::stmt_)
+                        (exec_, (id, SWhile ws e s_, (store, io))::stmt_)
                 SRead _ x -> 
                     let (es, id_) = getIO io "input" in
                     if id_ == -1 then 
