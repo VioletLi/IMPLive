@@ -1,7 +1,10 @@
 module IMP.Syntax exposing (..)
-import Syntax exposing (Expr(..))
+import Syntax exposing (MValue(..))
 
 type alias WS = List String
+
+type alias HCount = Int
+type alias SCount = Int
 
 type HoleName 
     = HOri Int
@@ -25,29 +28,21 @@ type Stmt
     | SSeq WS Stmt Stmt
     | SSkip WS
 
--- type RExpr 
---     = REHole HoleName Store
---     | REExpr Expr
---     | REOp String RExpr RExpr
---     | Error String
+type Value 
+    = VInt Int
+    | VBool Bool
+    | VString String
+    | VHole HoleName StmtID
+    | VError String
 
--- type RStmt 
---     = RSIf RExpr RStmt RStmt
---     | RSWhile RExpr RStmt
---     | RSAssign String RExpr
---     | RSRead String 
---     | RSPrint RExpr
---     | RSSeq RStmt RStmt
---     | RSSkip 
-
-type alias IO = List (String, List Expr, StmtID)
+type alias IO = List (String, List Value)
 
 type alias StmtID = Int
 
-type alias Store = List (String, Expr, StmtID)
+type alias Store = List (String, Value)
 
 type State = BOT | TOP
 
 type alias RiStmts = List (StmtID, Stmt, (Store, IO))
 
-type alias HoleBindings = List (HoleName, Store, Expr)
+type alias HoleBindings = List (HoleName, Store, Value)
