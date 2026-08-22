@@ -121,6 +121,7 @@ holeKey h =
     case h of
         HOri n -> "o:" ++ String.fromInt n
         HVar n -> "v:" ++ String.fromInt n
+        HTmp -> "t"
 
 value2Expr : Value -> Expr
 value2Expr v =
@@ -138,3 +139,9 @@ expr2Val e =
         EBool _ b -> VBool b
         EString _ s -> VString s
         _ -> VError "Unsupported expression"
+
+delStore : String -> Store -> Store
+delStore x store =
+    case store of
+        (x_, v) :: rest -> if x == x_ then rest else (x_, v) :: delStore x rest
+        [] -> []
