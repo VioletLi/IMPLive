@@ -1,5 +1,6 @@
 module IMP.Syntax exposing (..)
 import Syntax exposing (MValue(..))
+import Syntax exposing (Expr(..))
 
 type alias WS = List String
 
@@ -19,6 +20,8 @@ type Expr
     | EHole WS HoleName
     | Eop WS String Expr Expr
     | EError String
+    | ENot WS Expr
+    | EParens WS Expr
 
 type Stmt 
     = SIf WS Expr Stmt Stmt
@@ -28,6 +31,7 @@ type Stmt
     | SPrint WS Expr
     | SSeq WS Stmt Stmt
     | SSkip WS
+    | SError String
 
 type Value 
     = VInt Int

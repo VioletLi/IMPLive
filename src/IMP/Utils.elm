@@ -99,6 +99,7 @@ substHoleinStmt s holes =
         SPrint ws e -> SPrint ws (substHoleinExpr e holes)
         SSeq ws s1 s2 -> SSeq ws (substHoleinStmt s1 holes) (substHoleinStmt s2 holes)
         SSkip ws -> SSkip ws
+        SError info -> SError info
 
 substHoleinExpr : Expr -> HoleMap -> Expr
 substHoleinExpr e holes =
@@ -114,7 +115,8 @@ substHoleinExpr e holes =
         EBool ws b -> EBool ws b
         EString ws s -> EString ws s
         EError s -> EError s
-        
+        ENot ws e_ -> ENot ws (substHoleinExpr e_ holes)
+        EParens ws e_ -> EParens ws (substHoleinExpr e_ holes)
 
 holeKey : HoleName -> String
 holeKey h =

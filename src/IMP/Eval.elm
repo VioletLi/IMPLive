@@ -38,6 +38,13 @@ eval store holeBindings expr =
                 v2 = eval store holeBindings e2
             in 
             bop op v1 v2
+        EParens ws e -> eval store holeBindings e
+        ENot ws e -> 
+            let v = eval store holeBindings e in
+            case v of
+                VBool b -> VBool (not b)
+                VHole HTmp _ -> VHole HTmp -1
+                _ -> VError "Unsupported expression"
         _ -> VError "Unsupported expression"
 
 bop : String -> Value -> Value -> Value
@@ -264,6 +271,7 @@ exec store io holeBindings riStmts stmt hcount scount =
                     , hcount = hcount
                     , scount = scount
                     }
+        SError s -> {defaultFwdRes | store = [("error", VError s)]}
 
 fill : HoleMap -> HoleBindings -> FwdRes -> FwdRes
 fill holes hb fwdRes =
