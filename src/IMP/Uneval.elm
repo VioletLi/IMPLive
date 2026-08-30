@@ -344,55 +344,66 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
             let guard = eval store holeBindings io e in
             case guard of
                 VHole _ _ -> 
+                    let oldres = exec store io holeBindings riStmts stmt scount in
                     let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
-                    case (s1, s2) of
-                        (SSeq ws1 s_ (SWhile ws2 e_ sw), SSkip _) ->
-                            let fres = exec store io holeBindings riStmts s_ scount in
-                            let (guardstore, guardhb, (guardexpr, guardhcount)) = uneval fres.store holeBindings io e_ (VBool False) hcount in
-                            let bres = unexec store io holeBindings riStmts s_ guardhcount fres.scount (guardstore, newriStmts, newio) in
-                            let (exprstore, exprhb, (expr, hcount_)) = uneval store guardhb io e (VBool True) bres.hcount in
-                            let unpollutedstore = unpollute exprstore store scount in
-                            let unpollutedio = unpolluteIO bres.io io scount in
-                            {
-                                store = mergeStore userstore unpollutedstore store,
-                                io = mergeIO userio unpollutedio io,
-                                holeBindings = exprhb,
-                                riStmts = List.take ((List.length bres.riStmts) - 1) bres.riStmts,
-                                stmt = SIf ws expr (SSeq ws1 bres.stmt (SWhile ws2 guardexpr sw)) (SSkip []),
-                                hcount = hcount_
-                            }
-                        _ ->
-                            let bres = unexec store io holeBindings riStmts s1 hcount scount (newstore, newriStmts, newio) in
-                            case bres.stmt of
-                                SError _ ->
-                                    let bres2 = unexec store io holeBindings riStmts s2 hcount scount (newstore, newriStmts, newio) in
-                                    case bres2.stmt of
-                                        SError _ ->
-                                            { defaultUnexecRes | stmt = SError "Error: unexecStmt: SIf: both branches error"}
-                                        _ ->
-                                            let (finalstore, newhb, (newexpr, hcount_)) = uneval bres2.store bres2.holeBindings io e (VBool False) bres2.hcount in
-                                            let unpollutedstore = unpollute finalstore store scount in
-                                            let unpollutedio = unpolluteIO bres2.io io scount in
-                                            {
-                                                store = mergeStore userstore unpollutedstore store,
-                                                io = mergeIO userio unpollutedio io,
-                                                holeBindings = newhb,
-                                                riStmts = bres2.riStmts,
-                                                stmt = SIf ws newexpr bres2.stmt s2,
-                                                hcount = hcount_
-                                            }
-                                _ ->
-                                    let (finalstore, newhb, (newexpr, hcount_)) = uneval bres.store bres.holeBindings io e (VBool True) bres.hcount in
-                                    let unpollutedstore = unpollute finalstore store scount in
-                                    let unpollutedio = unpolluteIO bres.io io scount in
-                                    {
-                                        store = mergeStore userstore unpollutedstore store,
-                                        io = mergeIO userio unpollutedio io,
-                                        holeBindings = newhb,
-                                        riStmts = bres.riStmts,
-                                        stmt = SIf ws newexpr bres.stmt s2,
-                                        hcount = hcount_
-                                    }
+                    if isSameStore oldres.store newstore && isSameIO oldres.io io then
+                        {
+                            store = userstore,
+                            io = userio,
+                            holeBindings = holeBindings,
+                            riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                            stmt = SIf ws e s1 s2,
+                            hcount = hcount
+                        }
+                    else
+                        case (s1, s2) of
+                            (SSeq ws1 s_ (SWhile ws2 e_ sw), SSkip _) ->
+                                let fres = exec store io holeBindings riStmts s_ scount in
+                                let (guardstore, guardhb, (guardexpr, guardhcount)) = uneval fres.store holeBindings io e_ (VBool False) hcount in
+                                let bres = unexec store io holeBindings riStmts s_ guardhcount fres.scount (guardstore, newriStmts, newio) in
+                                let (exprstore, exprhb, (expr, hcount_)) = uneval store guardhb io e (VBool True) bres.hcount in
+                                let unpollutedstore = unpollute exprstore store scount in
+                                let unpollutedio = unpolluteIO bres.io io scount in
+                                {
+                                    store = mergeStore userstore unpollutedstore store,
+                                    io = mergeIO userio unpollutedio io,
+                                    holeBindings = exprhb,
+                                    riStmts = List.take ((List.length bres.riStmts) - 1) bres.riStmts,
+                                    stmt = SIf ws expr (SSeq ws1 bres.stmt (SWhile ws2 guardexpr sw)) (SSkip []),
+                                    hcount = hcount_
+                                }
+                            _ ->
+                                let bres = unexec store io holeBindings riStmts s1 hcount scount (newstore, newriStmts, newio) in
+                                case bres.stmt of
+                                    SError _ ->
+                                        let bres2 = unexec store io holeBindings riStmts s2 hcount scount (newstore, newriStmts, newio) in
+                                        case bres2.stmt of
+                                            SError _ ->
+                                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SIf: both branches error"}
+                                            _ ->
+                                                let (finalstore, newhb, (newexpr, hcount_)) = uneval bres2.store bres2.holeBindings io e (VBool False) bres2.hcount in
+                                                let unpollutedstore = unpollute finalstore store scount in
+                                                let unpollutedio = unpolluteIO bres2.io io scount in
+                                                {
+                                                    store = mergeStore userstore unpollutedstore store,
+                                                    io = mergeIO userio unpollutedio io,
+                                                    holeBindings = newhb,
+                                                    riStmts = bres2.riStmts,
+                                                    stmt = SIf ws newexpr bres2.stmt s2,
+                                                    hcount = hcount_
+                                                }
+                                    _ ->
+                                        let (finalstore, newhb, (newexpr, hcount_)) = uneval bres.store bres.holeBindings io e (VBool True) bres.hcount in
+                                        let unpollutedstore = unpollute finalstore store scount in
+                                        let unpollutedio = unpolluteIO bres.io io scount in
+                                        {
+                                            store = mergeStore userstore unpollutedstore store,
+                                            io = mergeIO userio unpollutedio io,
+                                            holeBindings = newhb,
+                                            riStmts = bres.riStmts,
+                                            stmt = SIf ws newexpr bres.stmt s2,
+                                            hcount = hcount_
+                                        }
                 VBool True ->
                     let res = unexec store io holeBindings riStmts s1 hcount scount (newstore, newriStmts, newio) in
                     let (finalstore, newhb, (newexpr, hcount_)) = uneval res.store res.holeBindings io e guard res.hcount in
