@@ -9,7 +9,7 @@ type alias SCount = Int
 
 type HoleName 
     = HOri Int
-    | HVar Int
+    | HVar String
     | HTmp
 
 type Expr 
@@ -48,4 +48,4 @@ type alias Store = List (String, Value)
 
 type alias RiStmts = List (StmtID, Stmt, (Store, IO))
 
-type alias HoleBindings = List (HoleName, Store, Value)
+type alias HoleBindings = List (HoleName, (Store, IO), Value)

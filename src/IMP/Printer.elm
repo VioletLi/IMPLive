@@ -1,6 +1,7 @@
 module IMP.Printer exposing (..)
 
 import IMP.Syntax exposing (..)
+import IMP.Utils exposing (getIO)
 
 
 printStmt : Stmt -> String
@@ -142,10 +143,23 @@ printHoleName : HoleName -> String
 printHoleName hn =
     case hn of
         HOri n ->
-            String.fromInt n
+            "#"++(String.fromInt n)
 
-        HVar n ->
-            String.fromInt n
+        HVar x ->
+            "#"++x
 
         HTmp ->
             "*"
+
+printHoleBindings : HoleBindings -> String
+printHoleBindings hb =
+    List.map (\(h, (s, io), v) -> printHoleName h ++ " := " ++ (printStore s) ++ (printIO io) ++ (printValue v)) hb
+    |> String.join "\n"
+
+printStore : Store -> String
+printStore s =
+    "[" ++ (List.map (\(x, v) -> x ++ " := " ++ printValue v) s |> String.join ", ") ++ "] \n"
+
+printIO : IO -> String
+printIO io =
+    "input: [" ++ (List.map printValue (getIO io "input") |> String.join ", ") ++ "]\n output: [" ++ (List.map printValue (getIO io "output") |> String.join ", ") ++ "] \n"

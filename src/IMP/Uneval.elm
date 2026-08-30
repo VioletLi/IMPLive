@@ -11,7 +11,6 @@ type alias UnexecRes =
     , riStmts : RiStmts
     , stmt : Stmt
     , hcount : HCount
-    , scount : SCount
     }
 
 defaultUnexecRes : UnexecRes
@@ -22,14 +21,13 @@ defaultUnexecRes =
     , riStmts = []
     , stmt = SSkip []
     , hcount = 0
-    , scount = 0
     }
 
-unevalExpr : Store -> HoleBindings -> Expr -> Value -> HCount-> (Store, HoleBindings, (Expr, HCount))
-unevalExpr store holeBindings expr val hcount =
+uneval : Store -> HoleBindings -> IO -> Expr -> Value -> HCount-> (Store, HoleBindings, (Expr, HCount))
+uneval store holeBindings io expr val hcount =
     case expr of
         ENot ws e -> 
-            let v = eval store holeBindings e in
+            let v = eval store holeBindings io e in
             case (v, val) of
                 (VHole _ _, VHole _ _) ->
                     (store, holeBindings, (ENot ws e, hcount))
@@ -38,25 +36,25 @@ unevalExpr store holeBindings expr val hcount =
                     if b1 /= b2 then
                         (store, holeBindings, (ENot ws e, hcount))
                     else
-                        let (newstore, newhb, (newexpr, hcount_)) = unevalExpr store holeBindings e (VBool (not b2)) hcount in
+                        let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e (VBool (not b2)) hcount in
                         (newstore, newhb, (ENot ws newexpr, hcount_))
 
                 (VHole _ _, VBool b) ->
-                    let (newstore, newhb, (newexpr, hcount_)) = unevalExpr store holeBindings e (VBool (not b)) hcount in
+                    let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e (VBool (not b)) hcount in
                     (newstore, newhb, (ENot ws newexpr, hcount_))
 
                 (VBool _, VHole _ _) ->
-                    let (newstore, newhb, (newexpr, hcount_)) = unevalExpr store holeBindings e val hcount in
+                    let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e val hcount in
                     (newstore, newhb, (ENot ws newexpr, hcount_))
 
                 _ -> ([],[],(EError "unsupported value type for ENot", 0))
         EParens ws e ->
-            let (newstore, newhb, (newexpr, hcount_)) = unevalExpr store holeBindings e val hcount in
+            let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e val hcount in
             (newstore, newhb, (EParens ws newexpr, hcount_))
         EHole _ u -> 
             case val of
                 VHole _ _ -> (store, holeBindings, (expr, hcount))
-                _ -> (store, (u, store, val) :: holeBindings, (expr, hcount))
+                _ -> (store, (u, (store, io), val) :: holeBindings, (expr, hcount))
         EVar _ x -> (updateStore x val store, holeBindings, (expr, hcount))
         EInt ws _ -> 
             case val of
@@ -76,13 +74,13 @@ unevalExpr store holeBindings expr val hcount =
         Eop ws op e1 e2 -> 
             let
                 logic_ =
-                    logic ws e1 e2 holeBindings store val hcount
+                    logic ws e1 e2 holeBindings store io val hcount
 
                 arith_ = 
-                    arith ws e1 e2 holeBindings store val hcount
+                    arith ws e1 e2 holeBindings store io val hcount
 
                 comp_ = 
-                    comp ws e1 e2 holeBindings store val hcount
+                    comp ws e1 e2 holeBindings store io val hcount
             in
             case op of
                 "+" -> arith_ "+"
@@ -101,37 +99,103 @@ unevalExpr store holeBindings expr val hcount =
                 _ -> ([],[],(EError "unsupported operation", 0))
         EError s -> ([], [], (EError s, 0))
 
-unexecStmt : Store -> IO -> HoleBindings -> RiStmts -> Stmt -> HCount -> SCount -> (Store, RiStmts, IO) -> UnexecRes
-unexecStmt store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, newio) =
+unexec : Store -> IO -> HoleBindings -> RiStmts -> Stmt -> HCount -> SCount -> (Store, RiStmts, IO) -> UnexecRes
+unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, newio) =
     case stmt of
         SAssign ws x e -> 
             -- 如果这个生成了新的ristmt，那我就把更新之后的最后一条的store传回给上一条，删掉原来那条，不然就不动
             -- 反向是不是不需要生成新的residual statement？
             let newval = lookup x newstore in
-            let val = eval store holeBindings e in
-            case (val, newval) of
-                (VHole _ _, Just nv) -> 
-                    let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
-                    let (finalstore, newhb, (newexpr, hcount_)) = unevalExpr userstore holeBindings e nv hcount in
-                    {
-                        store = finalstore,
-                        io = mergeIO userio newio io,
-                        holeBindings = newhb,
-                        riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                        stmt = SAssign ws x newexpr,
-                        hcount = hcount_,
-                        scount = scount
-                    }
-                (_, Just nv) ->
-                    let (finalstore, newhb, (newexpr, hcount_)) = unevalExpr store holeBindings e nv hcount in
+            let val = eval store holeBindings io e in
+            let oldval = lookup x store in
+            case (val, newval, oldval) of
+                (VHole _ _, Just nv, Just ov) -> 
+                    case nv of
+                        VHole (HVar x_) id_ -> if x_ == x && id_ == scount then 
+                            let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
+                            {
+                                store = mergeStore userstore (updateStore x ov newstore) store,
+                                io = mergeIO userio newio io,
+                                holeBindings = holeBindings,
+                                riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                stmt = stmt,
+                                hcount = hcount
+                            }
+                            else 
+                                let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
+                                let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings io e nv hcount in
+                                {
+                                    store = mergeStore userstore finalstore store,
+                                    io = mergeIO userio newio io,
+                                    holeBindings = newhb,
+                                    riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                    stmt = SAssign ws x newexpr,
+                                    hcount = hcount_
+                                }
+                        _ ->
+                            let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
+                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings io e nv hcount in
+                            {
+                                store = mergeStore userstore finalstore store,
+                                io = mergeIO userio newio io,
+                                holeBindings = newhb,
+                                riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                stmt = SAssign ws x newexpr,
+                                hcount = hcount_
+                            }
+                (_, Just nv, Just ov) ->
+                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings io e nv hcount in
                     {
                         store = finalstore,
                         io = newio,
                         holeBindings = newhb,
                         riStmts = newriStmts,
                         stmt = SAssign ws x newexpr,
-                        hcount = hcount_,
-                        scount = scount
+                        hcount = hcount_
+                    }
+                (VHole _ _, Just nv, Nothing) ->
+                    case nv of
+                        VHole (HVar x_) id_ -> if x_ == x && id_ == scount then 
+                            let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
+                            {
+                                store = mergeStore userstore (delStore x newstore) store,
+                                io = mergeIO userio newio io,
+                                holeBindings = holeBindings,
+                                riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                stmt = stmt,
+                                hcount = hcount
+                            }
+                            else 
+                                let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
+                                let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings io e nv hcount in
+                                {
+                                    store = mergeStore userstore finalstore store,
+                                    io = mergeIO userio newio io,
+                                    holeBindings = newhb,
+                                    riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                    stmt = SAssign ws x newexpr,
+                                    hcount = hcount_
+                                }
+                        _ ->
+                            let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
+                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings io e nv hcount in
+                            {
+                                store = mergeStore userstore finalstore store,
+                                io = mergeIO userio newio io,
+                                holeBindings = newhb,
+                                riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                stmt = SAssign ws x newexpr,
+                                hcount = hcount_
+                            }
+                (_, Just nv, Nothing) ->
+                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings io e nv hcount in
+                    {
+                        store = finalstore,
+                        io = newio,
+                        holeBindings = newhb,
+                        riStmts = newriStmts,
+                        stmt = SAssign ws x newexpr,
+                        hcount = hcount_
                     }
                 _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SAssign: newval not found"}
         SSkip _ -> 
@@ -141,25 +205,23 @@ unexecStmt store io holeBindings riStmts stmt hcount scount (newstore, newriStmt
             , riStmts = newriStmts
             , stmt = stmt
             , hcount = hcount
-            , scount = scount
             }
         SSeq ws s1 s2 -> 
-            let fres1 = exec store io holeBindings riStmts s1 hcount scount in
-            let bres2 = unexecStmt fres1.store fres1.io holeBindings fres1.riStmts s2 fres1.hcount fres1.scount (newstore, newriStmts, newio) in
-            let bres1 = unexecStmt store io bres2.holeBindings bres2.riStmts s1 bres2.hcount bres2.scount (bres2.store, bres2.riStmts, bres2.io) in
+            let fres1 = exec store io holeBindings riStmts s1 scount in
+            let bres2 = unexec fres1.store fres1.io holeBindings fres1.riStmts s2 hcount fres1.scount (newstore, newriStmts, newio) in
+            let bres1 = unexec store io bres2.holeBindings bres2.riStmts s1 bres2.hcount scount (bres2.store, bres2.riStmts, bres2.io) in
             {
                 store = bres1.store,
                 io = bres1.io,
                 holeBindings = bres1.holeBindings,
                 riStmts = bres1.riStmts,
                 stmt = SSeq ws bres1.stmt bres2.stmt,
-                hcount = bres1.hcount,
-                scount = bres1.scount
+                hcount = bres1.hcount
             }
         SRead ws x -> 
             let vs = getIO io "input" in
             case vs of
-                [VHole _ _] -> -- stuck的时候怎么更新？如果后面的stuck了反向是不是推不出来完整read也是合理的，只是回滚到之前的？
+                [VHole (HVar "input") id] -> -- stuck的时候怎么更新？如果后面的stuck了反向是不是推不出来完整read也是合理的，只是回滚到之前的？
                     let 
                         (userstore, userio) = getFinalRiStmtStoreIO newriStmts 
                         val = lookup x store
@@ -185,8 +247,7 @@ unexecStmt store io holeBindings riStmts stmt hcount scount (newstore, newriStmt
                                         holeBindings = holeBindings,
                                         riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                         stmt = SRead ws x,
-                                        hcount = hcount,
-                                        scount = scount
+                                        hcount = hcount
                                     }
                                 Nothing -> 
                                     {
@@ -195,8 +256,7 @@ unexecStmt store io holeBindings riStmts stmt hcount scount (newstore, newriStmt
                                         holeBindings = holeBindings,
                                         riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                         stmt = SRead ws x,
-                                        hcount = hcount,
-                                        scount = scount
+                                        hcount = hcount
                                     }
                 _ :: rest ->
                     let nv = lookup x newstore in
@@ -212,8 +272,7 @@ unexecStmt store io holeBindings riStmts stmt hcount scount (newstore, newriStmt
                                         holeBindings = holeBindings,
                                         riStmts = riStmts,
                                         stmt = SRead ws x,
-                                        hcount = hcount,
-                                        scount = scount
+                                        hcount = hcount
                                     }
                                 Nothing ->
                                     {
@@ -222,31 +281,47 @@ unexecStmt store io holeBindings riStmts stmt hcount scount (newstore, newriStmt
                                         holeBindings = holeBindings,
                                         riStmts = riStmts,
                                         stmt = SRead ws x,
-                                        hcount = hcount,
-                                        scount = scount
+                                        hcount = hcount
                                     }
                         Nothing -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SRead: val not found" }
                 _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SRead: input not found"}
         SPrint ws e -> 
-            let val = eval store holeBindings e in
+            let val = eval store holeBindings io e in
             case val of
                 VHole _ _ -> 
                     let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
-                    let newstore_ = mergeStore userstore newstore store in
                     let newio_ = mergeIO userio (updateIO newio "output" (List.take ((List.length (getIO newio "output")) - 1) (getIO newio "output"))) io in
                     let newout = getIO newio "output" in
                     let newval = List.head (List.reverse newout) in
                     case newval of
-                        Just v ->
-                            let (finalstore, newhb, (newexpr, hcount_)) = unevalExpr newstore_ holeBindings e v hcount in
+                        Just (VHole (HVar "output") id) -> if id == scount then 
                             {
-                                store = finalstore,
+                                store = mergeStore userstore newstore store,
+                                io = newio_,
+                                holeBindings = holeBindings,
+                                riStmts = newriStmts,
+                                stmt = SPrint ws e,
+                                hcount = hcount
+                            }   
+                            else
+                                let (finalstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e (VHole (HVar "output") id) hcount in
+                                    {
+                                        store = mergeStore userstore finalstore store,
+                                        io = newio_,
+                                        holeBindings = newhb,
+                                        riStmts = newriStmts,
+                                        stmt = SPrint ws newexpr,
+                                        hcount = hcount_
+                                    }
+                        Just v ->
+                            let (finalstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e v hcount in
+                            {
+                                store = mergeStore userstore finalstore store,
                                 io = newio_,
                                 holeBindings = newhb,
                                 riStmts = newriStmts,
                                 stmt = SPrint ws newexpr,
-                                hcount = hcount_,
-                                scount = scount
+                                hcount = hcount_
                             }
                         Nothing -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: newval not found"}
                 _ ->
@@ -255,77 +330,94 @@ unexecStmt store io holeBindings riStmts stmt hcount scount (newstore, newriStmt
                     let newio_ = updateIO newio "output" (List.take ((List.length newout) - 1) (getIO newio "output")) in
                     case newval of
                         Just v ->
-                            let (newstore_, newhb, (newexpr, hcount_)) = unevalExpr store holeBindings e v hcount in
+                            let (newstore_, newhb, (newexpr, hcount_)) = uneval store holeBindings io e v hcount in
                             {
                                 store = newstore_,
                                 io = newio_,
                                 holeBindings = newhb,
                                 riStmts = newriStmts,
                                 stmt = SPrint ws newexpr,
-                                hcount = hcount_,
-                                scount = scount
+                                hcount = hcount_
                             }
                         Nothing -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: newval not found"}
         SIf ws e s1 s2 -> 
-            -- if在stuck的时候怎么猜一个？
-            let guard = eval store holeBindings e in
+            let guard = eval store holeBindings io e in
             case guard of
                 VHole _ _ -> 
                     let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
                     case (s1, s2) of
                         (SSeq ws1 s_ (SWhile ws2 e_ sw), SSkip _) ->
-                            let fres = exec userstore userio holeBindings riStmts s_ hcount scount in
-                            let (guardstore, guardhb, (guardexpr, guardhcount)) = unevalExpr fres.store holeBindings e_ (VBool False) fres.hcount in
-                            let bres = unexecStmt userstore userio guardhb newriStmts s_ guardhcount fres.scount (mergeStore guardstore newstore fres.store, newriStmts, fres.io) in
-                            let (exprstore, exprhb, (expr, hcount_)) = unevalExpr bres.store guardhb e (VBool True) bres.hcount in
+                            let fres = exec store io holeBindings riStmts s_ scount in
+                            let (guardstore, guardhb, (guardexpr, guardhcount)) = uneval fres.store holeBindings io e_ (VBool False) hcount in
+                            let bres = unexec store io holeBindings riStmts s_ guardhcount fres.scount (guardstore, newriStmts, newio) in
+                            let (exprstore, exprhb, (expr, hcount_)) = uneval store guardhb io e (VBool True) bres.hcount in
+                            let unpollutedstore = unpollute exprstore store scount in
+                            let unpollutedio = unpolluteIO bres.io io scount in
                             {
-                                store = exprstore,
-                                io = bres.io,
+                                store = mergeStore userstore unpollutedstore store,
+                                io = mergeIO userio unpollutedio io,
                                 holeBindings = exprhb,
                                 riStmts = List.take ((List.length bres.riStmts) - 1) bres.riStmts,
                                 stmt = SIf ws expr (SSeq ws1 bres.stmt (SWhile ws2 guardexpr sw)) (SSkip []),
-                                hcount = hcount_,
-                                scount = bres.scount
+                                hcount = hcount_
                             }
                         _ ->
-                            let bres = unexecStmt userstore userio holeBindings riStmts s1 hcount scount (newstore, newriStmts, newio) in
-                            let (finalstore, newhb, (newexpr, hcount_)) = unevalExpr bres.store bres.holeBindings e (VBool True) bres.hcount in
-                            {
-                                store = finalstore,
-                                io = bres.io,
-                                holeBindings = newhb,
-                                riStmts = bres.riStmts,
-                                stmt = SIf ws newexpr bres.stmt s2,
-                                hcount = hcount_,
-                                scount = bres.scount
-                            }
+                            let bres = unexec store io holeBindings riStmts s1 hcount scount (newstore, newriStmts, newio) in
+                            case bres.stmt of
+                                SError _ ->
+                                    let bres2 = unexec store io holeBindings riStmts s2 hcount scount (newstore, newriStmts, newio) in
+                                    case bres2.stmt of
+                                        SError _ ->
+                                            { defaultUnexecRes | stmt = SError "Error: unexecStmt: SIf: both branches error"}
+                                        _ ->
+                                            let (finalstore, newhb, (newexpr, hcount_)) = uneval bres2.store bres2.holeBindings io e (VBool False) bres2.hcount in
+                                            let unpollutedstore = unpollute finalstore store scount in
+                                            let unpollutedio = unpolluteIO bres2.io io scount in
+                                            {
+                                                store = mergeStore userstore unpollutedstore store,
+                                                io = mergeIO userio unpollutedio io,
+                                                holeBindings = newhb,
+                                                riStmts = bres2.riStmts,
+                                                stmt = SIf ws newexpr bres2.stmt s2,
+                                                hcount = hcount_
+                                            }
+                                _ ->
+                                    let (finalstore, newhb, (newexpr, hcount_)) = uneval bres.store bres.holeBindings io e (VBool True) bres.hcount in
+                                    let unpollutedstore = unpollute finalstore store scount in
+                                    let unpollutedio = unpolluteIO bres.io io scount in
+                                    {
+                                        store = mergeStore userstore unpollutedstore store,
+                                        io = mergeIO userio unpollutedio io,
+                                        holeBindings = newhb,
+                                        riStmts = bres.riStmts,
+                                        stmt = SIf ws newexpr bres.stmt s2,
+                                        hcount = hcount_
+                                    }
                 VBool True ->
-                    let res = unexecStmt store io holeBindings riStmts s1 hcount scount (newstore, newriStmts, newio) in
-                    let (finalstore, newhb, (newexpr, hcount_)) = unevalExpr res.store res.holeBindings e guard res.hcount in
+                    let res = unexec store io holeBindings riStmts s1 hcount scount (newstore, newriStmts, newio) in
+                    let (finalstore, newhb, (newexpr, hcount_)) = uneval res.store res.holeBindings io e guard res.hcount in
                     {
                         store = finalstore,
                         io = res.io,
                         holeBindings = newhb,
                         riStmts = res.riStmts,
                         stmt = SIf ws newexpr res.stmt s2,
-                        hcount = hcount_,
-                        scount = res.scount
+                        hcount = hcount_
                     }
                 VBool False ->
-                    let res = unexecStmt store io holeBindings riStmts s2 hcount scount (newstore, newriStmts, newio) in
-                    let (finalstore, newhb, (newexpr, hcount_)) = unevalExpr res.store res.holeBindings e guard res.hcount in
+                    let res = unexec store io holeBindings riStmts s2 hcount scount (newstore, newriStmts, newio) in
+                    let (finalstore, newhb, (newexpr, hcount_)) = uneval res.store res.holeBindings io e guard res.hcount in
                     {
                         store = finalstore,
                         io = res.io,
                         holeBindings = newhb,
                         riStmts = res.riStmts,
                         stmt = SIf ws newexpr s1 res.stmt,
-                        hcount = hcount_,
-                        scount = res.scount
+                        hcount = hcount_
                     }
                 _ -> {defaultUnexecRes | stmt = SError "Error: unexecStmt: SIf: guard type error"}
         SWhile ws e s -> 
-            let res = unexecStmt store io holeBindings riStmts (SIf [] e (SSeq [] s (SWhile ws e s)) (SSkip [])) hcount scount (newstore, newriStmts, newio) in
+            let res = unexec store io holeBindings riStmts (SIf [] e (SSeq [] s (SWhile ws e s)) (SSkip [])) hcount scount (newstore, newriStmts, newio) in
             case res.stmt of
                 SIf _ e_ (SSeq _ s1_ (SWhile _ e2_ s2_)) (SSkip _) ->
                     let 
@@ -338,17 +430,16 @@ unexecStmt store io holeBindings riStmts stmt hcount scount (newstore, newriStmt
                             holeBindings = res.holeBindings,
                             riStmts = res.riStmts,
                             stmt = SWhile ws newe news,
-                            hcount = res.hcount,
-                            scount = res.scount
+                            hcount = res.hcount
                         }
                 _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SWhile: unexpected statement"}
         SError s -> { defaultUnexecRes | stmt = SError s}
 
-logic : WS -> Expr -> Expr -> HoleBindings -> Store -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
-logic ws e1 e2 holeBindings store val hcount op =
-    let v1 = eval store holeBindings e1 in
-    let v2 = eval store holeBindings e2 in
-    let v = eval store holeBindings (Eop ws op e1 e2) in
+logic : WS -> Expr -> Expr -> HoleBindings -> Store -> IO -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+logic ws e1 e2 holeBindings store io val hcount op =
+    let v1 = eval store holeBindings io e1 in
+    let v2 = eval store holeBindings io e2 in
+    let v = eval store holeBindings io (Eop ws op e1 e2) in
     let 
         (newv1, newv2) =
             case v of
@@ -416,12 +507,13 @@ logic ws e1 e2 holeBindings store val hcount op =
     in
     case (newv1, newv2) of
         (VError s, VError _) -> ([], [], (EError ("logic: " ++ s), 0))
-        _ -> checkChange ws store holeBindings e1 e2 v1 v2 newv1 newv2 hcount op
+        _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
 
-arith : WS -> Expr -> Expr -> HoleBindings -> Store -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
-arith ws e1 e2 holeBindings store val hcount op =
-    let v1 = eval store holeBindings e1 in
-    let v2 = eval store holeBindings e2 in
+arith : WS -> Expr -> Expr -> HoleBindings -> Store -> IO -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+arith ws e1 e2 holeBindings store io val hcount op =
+    let v1 = eval store holeBindings io e1 in
+    let v2 = eval store holeBindings io e2 in
+    let v = eval store holeBindings io (Eop ws op e1 e2) in
     case val of
         VHole _ _ -> 
             case v1 of
@@ -430,7 +522,7 @@ arith ws e1 e2 holeBindings store val hcount op =
                     case v2 of
                         VHole _ _ -> (store, holeBindings, (Eop ws op e1 e2, hcount))
                         _ ->
-                            let (store_, holeBindings_, (expr_, hcount_)) = unevalExpr store holeBindings e2 val hcount in
+                            let (store_, holeBindings_, (expr_, hcount_)) = uneval store holeBindings io e2 val hcount in
                             (store_, holeBindings_, (Eop ws op e1 expr_, hcount_))
         VInt n ->
             let 
@@ -451,7 +543,7 @@ arith ws e1 e2 holeBindings store val hcount op =
                                 "/" -> (VInt n1, VInt (n1 // n))
                                 _ -> (VError "unsupported operation", VError "unsupported operation")
                         (VHole _ _, VInt n2) ->
-                            case op of
+                            case op of  
                                 "+" -> (VInt (n - n2), VInt n2)
                                 "-" -> (VInt (n + n2), VInt n2)
                                 "*" -> (VInt (n // n2), VInt n2)
@@ -468,7 +560,7 @@ arith ws e1 e2 holeBindings store val hcount op =
             in
             case (newv1, newv2) of
                 (VError _, VError _) -> ([], [], (EError ("arith: " ++ op), 0))
-                _ -> checkChange ws store holeBindings e1 e2 v1 v2 newv1 newv2 hcount op
+                _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
         VString s ->
             case op of
                 "++"->
@@ -492,14 +584,14 @@ arith ws e1 e2 holeBindings store val hcount op =
                     in
                     case (newv1, newv2) of
                         (VError info, VError _) -> ([], [], (EError ("arith: " ++ info), 0))
-                        _ -> checkChange ws store holeBindings e1 e2 v1 v2 newv1 newv2 hcount op
+                        _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
                 _ -> ([], [], (EError ("arith: unsupported operation for string"), 0))
         _ -> ([], [], (EError ("arith: unsupported operation"), 0))
 
-comp : WS -> Expr -> Expr -> HoleBindings -> Store -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
-comp ws e1 e2 holeBindings store val hcount op =
-    let v1 = eval store holeBindings e1 in
-    let v2 = eval store holeBindings e2 in
+comp : WS -> Expr -> Expr -> HoleBindings -> Store -> IO -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+comp ws e1 e2 holeBindings store io val hcount op =
+    let v1 = eval store holeBindings io e1 in
+    let v2 = eval store holeBindings io e2 in
     case val of
         VHole _ _ -> 
             case v1 of
@@ -508,7 +600,7 @@ comp ws e1 e2 holeBindings store val hcount op =
                     case v2 of
                         VHole _ _ -> (store, holeBindings, (Eop ws op e1 e2, hcount))
                         _ ->
-                            let (store_, holeBindings_, (expr_, hcount_)) = unevalExpr store holeBindings e2 val hcount in
+                            let (store_, holeBindings_, (expr_, hcount_)) = uneval store holeBindings io e2 val hcount in
                             (store_, holeBindings_, (Eop ws op e1 expr_, hcount_))
         VBool True ->
             case op of
@@ -532,7 +624,7 @@ comp ws e1 e2 holeBindings store val hcount op =
                     in
                     case (newv1, newv2) of
                         (VError _, VError _) -> ([], [], (EError "unsupported operation", 0))
-                        _ -> checkChange ws store holeBindings e1 e2 v1 v2 newv1 newv2 hcount op
+                        _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
                 "!=" -> 
                     case (v1, v2) of
                         (VHole _ _, VHole _ _) -> ([], [], (EError "Cannot infer in neq", 0)) 
@@ -540,7 +632,7 @@ comp ws e1 e2 holeBindings store val hcount op =
                         (_, VHole _ _) -> ([], [], (EError "Cannot infer in neq", 0))
                         _ -> if v1 /= v2 then (store, holeBindings, (Eop ws op e1 e2, hcount)) else ([], [], (EError "Cannot infer in neq", 0))
                 _ ->
-                    let v = eval store holeBindings (Eop ws op e1 e2) in
+                    let v = eval store holeBindings io (Eop ws op e1 e2) in
                     case v of
                         VBool True -> (store, holeBindings, (Eop ws op e1 e2, hcount))
                         VBool False ->
@@ -579,9 +671,9 @@ comp ws e1 e2 holeBindings store val hcount op =
                     in 
                     case (newv1, newv2) of
                         (VError _, VError _) -> ([], [], (EError "unsupported operation", 0))
-                        _ -> checkChange ws store holeBindings e1 e2 v1 v2 newv1 newv2 hcount op
+                        _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
                 _ ->
-                    let v = eval store holeBindings (Eop ws op e1 e2) in
+                    let v = eval store holeBindings io (Eop ws op e1 e2) in
                     case v of
                         VBool False -> (store, holeBindings, (Eop ws op e1 e2, hcount))
                         VBool True ->
@@ -595,28 +687,28 @@ comp ws e1 e2 holeBindings store val hcount op =
         _ -> ([], [], (EError "Unsupported value type for comp", 0))
 
 
-checkChange : WS -> Store -> HoleBindings -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
-checkChange ws store holeBindings e1 e2 v1 v2 newv1 newv2 hcount op =
+checkChange : WS -> Store -> HoleBindings -> IO -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op =
     if newv1 == v1 && newv2 == v2 then
         (store, holeBindings, (Eop ws op e1 e2, hcount))
     else if newv1 == v1 then
         let
             (store2, holeBindings2, (expr2, hcount2)) =
-                unevalExpr store holeBindings e2 newv2 hcount
+                uneval store holeBindings io e2 newv2 hcount
         in
             (store2, holeBindings2, (Eop ws op e1 expr2, hcount2))
     else if newv2 == v2 then
         let
             (store1, holeBindings1, (expr1, hcount1)) =
-                unevalExpr store holeBindings e1 newv1 hcount
+                uneval store holeBindings io e1 newv1 hcount
         in
             (store1, holeBindings1, (Eop ws op expr1 e2, hcount1))
     else
         let
             (store1, holeBindings1, (expr1, hcount1)) =
-                unevalExpr store holeBindings e1 newv1 hcount
+                uneval store holeBindings io e1 newv1 hcount
             (store2, holeBindings2, (expr2, hcount2)) =
-                unevalExpr store holeBindings e2 newv2 hcount1
+                uneval store holeBindings io e2 newv2 hcount1
             store_ = mergeStore store1 store2 store
             holeBindings_ = mergeHoleBindings holeBindings1 holeBindings2 holeBindings
         in
@@ -633,19 +725,19 @@ mergeStore store1 store2 store3 =
 mergeHoleBindings : HoleBindings -> HoleBindings -> HoleBindings -> HoleBindings
 mergeHoleBindings hb1 hb2 hb =
     case hb of
-        (hn, store, v) :: hb_ ->
+        (hn, (store, io), v) :: hb_ ->
             let
                 (v1, hb1_) =
-                    getElem hn store hb1
+                    getElem hn (store, io) hb1
 
                 (v2, hb2_) =
-                    getElem hn store hb2
+                    getElem hn (store, io) hb2
 
                 newE1 =
-                    (hn, store, v1)
+                    (hn, (store, io), v1)
 
                 newE2 =
-                    (hn, store, v2)
+                    (hn, (store, io), v2)
 
                 resMerge = 
                     mergeHoleBindings hb_ hb1_ hb2_
@@ -661,30 +753,30 @@ mergeHoleBindings hb1 hb2 hb =
 
         [] -> union hb1 hb2
 
-getElem : HoleName -> Store -> HoleBindings -> (Value, HoleBindings)
-getElem hn venv hb =
+getElem : HoleName -> (Store, IO) -> HoleBindings -> (Value, HoleBindings)
+getElem hn (store, io) hb =
     case hb of
-        (hn_, store_, v_) :: hb_ -> 
-            if hn == hn_ && venv == store_ then (v_, hb_) else 
-                let (resv, reshb) = getElem hn venv hb_ in
-                (resv, (hn_, store_, v_) :: reshb)
+        (hn_, (store_, io_), v_) :: hb_ -> 
+            if hn == hn_ && isSameStore store store_ && isSameIO io io_ then (v_, hb_) else 
+                let (resv, reshb) = getElem hn (store_, io_) hb_ in
+                (resv, (hn_, (store_, io_), v_) :: reshb)
         _ -> (VError "unsupported operation", [])
 
 union : HoleBindings -> HoleBindings -> HoleBindings
 union hb1 hb2 =
     case hb2 of
-        (hn2, store2, v2)::hb2_ ->
-            if elemIn hn2 store2 hb1 then
+        (hn2, (store2, io2), v2)::hb2_ ->
+            if elemIn hn2 (store2, io2) hb1 then
                 union hb1 hb2_
             else
-                (hn2, store2, v2)::(union hb1 hb2_)
+                (hn2, (store2, io2), v2)::(union hb1 hb2_)
 
         _ -> hb1
 
-elemIn : HoleName -> Store -> HoleBindings -> Bool
-elemIn hn store hb =
+elemIn : HoleName -> (Store, IO) -> HoleBindings -> Bool
+elemIn hn (store, io) hb =
     case hb of
-        (hn_, store_, _)::hb_ -> if hn == hn_ && store == store_ then True else elemIn hn store hb_
+        (hn_, (store_, io_), _)::hb_ -> if hn == hn_ && isSameStore store store_ && isSameIO io io_ then True else elemIn hn (store, io) hb_
         _ -> False
 
 getFinalRiStmtStoreIO : RiStmts -> (Store, IO)
@@ -700,4 +792,34 @@ mergeIO io1 io2 io3 =
     let (output1, output2, output3) = (getIO io1 "output", getIO io2 "output", getIO io3 "output") in
     let newinput = if input1 /= input3 then input1 else input2 in
     let newoutput = if output1 /= output3 then output1 else output2 in
+    [("input", newinput), ("output", newoutput)]
+
+unpollute : Store -> Store -> SCount -> Store
+unpollute store oristore scount =
+    case store of
+        (x, VHole (HVar x_) id) :: store_ -> 
+            if x_ == x && id == scount then 
+                case lookup x oristore of
+                    Just v -> (x, v) :: (unpollute store_ oristore scount)
+                    Nothing -> unpollute store_ oristore scount
+            else (x, VHole (HVar x_) id) :: (unpollute store_ oristore scount)
+        (x, v) :: store_ -> (x, v) :: (unpollute store_ oristore scount)
+        _ -> []
+
+unpolluteIO : IO -> IO -> SCount -> IO
+unpolluteIO io oriio scount =
+    let input = getIO io "input" in
+    let output = getIO io "output" in
+    let 
+        newinput = 
+            case input of
+                [VHole (HVar "input") id] -> 
+                    if id == scount then getIO oriio "input" else input
+                _ -> input
+        newoutput = 
+            case List.reverse output of
+                (VHole (HVar "output") id) :: _ -> 
+                    if id == scount then getIO oriio "output" else output
+                _ -> output
+    in
     [("input", newinput), ("output", newoutput)]

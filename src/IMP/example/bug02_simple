@@ -1,0 +1,7 @@
+i := 3;
+while i>0 do
+    read x;
+    read y;
+    if x>=y then print true else print false end;
+    i := i-1
+end

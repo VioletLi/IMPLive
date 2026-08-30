@@ -1,0 +1,6 @@
+x1:=1;
+y1:=2;
+x2:=3;
+y2:=4;
+if x1>y1 then mx:=x1 else mx:=y1 end;
+if x2<y2 then mn:=_ else mn:=_ end
