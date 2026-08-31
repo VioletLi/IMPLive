@@ -98,6 +98,7 @@ uneval store holeBindings io expr val hcount =
                 "++" -> arith_ "++"
                 _ -> ([],[],(EError "unsupported operation", 0))
         EError s -> ([], [], (EError s, 0))
+        _ -> ([],[],(EError "unsupported expression", 0))
 
 unexec : Store -> IO -> HoleBindings -> RiStmts -> Stmt -> HCount -> SCount -> (Store, RiStmts, IO) -> UnexecRes
 unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, newio) =

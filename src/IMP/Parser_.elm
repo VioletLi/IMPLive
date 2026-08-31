@@ -106,17 +106,93 @@ parens_ =
         |= mSpaces
 
 
+list : Parser Expr
+list =
+    succeed (\sOpen parts sClose ->
+            let
+                (commaWs, exprs) =
+                    parts
+            in
+            EList (sOpen :: commaWs ++ [sClose]) exprs)
+        |. symbol "["
+        |= mSpaces
+        |= listItems
+        |. symbol "]"
+        |= mSpaces
+
+
+listItems : Parser (List String, List Expr)
+listItems =
+    oneOf
+        [ succeed (\e rest ->
+                ( List.map Tuple.first rest
+                , e :: List.map Tuple.second rest
+                ))
+            |= lazy (\_ -> expr)
+            |= listTail
+        , succeed ([], [])
+        ]
+
+
+listTail : Parser (List (String, Expr))
+listTail =
+    loop [] listTailHelper
+
+
+listTailHelper : List (String, Expr) -> Parser (Step (List (String, Expr)) (List (String, Expr)))
+listTailHelper revItems =
+    oneOf
+        [ succeed (\s e -> Loop ((s, e) :: revItems))
+            |. symbol ","
+            |= mSpaces
+            |= lazy (\_ -> expr)
+        , succeed ()
+            |> map (\_ -> Done (List.reverse revItems))
+        ]
+
+
+atom : Parser Expr
+atom =
+    oneOf
+        [ hole
+        , true
+        , false
+        , int_
+        , string
+        , var
+        , parens_
+        , list
+        ]
+
+
+indexSuffixes : Parser (List (String, Expr, String))
+indexSuffixes =
+    loop [] indexSuffixHelper
+
+
+indexSuffixHelper : List (String, Expr, String) -> Parser (Step (List (String, Expr, String)) (List (String, Expr, String)))
+indexSuffixHelper revIdxs =
+    oneOf
+        [ succeed (\s1 e s2 -> Loop ((s1, e, s2) :: revIdxs))
+            |. symbol "["
+            |= mSpaces
+            |= lazy (\_ -> expr)
+            |. symbol "]"
+            |= mSpaces
+        , succeed ()
+            |> map (\_ -> Done (List.reverse revIdxs))
+        ]
+
+
 aexpr : Parser Expr
 aexpr =
-    oneOf
-    [ hole
-    , true
-    , false
-    , int_
-    , string
-    , var
-    , parens_
-    ]
+    succeed (\e idxs ->
+            List.foldl
+                (\(s1, ix, s2) acc -> EIndex [s1, s2] acc ix)
+                e
+                idxs)
+        |= atom
+        |= indexSuffixes
 
 
 bopParser : String -> Parser (Expr -> Expr -> Expr)

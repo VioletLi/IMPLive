@@ -53,6 +53,24 @@ preprocessExpr e hcount =
             (EParens ws e__, hcount_)
         EHole ws _ -> 
             (EHole ws (HOri hcount), hcount+1)
+        EList ws es -> 
+            let (es_, hcount_) = preprocessList es hcount in
+            (EList ws es_, hcount_)
+        EIndex ws e1 e2 -> 
+            let
+                (e1_, hcount_) = preprocessExpr e1 hcount
+                (e2_, hcount__) = preprocessExpr e2 hcount_
+            in
+            (EIndex ws e1_ e2_, hcount__)
+
+preprocessList : List Expr -> HCount -> (List Expr, HCount)
+preprocessList es hcount =
+    case es of
+        [] -> ([], hcount)
+        e :: rest ->
+            let (e_, hcount_) = preprocessExpr e hcount in
+            let (rest_, hcount__) = preprocessList rest hcount_ in
+            (e_ :: rest_, hcount__)
 
 lookup : String -> Store -> Maybe Value
 lookup x store =
@@ -175,6 +193,8 @@ substHoleinExpr id e holes =
         EError s -> EError s
         ENot ws e_ -> ENot ws (substHoleinExpr id e_ holes)
         EParens ws e_ -> EParens ws (substHoleinExpr id e_ holes)
+        EList ws es -> EList ws (List.map (\e_ -> substHoleinExpr id e holes) es)
+        EIndex ws e1 e2 -> EIndex ws (substHoleinExpr id e1 holes) (substHoleinExpr id e2 holes)
 
 holeKey : HoleName -> StmtID -> String
 holeKey h id =
@@ -190,6 +210,7 @@ value2Expr v =
         VBool b -> EBool [] b
         VString s -> EString [] s
         VHole h _ -> EHole [] h
+        VList vs -> EList [] (List.map value2Expr vs)
         VError _ -> EError "Unsupported expression"
 
 expr2Val : Expr -> Value
@@ -205,3 +226,10 @@ delStore x store =
     case store of
         (x_, v) :: rest -> if x == x_ then rest else (x_, v) :: delStore x rest
         [] -> []
+
+nthValue : List Value -> Int -> Value
+nthValue vs i =
+    if i < 0 then VError "Index out of range" else
+        case vs of
+            v :: rest -> if i == 0 then v else nthValue rest (i - 1)
+            [] -> VError "Index out of range"

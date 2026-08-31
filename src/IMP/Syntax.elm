@@ -22,6 +22,8 @@ type Expr
     | EError String
     | ENot WS Expr
     | EParens WS Expr
+    | EList WS (List Expr)
+    | EIndex WS Expr Expr
 
 type Stmt 
     = SIf WS Expr Stmt Stmt
@@ -39,6 +41,7 @@ type Value
     | VString String
     | VHole HoleName StmtID
     | VError String
+    | VList (List Value)
 
 type alias IO = List (String, List Value)
 

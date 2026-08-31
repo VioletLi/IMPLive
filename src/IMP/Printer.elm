@@ -113,8 +113,50 @@ printExpr expr =
         Eop _ op e1 e2 ->
             printExpr e1 ++ " " ++ op ++ " " ++ printExpr e2
 
+        EList (sOpen :: rest) es ->
+            case List.reverse rest of
+                sClose :: commasRev ->
+                    "[" ++ sOpen
+                        ++ printListBody (List.reverse commasRev) es
+                        ++ "]" ++ sClose
+
+                [] ->
+                    "[" ++ (List.map printExpr es |> String.join ", ") ++ "]"
+
+        EList _ es ->
+            "[" ++ (List.map printExpr es |> String.join ", ") ++ "] "
+
+        EIndex [s1, s2] e1 e2 ->
+            printExpr e1 ++ "[" ++ s1 ++ printExpr e2 ++ "]" ++ s2
+
+        EIndex _ e1 e2 ->
+            printExpr e1 ++ "[" ++ printExpr e2 ++ "]"
+
         EError info ->
             info
+
+
+printListBody : List String -> List Expr -> String
+printListBody commas es =
+    case es of
+        [] ->
+            ""
+
+        e :: rest ->
+            printExpr e ++ printListTail commas rest
+
+
+printListTail : List String -> List Expr -> String
+printListTail commas es =
+    case (commas, es) of
+        (c :: cs, e :: rest) ->
+            "," ++ c ++ printExpr e ++ printListTail cs rest
+
+        (_, e :: rest) ->
+            ", " ++ printExpr e ++ printListTail [] rest
+
+        _ ->
+            ""
 
 
 printValue : Value -> String
@@ -134,6 +176,9 @@ printValue v =
 
         VHole hn _ ->
             "{ " ++ printHoleName hn ++ " }"
+
+        VList vs ->
+            "[" ++ (List.map printValue vs |> String.join ", ") ++ "]"
 
         VError info ->
             info

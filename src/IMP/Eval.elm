@@ -44,6 +44,25 @@ eval store holeBindings io expr =
                 VBool b -> VBool (not b)
                 VHole HTmp _ -> VHole HTmp -1
                 _ -> VError "Unsupported expression"
+        EList ws es ->
+            VList (List.map (eval store holeBindings io) es)
+        EIndex ws e1 e2 ->
+            let v1 = eval store holeBindings io e1 in
+            let v2 = eval store holeBindings io e2 in
+            case v1 of
+                VString s -> 
+                    case v2 of
+                        VInt i -> VString (String.slice i (i+1) s)
+                        _ -> VError "Unsupported expression"
+                VList vs ->
+                    case v2 of
+                        VInt i -> 
+                            if i >= 0 && i < List.length vs then
+                                nthValue vs i
+                            else
+                                VError "Index out of range"
+                        _ -> VError "Unsupported expression"
+                _ -> VError "Unsupported expression"
         _ -> VError "Unsupported expression"
 
 bop : String -> Value -> Value -> Value
