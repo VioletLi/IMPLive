@@ -165,34 +165,49 @@ atom =
         ]
 
 
-indexSuffixes : Parser (List (String, Expr, String))
-indexSuffixes =
-    loop [] indexSuffixHelper
+type ASuffix
+    = AIndex String Expr String
+    | ALength String
 
 
-indexSuffixHelper : List (String, Expr, String) -> Parser (Step (List (String, Expr, String)) (List (String, Expr, String)))
-indexSuffixHelper revIdxs =
+suffixes : Parser (List ASuffix)
+suffixes =
+    loop [] suffixHelper
+
+
+suffixHelper : List ASuffix -> Parser (Step (List ASuffix) (List ASuffix))
+suffixHelper revSufs =
     oneOf
-        [ succeed (\s1 e s2 -> Loop ((s1, e, s2) :: revIdxs))
+        [ succeed (\s1 e s2 -> Loop (AIndex s1 e s2 :: revSufs))
             |. symbol "["
             |= mSpaces
             |= lazy (\_ -> expr)
             |. symbol "]"
             |= mSpaces
+        , succeed (\s -> Loop (ALength s :: revSufs))
+            |. symbol "."
+            |. keyword "length"
+            |= mSpaces
         , succeed ()
-            |> map (\_ -> Done (List.reverse revIdxs))
+            |> map (\_ -> Done (List.reverse revSufs))
         ]
+
+
+applySuffix : ASuffix -> Expr -> Expr
+applySuffix suf acc =
+    case suf of
+        AIndex s1 ix s2 ->
+            EIndex [s1, s2] acc ix
+
+        ALength s ->
+            ELength [s] acc
 
 
 aexpr : Parser Expr
 aexpr =
-    succeed (\e idxs ->
-            List.foldl
-                (\(s1, ix, s2) acc -> EIndex [s1, s2] acc ix)
-                e
-                idxs)
+    succeed (\e sufs -> List.foldl applySuffix e sufs)
         |= atom
-        |= indexSuffixes
+        |= suffixes
 
 
 bopParser : String -> Parser (Expr -> Expr -> Expr)

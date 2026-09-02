@@ -3,18 +3,19 @@ module IMP.Eval exposing (..)
 import IMP.Syntax exposing (..)
 import IMP.Utils exposing (..)
 import Dict exposing (Dict)
-
+import Set exposing (Set)
 
 type alias FwdRes = 
     {
         store : Store,
         io : IO,
         riStmts : RiStmts,
-        scount : SCount
+        scount : SCount,
+        readOnly : Set String
     }
 
 defaultFwdRes : FwdRes
-defaultFwdRes = {store = [], io = [], riStmts = [], scount = 0}
+defaultFwdRes = {store = [], io = [], riStmts = [], scount = 0, readOnly = Set.empty}
 
 eval : Store -> HoleBindings -> IO -> Expr -> Value
 eval store holeBindings io expr =
@@ -53,6 +54,7 @@ eval store holeBindings io expr =
                 VString s -> 
                     case v2 of
                         VInt i -> VString (String.slice i (i+1) s)
+                        VHole _ _ -> VHole HTmp -1
                         _ -> VError "Unsupported expression"
                 VList vs ->
                     case v2 of
@@ -61,7 +63,16 @@ eval store holeBindings io expr =
                                 nthValue vs i
                             else
                                 VError "Index out of range"
+                        VHole _ _ -> VHole HTmp -1
                         _ -> VError "Unsupported expression"
+                VHole _ _ -> VHole HTmp -1
+                _ -> VError "Unsupported expression"
+        ELength ws e ->
+            let v = eval store holeBindings io e in
+            case v of
+                VString s -> VInt (String.length s)
+                VList vs -> VInt (List.length vs)
+                VHole _ _ -> VHole HTmp -1
                 _ -> VError "Unsupported expression"
         _ -> VError "Unsupported expression"
 
@@ -151,6 +162,7 @@ bop op v1 v2 =
         "++" -> 
             case (v1, v2) of
                 (VString s1, VString s2) -> VString (s1 ++ s2)
+                (VList vs1, VList vs2) -> VList (vs1 ++ vs2)
                 (VHole _ _, _) -> VHole HTmp -1
                 (_, VHole _ _) -> VHole HTmp -1
                 _ -> VError "Unsupported operation"
@@ -176,13 +188,14 @@ simplifyExpr store io e holeBindings =
             Eop [] op e1_ e2_
         _ -> e
 
-exec : Store -> IO -> HoleBindings -> RiStmts -> Stmt -> SCount -> FwdRes
-exec store io holeBindings riStmts stmt scount =
+exec : Store -> IO -> HoleBindings -> RiStmts -> Stmt -> Set String -> SCount -> FwdRes
+exec store io holeBindings riStmts stmt readOnly scount =
     case stmt of
-        SSkip _ -> {store = store, io = io, riStmts = riStmts, scount = scount}
+        SSkip _ -> {store = store, io = io, riStmts = riStmts, readOnly = readOnly, scount = scount}
         SAssign _ x e ->
             let
                 v = eval store holeBindings io e
+                newReadOnly = if Set.member x readOnly then Set.remove x readOnly else readOnly
             in
             case v of
                 VHole HTmp _ -> 
@@ -190,18 +203,20 @@ exec store io holeBindings riStmts stmt scount =
                     { store = updateStore x (VHole (HVar x) scount) store
                     , io = io
                     , riStmts = riStmts ++ [(scount, SAssign [] x e_, (store, io))]
+                    , readOnly = newReadOnly
                     , scount = scount+1}
                 VError _ -> {defaultFwdRes | store = [("error", VError "Unsupported expression")]}
                 _ ->
                     { store = updateStore x v store
                     , io = io
                     , riStmts = riStmts
+                    , readOnly = newReadOnly
                     , scount = scount}
                 
         SSeq _ s1 s2 -> 
             let
-                res1 = exec store io holeBindings riStmts s1 scount
-                res2 = exec res1.store res1.io holeBindings res1.riStmts s2 res1.scount
+                res1 = exec store io holeBindings riStmts s1 readOnly scount
+                res2 = exec res1.store res1.io holeBindings res1.riStmts s2 res1.readOnly res1.scount
             in
             res2
         SIf _ e s1 s2 -> 
@@ -219,10 +234,11 @@ exec store io holeBindings riStmts stmt scount =
                     { store = store_
                     , io = io_
                     , riStmts = riStmts ++ [(scount, SIf [] e_ s1 s2, (store, io))]
+                    , readOnly = readOnly
                     , scount = scount + 1
                     }
-                VBool True -> exec store io holeBindings riStmts s1 scount
-                VBool False -> exec store io holeBindings riStmts s2 scount
+                VBool True -> exec store io holeBindings riStmts s1 readOnly scount
+                VBool False -> exec store io holeBindings riStmts s2 readOnly scount
                 _ -> {defaultFwdRes|store=[("error", VError "Unsupported guard of If")]}
                 
         SWhile _ e s -> 
@@ -236,13 +252,15 @@ exec store io holeBindings riStmts stmt scount =
                     { store = store_
                     , io = io_
                     , riStmts = riStmts ++ [(scount, SIf [] e_ (SSeq [] s (SWhile [] e s)) (SSkip []), (store, io))]
+                    , readOnly = readOnly
                     , scount = scount + 1
                     }
-                VBool True -> exec store io holeBindings riStmts (SSeq [] s stmt) scount
+                VBool True -> exec store io holeBindings riStmts (SSeq [] s stmt) readOnly scount
                 VBool False -> 
                     { store = store
                     , io = io
                     , riStmts = riStmts
+                    , readOnly = readOnly
                     , scount = scount}
                 _ -> {defaultFwdRes | store = [("error", VError "Unsupported guard of While")]}
                 
@@ -255,11 +273,13 @@ exec store io holeBindings riStmts stmt scount =
                     { store = updateStore x (VHole (HVar x) scount) store
                     , io = updateIO io "input" [VHole (HVar "input") scount]
                     , riStmts = riStmts ++ [(scount, SRead [] x, (store, io))]
+                    , readOnly = Set.insert x readOnly
                     , scount = scount+1}
                 v :: rest ->
                     { store = updateStore x v store
                     , io = updateIO io "input" rest
                     , riStmts = riStmts
+                    , readOnly = Set.insert x readOnly
                     , scount = scount}
                 _ -> {defaultFwdRes | store = [("error", VError "Input not found")]}
         SPrint _ e -> 
@@ -271,6 +291,7 @@ exec store io holeBindings riStmts stmt scount =
                     { store = store
                     , io = updateIO io "output" ((getIO io "output") ++ [VHole (HVar "output") scount])
                     , riStmts = riStmts ++ [(scount, SPrint [] e_, (store, io))]
+                    , readOnly = readOnly
                     , scount = scount + 1
                     }
                 VError _ -> {defaultFwdRes | store = [("error", VError "Unsupported expression")]}
@@ -278,6 +299,7 @@ exec store io holeBindings riStmts stmt scount =
                     { store = store
                     , io = updateIO io "output" ((getIO io "output") ++ [v])
                     , riStmts = riStmts
+                    , readOnly = readOnly
                     , scount = scount
                     }
         SError s -> {defaultFwdRes | store = [("error", VError s)]}
@@ -331,11 +353,11 @@ tryExec hb ris scount =
                             let (exec_, stmt_) = tryExec hb rest scount in
                             (exec_, (id, SIf ws e_ s1 s2, (store, io))::stmt_)
                         VBool True ->
-                            let res = exec store io hb [] s1 scount in
+                            let res = exec store io hb [] s1 Set.empty scount in
                             let (exec_, stmt_) = tryExec hb rest res.scount in
                             ((id, res.store, res.io)::exec_, res.riStmts++stmt_)
                         VBool False -> 
-                            let res = exec store io hb [] s2 scount in
+                            let res = exec store io hb [] s2 Set.empty scount in
                             let (exec_, stmt_) = tryExec hb rest res.scount in
                             ((id, res.store, res.io)::exec_, res.riStmts++stmt_)
                         _ -> ([], [])
@@ -346,7 +368,7 @@ tryExec hb ris scount =
                             let (exec_, stmt_) = tryExec hb rest scount in
                             (exec_, (id, SIf [] e (SSeq [] s_ (SWhile ws e s_)) (SSkip []), (store, io))::stmt_)
                         VBool True ->
-                            let res = exec store io hb [] (SSeq [] s_ (SWhile ws e s_)) scount in
+                            let res = exec store io hb [] (SSeq [] s_ (SWhile ws e s_)) Set.empty scount in
                             let (exec_, stmt_) = tryExec hb rest res.scount in
                             ((id, res.store, res.io)::exec_, res.riStmts++stmt_)
                         VBool False -> 
@@ -360,7 +382,7 @@ tryExec hb ris scount =
                             let (exec_, stmt_) = tryExec hb rest scount in
                             (exec_, (id, SRead [] x, (store, io))::stmt_)
                         _ :: _ ->
-                            let res = exec store io hb [] (SRead [] x) scount in
+                            let res = exec store io hb [] (SRead [] x) Set.empty scount in
                             let (exec_, stmt_) = tryExec hb rest res.scount in
                             ((id, res.store, res.io)::exec_, res.riStmts++stmt_)
                         _ -> ([], [])
@@ -373,7 +395,7 @@ tryExec hb ris scount =
                             let (exec_, stmt_) = tryExec hb rest scount in
                             (exec_, (id, SPrint ws e_, (store, io))::stmt_)
                         _ ->
-                            let res = exec store io hb [] (SPrint ws e) scount in
+                            let res = exec store io hb [] (SPrint ws e) Set.empty scount in
                             let (exec_, stmt_) = tryExec hb rest res.scount in
                             ((id, res.store, res.io)::exec_, res.riStmts++stmt_)
                 _ -> ([(-2, [], [])], [])

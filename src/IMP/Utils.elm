@@ -62,6 +62,9 @@ preprocessExpr e hcount =
                 (e2_, hcount__) = preprocessExpr e2 hcount_
             in
             (EIndex ws e1_ e2_, hcount__)
+        ELength ws e_ ->
+            let (e__, hcount_) = preprocessExpr e_ hcount in
+            (ELength ws e__, hcount_)
 
 preprocessList : List Expr -> HCount -> (List Expr, HCount)
 preprocessList es hcount =
@@ -195,6 +198,7 @@ substHoleinExpr id e holes =
         EParens ws e_ -> EParens ws (substHoleinExpr id e_ holes)
         EList ws es -> EList ws (List.map (\e_ -> substHoleinExpr id e holes) es)
         EIndex ws e1 e2 -> EIndex ws (substHoleinExpr id e1 holes) (substHoleinExpr id e2 holes)
+        ELength ws e_ -> ELength ws (substHoleinExpr id e_ holes)
 
 holeKey : HoleName -> StmtID -> String
 holeKey h id =

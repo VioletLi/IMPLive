@@ -3,6 +3,8 @@ module IMP.Uneval exposing (..)
 import IMP.Syntax exposing (..)
 import IMP.Eval exposing (eval, exec)
 import IMP.Utils exposing (..)
+import Newuneval exposing (uneval)
+import Set exposing (Set)
 
 type alias UnexecRes = 
     { store : Store
@@ -23,8 +25,8 @@ defaultUnexecRes =
     , hcount = 0
     }
 
-uneval : Store -> HoleBindings -> IO -> Expr -> Value -> HCount-> (Store, HoleBindings, (Expr, HCount))
-uneval store holeBindings io expr val hcount =
+uneval : Store -> HoleBindings -> IO -> Expr -> Set String -> Value -> HCount -> (Store, HoleBindings, (Expr, HCount))
+uneval store holeBindings io expr readOnly val hcount =
     case expr of
         ENot ws e -> 
             let v = eval store holeBindings io e in
@@ -36,26 +38,33 @@ uneval store holeBindings io expr val hcount =
                     if b1 /= b2 then
                         (store, holeBindings, (ENot ws e, hcount))
                     else
-                        let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e (VBool (not b2)) hcount in
+                        let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e readOnly (VBool (not b2)) hcount in
                         (newstore, newhb, (ENot ws newexpr, hcount_))
 
                 (VHole _ _, VBool b) ->
-                    let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e (VBool (not b)) hcount in
+                    let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e readOnly (VBool (not b)) hcount in
                     (newstore, newhb, (ENot ws newexpr, hcount_))
 
                 (VBool _, VHole _ _) ->
-                    let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e val hcount in
+                    let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e readOnly val hcount in
                     (newstore, newhb, (ENot ws newexpr, hcount_))
 
                 _ -> ([],[],(EError "unsupported value type for ENot", 0))
         EParens ws e ->
-            let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e val hcount in
+            let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e readOnly val hcount in
             (newstore, newhb, (EParens ws newexpr, hcount_))
         EHole _ u -> 
             case val of
                 VHole _ _ -> (store, holeBindings, (expr, hcount))
                 _ -> (store, (u, (store, io), val) :: holeBindings, (expr, hcount))
-        EVar _ x -> (updateStore x val store, holeBindings, (expr, hcount))
+        EVar _ x -> 
+            let oriv = lookup x store in
+            case oriv of
+                Just v -> 
+                    if v == val then (store, holeBindings, (expr, hcount))
+                    else if Set.member x readOnly then ([], [], (EError "variable is read only", 0))
+                    else (updateStore x val store, holeBindings, (expr, hcount))
+                Nothing -> ([], [], (EError "variable not found when updating", 0))
         EInt ws _ -> 
             case val of
                 VInt n_ -> (store, holeBindings, (EInt ws n_, hcount))
@@ -74,13 +83,13 @@ uneval store holeBindings io expr val hcount =
         Eop ws op e1 e2 -> 
             let
                 logic_ =
-                    logic ws e1 e2 holeBindings store io val hcount
+                    logic ws e1 e2 holeBindings store io readOnly val hcount
 
                 arith_ = 
-                    arith ws e1 e2 holeBindings store io val hcount
+                    arith ws e1 e2 holeBindings store io readOnly val hcount
 
                 comp_ = 
-                    comp ws e1 e2 holeBindings store io val hcount
+                    comp ws e1 e2 holeBindings store io readOnly val hcount
             in
             case op of
                 "+" -> arith_ "+"
@@ -98,10 +107,68 @@ uneval store holeBindings io expr val hcount =
                 "++" -> arith_ "++"
                 _ -> ([],[],(EError "unsupported operation", 0))
         EError s -> ([], [], (EError s, 0))
-        _ -> ([],[],(EError "unsupported expression", 0))
+        EList ws es -> 
+            case val of
+                VList vs ->
+                    if List.length vs == List.length es then 
+                        let (newstore, newhb, (newexprs, hcount_)) = unevalList store holeBindings io readOnly es vs hcount in
+                        (newstore, newhb, (EList ws newexprs, hcount_))
+                    else 
+                        if List.length vs > List.length es then
+                            let (newstore, newhb, (newexprs, hcount_)) = unevalList store holeBindings io readOnly es (List.take (List.length es) vs) hcount in
+                            (newstore, newhb, ((EList ws (newexprs ++ (List.map (value2Expr) (List.drop (List.length es) vs)))), hcount_))
+                        else
+                            let (newstore, newhb, (newexprs, hcount_)) = unevalList store holeBindings io readOnly (List.take (List.length vs) es) vs hcount in
+                            (newstore, newhb, (EList ws newexprs, hcount_))
+                VHole _ _ ->
+                    (store, holeBindings, (EHole ws (HOri hcount), hcount + 1))
+                _ -> ([],[],(EError "unsupported value type for EList", 0))
+        EIndex ws e1 e2 ->
+            let oldv = eval store holeBindings io e1 in
+            let index = eval store holeBindings io e2 in
+            case (oldv, index, val) of
+                (_, VHole _ _, VHole _ _) -> (store, holeBindings, (expr, hcount))
+                (VHole _ _, _, VHole _ _) -> (store, holeBindings, (expr, hcount))
+                (VString s, VInt i, VString s_) ->
+                    if i >= 0 && i < String.length s && String.length s_ == 1 then
+                        let newv = String.left i s ++ s_ ++ String.dropLeft (i + 1) s in
+                        let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e1 readOnly (VString newv) hcount in
+                        (newstore, newhb, (EIndex ws newexpr e2, hcount_))
+                    else ([],[],(EError "index out of range or string length not 1", 0))
+                (VString s, VInt i, VHole _ _) ->
+                    let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e1 readOnly val hcount in
+                    (newstore, newhb, (EIndex ws newexpr e2, hcount_))
+                (VList vs, VInt i, _) ->
+                    if i >= 0 && i < List.length vs then
+                        let newv = List.take i vs ++ val :: List.drop (i + 1) vs in
+                        let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e1 readOnly (VList newv) hcount in
+                        (newstore, newhb, (EIndex ws newexpr e2, hcount_))
+                    else ([],[],(EError "index out of range", 0))
+                _ -> ([],[],(EError "unsupported expression", 0))
+        ELength ws e ->
+            let v = eval store holeBindings io e in
+            case (v, val) of
+                (VString s, VInt n) -> if n == String.length s then 
+                    (store, holeBindings, (expr, hcount))
+                    else ([],[],(EError "length mismatch", 0))
+                (VList vs, VInt n) -> if n == List.length vs then 
+                    (store, holeBindings, (expr, hcount))
+                    else ([],[],(EError "length mismatch", 0))
+                (VHole _ _, VHole _ _) -> (store, holeBindings, (expr, hcount))
+                _ -> ([],[],(EError "unsupported update for list length", 0))
+        -- _ -> ([],[],(EError "unsupported expression", 0))
 
-unexec : Store -> IO -> HoleBindings -> RiStmts -> Stmt -> HCount -> SCount -> (Store, RiStmts, IO) -> UnexecRes
-unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, newio) =
+unevalList : Store -> HoleBindings -> IO -> Set String -> List Expr -> List Value -> HCount -> (Store, HoleBindings, (List Expr, HCount))
+unevalList store holeBindings io readOnly es vs hcount =
+    case (es, vs) of
+        (e :: es_, v :: vs_) ->
+            let (newstore_, newhb_, (newexprs, hcount_)) = unevalList store holeBindings io readOnly es_ vs_ hcount in
+            let (estore_, ehb_, (eexpr, ehcount_)) = uneval store holeBindings io e readOnly v hcount_ in
+            (mergeStore estore_ newstore_ store, mergeHoleBindings ehb_ newhb_ holeBindings, (eexpr :: newexprs, ehcount_))
+        _ -> (store, holeBindings, ([], hcount))
+
+unexec : Store -> IO -> HoleBindings -> RiStmts -> Set String -> Stmt -> HCount -> SCount -> (Store, RiStmts, IO) -> UnexecRes
+unexec store io holeBindings riStmts readOnly stmt hcount scount (newstore, newriStmts, newio) =
     case stmt of
         SAssign ws x e -> 
             -- 如果这个生成了新的ristmt，那我就把更新之后的最后一条的store传回给上一条，删掉原来那条，不然就不动
@@ -124,7 +191,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                             }
                             else 
                                 let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
-                                let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings io e nv hcount in
+                                let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings io e readOnly nv hcount in
                                 {
                                     store = mergeStore userstore finalstore store,
                                     io = mergeIO userio newio io,
@@ -135,7 +202,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                                 }
                         _ ->
                             let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
-                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings io e nv hcount in
+                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings io e readOnly nv hcount in
                             {
                                 store = mergeStore userstore finalstore store,
                                 io = mergeIO userio newio io,
@@ -145,7 +212,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                                 hcount = hcount_
                             }
                 (_, Just nv, Just ov) ->
-                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings io e nv hcount in
+                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings io e readOnly nv hcount in
                     {
                         store = finalstore,
                         io = newio,
@@ -168,7 +235,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                             }
                             else 
                                 let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
-                                let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings io e nv hcount in
+                                let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings io e readOnly nv hcount in
                                 {
                                     store = mergeStore userstore finalstore store,
                                     io = mergeIO userio newio io,
@@ -179,7 +246,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                                 }
                         _ ->
                             let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
-                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings io e nv hcount in
+                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings io e readOnly nv hcount in
                             {
                                 store = mergeStore userstore finalstore store,
                                 io = mergeIO userio newio io,
@@ -189,7 +256,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                                 hcount = hcount_
                             }
                 (_, Just nv, Nothing) ->
-                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings io e nv hcount in
+                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings io e readOnly nv hcount in
                     {
                         store = finalstore,
                         io = newio,
@@ -208,9 +275,9 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
             , hcount = hcount
             }
         SSeq ws s1 s2 -> 
-            let fres1 = exec store io holeBindings riStmts s1 scount in
-            let bres2 = unexec fres1.store fres1.io holeBindings fres1.riStmts s2 hcount fres1.scount (newstore, newriStmts, newio) in
-            let bres1 = unexec store io bres2.holeBindings bres2.riStmts s1 bres2.hcount scount (bres2.store, bres2.riStmts, bres2.io) in
+            let fres1 = exec store io holeBindings riStmts s1 readOnly scount in
+            let bres2 = unexec fres1.store fres1.io holeBindings fres1.riStmts fres1.readOnly s2 hcount fres1.scount (newstore, newriStmts, newio) in
+            let bres1 = unexec store io bres2.holeBindings bres2.riStmts readOnly s1 bres2.hcount scount (bres2.store, bres2.riStmts, bres2.io) in
             {
                 store = bres1.store,
                 io = bres1.io,
@@ -305,7 +372,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                                 hcount = hcount
                             }   
                             else
-                                let (finalstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e (VHole (HVar "output") id) hcount in
+                                let (finalstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e readOnly (VHole (HVar "output") id) hcount in
                                     {
                                         store = mergeStore userstore finalstore store,
                                         io = newio_,
@@ -315,7 +382,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                                         hcount = hcount_
                                     }
                         Just v ->
-                            let (finalstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e v hcount in
+                            let (finalstore, newhb, (newexpr, hcount_)) = uneval store holeBindings io e readOnly v hcount in
                             {
                                 store = mergeStore userstore finalstore store,
                                 io = newio_,
@@ -331,7 +398,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                     let newio_ = updateIO newio "output" (List.take ((List.length newout) - 1) (getIO newio "output")) in
                     case newval of
                         Just v ->
-                            let (newstore_, newhb, (newexpr, hcount_)) = uneval store holeBindings io e v hcount in
+                            let (newstore_, newhb, (newexpr, hcount_)) = uneval store holeBindings io e readOnly v hcount in
                             {
                                 store = newstore_,
                                 io = newio_,
@@ -345,7 +412,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
             let guard = eval store holeBindings io e in
             case guard of
                 VHole _ _ -> 
-                    let oldres = exec store io holeBindings riStmts stmt scount in
+                    let oldres = exec store io holeBindings riStmts stmt readOnly scount in
                     let (userstore, userio) = getFinalRiStmtStoreIO newriStmts in
                     if isSameStore oldres.store newstore && isSameIO oldres.io io then
                         {
@@ -359,10 +426,10 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                     else
                         case (s1, s2) of
                             (SSeq ws1 s_ (SWhile ws2 e_ sw), SSkip _) ->
-                                let fres = exec store io holeBindings riStmts s_ scount in
-                                let (guardstore, guardhb, (guardexpr, guardhcount)) = uneval fres.store holeBindings io e_ (VBool False) hcount in
-                                let bres = unexec store io holeBindings riStmts s_ guardhcount fres.scount (guardstore, newriStmts, newio) in
-                                let (exprstore, exprhb, (expr, hcount_)) = uneval store guardhb io e (VBool True) bres.hcount in
+                                let fres = exec store io holeBindings riStmts s_ readOnly scount in
+                                let (guardstore, guardhb, (guardexpr, guardhcount)) = uneval fres.store holeBindings io e_ fres.readOnly (VBool False) hcount in
+                                let bres = unexec store io holeBindings riStmts fres.readOnly s_ guardhcount fres.scount (guardstore, newriStmts, newio) in
+                                let (exprstore, exprhb, (expr, hcount_)) = uneval store guardhb io e readOnly (VBool True) bres.hcount in
                                 let unpollutedstore = unpollute exprstore store scount in
                                 let unpollutedio = unpolluteIO bres.io io scount in
                                 {
@@ -374,15 +441,15 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                                     hcount = hcount_
                                 }
                             _ ->
-                                let bres = unexec store io holeBindings riStmts s1 hcount scount (newstore, newriStmts, newio) in
+                                let bres = unexec store io holeBindings riStmts readOnly s1 hcount scount (newstore, newriStmts, newio) in
                                 case bres.stmt of
                                     SError _ ->
-                                        let bres2 = unexec store io holeBindings riStmts s2 hcount scount (newstore, newriStmts, newio) in
+                                        let bres2 = unexec store io holeBindings riStmts readOnly s2 hcount scount (newstore, newriStmts, newio) in
                                         case bres2.stmt of
                                             SError _ ->
                                                 { defaultUnexecRes | stmt = SError "Error: unexecStmt: SIf: both branches error"}
                                             _ ->
-                                                let (finalstore, newhb, (newexpr, hcount_)) = uneval bres2.store bres2.holeBindings io e (VBool False) bres2.hcount in
+                                                let (finalstore, newhb, (newexpr, hcount_)) = uneval bres2.store bres2.holeBindings io e readOnly (VBool False) bres2.hcount in
                                                 let unpollutedstore = unpollute finalstore store scount in
                                                 let unpollutedio = unpolluteIO bres2.io io scount in
                                                 {
@@ -394,7 +461,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                                                     hcount = hcount_
                                                 }
                                     _ ->
-                                        let (finalstore, newhb, (newexpr, hcount_)) = uneval bres.store bres.holeBindings io e (VBool True) bres.hcount in
+                                        let (finalstore, newhb, (newexpr, hcount_)) = uneval bres.store bres.holeBindings io e readOnly (VBool True) bres.hcount in
                                         let unpollutedstore = unpollute finalstore store scount in
                                         let unpollutedio = unpolluteIO bres.io io scount in
                                         {
@@ -406,8 +473,8 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                                             hcount = hcount_
                                         }
                 VBool True ->
-                    let res = unexec store io holeBindings riStmts s1 hcount scount (newstore, newriStmts, newio) in
-                    let (finalstore, newhb, (newexpr, hcount_)) = uneval res.store res.holeBindings io e guard res.hcount in
+                    let res = unexec store io holeBindings riStmts readOnly s1 hcount scount (newstore, newriStmts, newio) in
+                    let (finalstore, newhb, (newexpr, hcount_)) = uneval res.store res.holeBindings io e readOnly guard res.hcount in
                     {
                         store = finalstore,
                         io = res.io,
@@ -417,8 +484,8 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                         hcount = hcount_
                     }
                 VBool False ->
-                    let res = unexec store io holeBindings riStmts s2 hcount scount (newstore, newriStmts, newio) in
-                    let (finalstore, newhb, (newexpr, hcount_)) = uneval res.store res.holeBindings io e guard res.hcount in
+                    let res = unexec store io holeBindings riStmts readOnly s2 hcount scount (newstore, newriStmts, newio) in
+                    let (finalstore, newhb, (newexpr, hcount_)) = uneval res.store res.holeBindings io e readOnly guard res.hcount in
                     {
                         store = finalstore,
                         io = res.io,
@@ -429,7 +496,7 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                     }
                 _ -> {defaultUnexecRes | stmt = SError "Error: unexecStmt: SIf: guard type error"}
         SWhile ws e s -> 
-            let res = unexec store io holeBindings riStmts (SIf [] e (SSeq [] s (SWhile ws e s)) (SSkip [])) hcount scount (newstore, newriStmts, newio) in
+            let res = unexec store io holeBindings riStmts readOnly (SIf [] e (SSeq [] s (SWhile ws e s)) (SSkip [])) hcount scount (newstore, newriStmts, newio) in
             case res.stmt of
                 SIf _ e_ (SSeq _ s1_ (SWhile _ e2_ s2_)) (SSkip _) ->
                     let 
@@ -447,31 +514,99 @@ unexec store io holeBindings riStmts stmt hcount scount (newstore, newriStmts, n
                 _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SWhile: unexpected statement"}
         SError s -> { defaultUnexecRes | stmt = SError s}
 
-logic : WS -> Expr -> Expr -> HoleBindings -> Store -> IO -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
-logic ws e1 e2 holeBindings store io val hcount op =
-    let v1 = eval store holeBindings io e1 in
-    let v2 = eval store holeBindings io e2 in
-    let v = eval store holeBindings io (Eop ws op e1 e2) in
+tryupde2logic : WS -> Store -> HoleBindings -> IO -> Set String -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+tryupde2logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op = 
+    let 
+        (newv1, newv2) =
+            case v of
+                VHole _ _ -> 
+                    case ((v1, v2, val), op) of
+                        -- ((VHole _ _, VBool True, VBool True), "&&") -> (VBool True, VBool True)
+                        ((VBool True, VHole _ _, VBool True), "&&") -> (VBool True, VBool True)
+                        -- ((VHole _ _, VHole _ _, VBool True), "&&") -> (VBool True, VBool True)
+
+                        ((VHole _ _, VBool True, VBool False), "&&") -> (v1, VBool False)
+                        ((VBool True, VHole _ _, VBool False), "&&") -> (VBool True, VBool False)
+                        ((VHole _ _, VHole _ _, VBool False), "&&") -> (v1, VBool False)
+
+                        -- ((VHole _ _, VBool False, VBool False), "||") -> (v1, VBool False)
+                        ((VBool False, VHole _ _, VBool False), "||") -> (VBool False, VBool False)
+                        -- ((VHole _ _, VHole _ _, VBool False), "||") -> (v1, VBool False)
+
+                        ((VHole _ _, VBool False, VBool True), "||") -> (v1, VBool True)
+                        ((VBool False, VHole _ _, VBool True), "||") -> (VBool False, VBool True)
+                        ((VHole _ _, VHole _ _, VBool True), "||") -> (v1, VBool True)
+
+                        ((_, _, VHole _ _), "&&") -> (v1, v2)
+                        _ -> (VError "unsupported operation", VError "unsupported operation")
+                VBool True ->
+                    case val of
+                        VBool True -> (v1, v2)
+                        VBool False -> 
+                            case op of
+                                "&&" -> 
+                                    case (v1, v2) of
+                                        (VBool True, VBool True) -> (VBool True, VBool False)
+                                        _ -> (VError "unsupported operation", VError "unsupported operation")
+                                "||" -> 
+                                    case (v1, v2) of
+                                        -- (VBool True, VBool True) -> (VError "unsupported operation", VError "unsupported operation")
+                                        -- (VBool True, VBool False) -> (VError "unsupported operation", VError "unsupported operation")
+                                        (VBool False, VBool True) -> (VBool False, VBool False)
+                                        -- (VHole _ _, VBool True) -> (VError "unsupported operation", VError "unsupported operation")
+                                        -- (VBool True, VHole _ _) -> (VError "unsupported operation", VError "unsupported operation")
+                                        _ -> (VError "unsupported operation", VError "unsupported operation")
+                                _ -> (VError "unsupported operation", VError "unsupported operation")
+                        VHole h _ -> (v1, val)
+                        _ -> (VError "unsupported operation", VError "unsupported operation")
+                VBool False ->
+                    case val of
+                        VBool False -> (v1, v2)
+                        VBool True ->
+                            case op of
+                                "&&" -> 
+                                    case (v1, v2) of
+                                        -- (VBool False, VBool False) -> (VError "unsupported operation", VError "unsupported operation")
+                                        -- (VBool False, VBool True) -> (VError "unsupported operation", VError "unsupported operation")
+                                        (VBool True, VBool False) -> (VBool True, VBool True)
+                                        -- (VHole _ _, VBool True) -> (VError "unsupported operation", VError "unsupported operation")
+                                        (VBool True, VHole _ _) -> (VBool True, VBool True)
+                                        _ -> (VError "unsupported operation", VError "unsupported operation")
+                                "||" -> 
+                                    case (v1, v2) of
+                                        (VBool False, VBool False) -> (VBool False, VBool True)
+                                        _ -> (VError "unsupported operation", VError "unsupported operation")
+                                _ -> (VError "unsupported operation", VError "unsupported operation")
+                        VHole h _ -> (v1, val)
+                        _ -> (VError "unsupported operation", VError "unsupported operation")
+                _ -> (VError "unsupported operation", VError "unsupported operation")
+    in
+        case (newv1, newv2) of
+            (VError s, VError _) -> ([], [], (EError ("logic: " ++ s), 0))
+            _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op   
+
+tryupde1logic : WS -> Store -> HoleBindings -> IO -> Set String -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+tryupde1logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op = 
     let 
         (newv1, newv2) =
             case v of
                 VHole _ _ -> 
                     case ((v1, v2, val), op) of
                         ((VHole _ _, VBool True, VBool True), "&&") -> (VBool True, VBool True)
-                        ((VBool True, VHole _ _, VBool True), "&&") -> (VBool True, VBool True)
-                        ((VHole _ _, VHole _ _, VBool True), "&&") -> (VBool True, VBool True)
+                        -- ((VBool True, VHole _ _, VBool True), "&&") -> (VBool True, VBool True)
+                        -- ((VHole _ _, VHole _ _, VBool True), "&&") -> (VBool True, VBool True)
 
                         ((VHole _ _, VBool True, VBool False), "&&") -> (VBool False, VBool True)
-                        ((VBool True, VHole _ _, VBool False), "&&") -> (VBool True, VBool False)
-                        ((VHole _ _, VHole _ _, VBool False), "&&") -> (v1, VBool False)
+                        ((VBool True, VHole _ _, VBool False), "&&") -> (VBool False, v2)
+                        ((VHole _ _, VHole _ _, VBool False), "&&") -> (VBool False, v2)
 
                         ((VHole _ _, VBool False, VBool False), "||") -> (VBool False, VBool False)
-                        ((VBool False, VHole _ _, VBool False), "||") -> (VBool False, VBool False)
-                        ((VHole _ _, VHole _ _, VBool False), "||") -> (VBool False, VBool False)
+                        -- ((VBool False, VHole _ _, VBool False), "||") -> (VBool False, VBool False)
+                        -- ((VHole _ _, VHole _ _, VBool False), "||") -> (VBool False, VBool False)
 
                         ((VHole _ _, VBool False, VBool True), "||") -> (VBool True, VBool False)
-                        ((VBool False, VHole _ _, VBool True), "||") -> (VBool False, VBool True)
-                        ((VHole _ _, VHole _ _, VBool True), "||") -> (v1, VBool True)
+                        ((VBool False, VHole _ _, VBool True), "||") -> (VBool True, v2)
+                        ((VHole _ _, VHole _ _, VBool True), "||") -> (VBool True, v2)
 
                         ((_, _, VHole _ _), "&&") -> (v1, v2)
                         _ -> (VError "unsupported operation", VError "unsupported operation")
@@ -486,14 +621,14 @@ logic ws e1 e2 holeBindings store io val hcount op =
                                         _ -> (VError "unsupported operation", VError "unsupported operation")
                                 "||" -> 
                                     case (v1, v2) of
-                                        (VBool True, VBool True) -> (VBool False, VBool False)
+                                        -- (VBool True, VBool True) -> (VBool False, VBool False)
                                         (VBool True, VBool False) -> (VBool False, VBool False)
-                                        (VBool False, VBool True) -> (VBool False, VBool False)
+                                        -- (VBool False, VBool True) -> (VBool False, VBool False)
                                         (VHole _ _, VBool True) -> (VBool False, VBool False)
-                                        (VBool True, VHole _ _) -> (VBool False, VBool False)
+                                        -- (VBool True, VHole _ _) -> (VBool False, VBool False)
                                         _ -> (VError "unsupported operation", VError "unsupported operation")
                                 _ -> (VError "unsupported operation", VError "unsupported operation")
-                        VHole h _ -> (v1, val)
+                        VHole h _ -> (val, v2)
                         _ -> (VError "unsupported operation", VError "unsupported operation")
                 VBool False ->
                     case val of
@@ -502,30 +637,211 @@ logic ws e1 e2 holeBindings store io val hcount op =
                             case op of
                                 "&&" -> 
                                     case (v1, v2) of
-                                        (VBool False, VBool False) -> (VBool True, VBool True)
+                                        -- (VBool False, VBool False) -> (VBool True, VBool True)
                                         (VBool False, VBool True) -> (VBool True, VBool True)
-                                        (VBool True, VBool False) -> (VBool True, VBool True)
+                                        -- (VBool True, VBool False) -> (VBool True, VBool True)
                                         (VHole _ _, VBool True) -> (VBool True, VBool True)
-                                        (VBool True, VHole _ _) -> (VBool True, VBool True)
+                                        -- (VBool True, VHole _ _) -> (VBool True, VBool True)
                                         _ -> (VError "unsupported operation", VError "unsupported operation")
                                 "||" -> 
                                     case (v1, v2) of
                                         (VBool False, VBool False) -> (VBool True, VBool False)
                                         _ -> (VError "unsupported operation", VError "unsupported operation")
                                 _ -> (VError "unsupported operation", VError "unsupported operation")
-                        VHole h _ -> (v1, val)
+                        VHole h _ -> (val, v2)
                         _ -> (VError "unsupported operation", VError "unsupported operation")
                 _ -> (VError "unsupported operation", VError "unsupported operation")
     in
     case (newv1, newv2) of
         (VError s, VError _) -> ([], [], (EError ("logic: " ++ s), 0))
-        _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
+        _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
 
-arith : WS -> Expr -> Expr -> HoleBindings -> Store -> IO -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
-arith ws e1 e2 holeBindings store io val hcount op =
+logic : WS -> Expr -> Expr -> HoleBindings -> Store -> IO -> Set String -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+logic ws e1 e2 holeBindings store io readOnly val hcount op =
     let v1 = eval store holeBindings io e1 in
     let v2 = eval store holeBindings io e2 in
     let v = eval store holeBindings io (Eop ws op e1 e2) in
+    if v == val then (store, holeBindings, (Eop ws op e1 e2, hcount))
+    else
+        -- case (e1, e2) of
+        --     (EVar _ x, EVar _ y) ->
+        --         if Set.member x readOnly && Set.member y readOnly then
+        --             ([], [], (EError "update fail: logic: read-only variable", 0))
+        --         else if Set.member x readOnly then
+        --             tryupde2logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op
+        --         else if Set.member y readOnly then
+        --             tryupde1logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op
+        --         else
+        let (e1store, e1holeBindings, (e1expr, e1hcount)) = tryupde1logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op in
+        case e1expr of
+            EError _ -> 
+                let (e2store, e2holeBindings, (e2expr, e2hcount)) = tryupde2logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op in
+                case e2expr of
+                    EError _ -> ([], [], (EError "error: uneval: both branches error", 0))
+                    _ -> (e2store, e2holeBindings, (e2expr, e2hcount))
+            _ -> (e1store, e1holeBindings, (e1expr, e1hcount))
+                    -- let 
+                    --     (newv1, newv2) =
+                    --         case v of
+                    --             VHole _ _ -> 
+                    --                 case ((v1, v2, val), op) of
+                    --                     ((VHole _ _, VBool True, VBool True), "&&") -> (VBool True, VBool True)
+                    --                     ((VBool True, VHole _ _, VBool True), "&&") -> (VBool True, VBool True)
+                    --                     ((VHole _ _, VHole _ _, VBool True), "&&") -> (VBool True, VBool True)
+
+                    --                     ((VHole _ _, VBool True, VBool False), "&&") -> (VBool False, VBool True)
+                    --                     ((VBool True, VHole _ _, VBool False), "&&") -> (VBool True, VBool False)
+                    --                     ((VHole _ _, VHole _ _, VBool False), "&&") -> (v1, VBool False)
+
+                    --                     ((VHole _ _, VBool False, VBool False), "||") -> (VBool False, VBool False)
+                    --                     ((VBool False, VHole _ _, VBool False), "||") -> (VBool False, VBool False)
+                    --                     ((VHole _ _, VHole _ _, VBool False), "||") -> (VBool False, VBool False)
+
+                    --                     ((VHole _ _, VBool False, VBool True), "||") -> (VBool True, VBool False)
+                    --                     ((VBool False, VHole _ _, VBool True), "||") -> (VBool False, VBool True)
+                    --                     ((VHole _ _, VHole _ _, VBool True), "||") -> (v1, VBool True)
+
+                    --                     ((_, _, VHole _ _), "&&") -> (v1, v2)
+                    --                     _ -> (VError "unsupported operation", VError "unsupported operation")
+                    --             VBool True ->
+                    --                 case val of
+                    --                     VBool True -> (v1, v2)
+                    --                     VBool False -> 
+                    --                         case op of
+                    --                             "&&" -> 
+                    --                                 case (v1, v2) of
+                    --                                     (VBool True, VBool True) -> (VBool False, VBool True)
+                    --                                     _ -> (VError "unsupported operation", VError "unsupported operation")
+                    --                             "||" -> 
+                    --                                 case (v1, v2) of
+                    --                                     (VBool True, VBool True) -> (VBool False, VBool False)
+                    --                                     (VBool True, VBool False) -> (VBool False, VBool False)
+                    --                                     (VBool False, VBool True) -> (VBool False, VBool False)
+                    --                                     (VHole _ _, VBool True) -> (VBool False, VBool False)
+                    --                                     (VBool True, VHole _ _) -> (VBool False, VBool False)
+                    --                                     _ -> (VError "unsupported operation", VError "unsupported operation")
+                    --                             _ -> (VError "unsupported operation", VError "unsupported operation")
+                    --                     VHole h _ -> (v1, val)
+                    --                     _ -> (VError "unsupported operation", VError "unsupported operation")
+                    --             VBool False ->
+                    --                 case val of
+                    --                     VBool False -> (v1, v2)
+                    --                     VBool True ->
+                    --                         case op of
+                    --                             "&&" -> 
+                    --                                 case (v1, v2) of
+                    --                                     (VBool False, VBool False) -> (VBool True, VBool True)
+                    --                                     (VBool False, VBool True) -> (VBool True, VBool True)
+                    --                                     (VBool True, VBool False) -> (VBool True, VBool True)
+                    --                                     (VHole _ _, VBool True) -> (VBool True, VBool True)
+                    --                                     (VBool True, VHole _ _) -> (VBool True, VBool True)
+                    --                                     _ -> (VError "unsupported operation", VError "unsupported operation")
+                    --                             "||" -> 
+                    --                                 case (v1, v2) of
+                    --                                     (VBool False, VBool False) -> (VBool True, VBool False)
+                    --                                     _ -> (VError "unsupported operation", VError "unsupported operation")
+                    --                             _ -> (VError "unsupported operation", VError "unsupported operation")
+                    --                     VHole h _ -> (v1, val)
+                    --                     _ -> (VError "unsupported operation", VError "unsupported operation")
+                    --             _ -> (VError "unsupported operation", VError "unsupported operation")
+                    -- in
+                    -- case (newv1, newv2) of
+                    --     (VError s, VError _) -> ([], [], (EError ("logic: " ++ s), 0))
+                    --     _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
+            -- (EVar _ x, _) ->
+            --     if Set.member x readOnly then tryupde2logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op
+            --     else
+            --         let (e1store, e1holeBindings, (e1expr, e1hcount)) = tryupde2logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op in
+            --         case e1expr of
+            --             EError _ -> 
+            --                 let (e2store, e2holeBindings, (e2expr, e2hcount)) = tryupde1logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op in
+            --                 case e2expr of
+            --                     EError _ -> ([], [], (EError "error: uneval: both branches error", 0))
+            --                     _ -> (e2store, e2holeBindings, (e2expr, e2hcount))
+            --             _ -> (e1store, e1holeBindings, (e1expr, e1hcount))
+            -- (_, EVar _ y) ->
+            --     if Set.member y readOnly then tryupde1logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op
+            --     else
+            --         let (e1store, e1holeBindings, (e1expr, e1hcount)) = tryupde2logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op in
+            --         case e1expr of
+            --             EError _ -> 
+            --                 let (e2store, e2holeBindings, (e2expr, e2hcount)) = tryupde1logic ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op in
+            --                 case e2expr of
+            --                     EError _ -> ([], [], (EError "error: uneval: both branches error", 0))
+            --                     _ -> (e2store, e2holeBindings, (e2expr, e2hcount))
+            --             _ -> (e1store, e1holeBindings, (e1expr, e1hcount))
+            -- _ ->
+            --     let 
+            --         (newv1, newv2) =
+            --             case v of
+            --                 VHole _ _ -> 
+            --                     case ((v1, v2, val), op) of
+            --                         ((VHole _ _, VBool True, VBool True), "&&") -> (VBool True, VBool True)
+            --                         ((VBool True, VHole _ _, VBool True), "&&") -> (VBool True, VBool True)
+            --                         ((VHole _ _, VHole _ _, VBool True), "&&") -> (VBool True, VBool True)
+
+            --                         ((VHole _ _, VBool True, VBool False), "&&") -> (VBool False, VBool True)
+            --                         ((VBool True, VHole _ _, VBool False), "&&") -> (VBool True, VBool False)
+            --                         ((VHole _ _, VHole _ _, VBool False), "&&") -> (v1, VBool False)
+
+            --                         ((VHole _ _, VBool False, VBool False), "||") -> (VBool False, VBool False)
+            --                         ((VBool False, VHole _ _, VBool False), "||") -> (VBool False, VBool False)
+            --                         ((VHole _ _, VHole _ _, VBool False), "||") -> (VBool False, VBool False)
+
+            --                         ((VHole _ _, VBool False, VBool True), "||") -> (VBool True, VBool False)
+            --                         ((VBool False, VHole _ _, VBool True), "||") -> (VBool False, VBool True)
+            --                         ((VHole _ _, VHole _ _, VBool True), "||") -> (v1, VBool True)
+
+            --                         ((_, _, VHole _ _), "&&") -> (v1, v2)
+            --                         _ -> (VError "unsupported operation", VError "unsupported operation")
+            --                 VBool True ->
+            --                     case val of
+            --                         VBool True -> (v1, v2)
+            --                         VBool False -> 
+            --                             case op of
+            --                                 "&&" -> 
+            --                                     case (v1, v2) of
+            --                                         (VBool True, VBool True) -> (VBool False, VBool True)
+            --                                         _ -> (VError "unsupported operation", VError "unsupported operation")
+            --                                 "||" -> 
+            --                                     case (v1, v2) of
+            --                                         (VBool True, VBool True) -> (VBool False, VBool False)
+            --                                         (VBool True, VBool False) -> (VBool False, VBool False)
+            --                                         (VBool False, VBool True) -> (VBool False, VBool False)
+            --                                         (VHole _ _, VBool True) -> (VBool False, VBool False)
+            --                                         (VBool True, VHole _ _) -> (VBool False, VBool False)
+            --                                         _ -> (VError "unsupported operation", VError "unsupported operation")
+            --                                 _ -> (VError "unsupported operation", VError "unsupported operation")
+            --                         VHole h _ -> (v1, val)
+            --                         _ -> (VError "unsupported operation", VError "unsupported operation")
+            --                 VBool False ->
+            --                     case val of
+            --                         VBool False -> (v1, v2)
+            --                         VBool True ->
+            --                             case op of
+            --                                 "&&" -> 
+            --                                     case (v1, v2) of
+            --                                         (VBool False, VBool False) -> (VBool True, VBool True)
+            --                                         (VBool False, VBool True) -> (VBool True, VBool True)
+            --                                         (VBool True, VBool False) -> (VBool True, VBool True)
+            --                                         (VHole _ _, VBool True) -> (VBool True, VBool True)
+            --                                         (VBool True, VHole _ _) -> (VBool True, VBool True)
+            --                                         _ -> (VError "unsupported operation", VError "unsupported operation")
+            --                                 "||" -> 
+            --                                     case (v1, v2) of
+            --                                         (VBool False, VBool False) -> (VBool True, VBool False)
+            --                                         _ -> (VError "unsupported operation", VError "unsupported operation")
+            --                                 _ -> (VError "unsupported operation", VError "unsupported operation")
+            --                         VHole h _ -> (v1, val)
+            --                         _ -> (VError "unsupported operation", VError "unsupported operation")
+            --                 _ -> (VError "unsupported operation", VError "unsupported operation")
+            --     in
+            --     case (newv1, newv2) of
+            --         (VError s, VError _) -> ([], [], (EError ("logic: " ++ s), 0))
+            --         _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
+
+tryupde1arith : WS -> Store -> HoleBindings -> IO -> Set String -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+tryupde1arith ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op =
     case val of
         VHole _ _ -> 
             case v1 of
@@ -534,76 +850,72 @@ arith ws e1 e2 holeBindings store io val hcount op =
                     case v2 of
                         VHole _ _ -> (store, holeBindings, (Eop ws op e1 e2, hcount))
                         _ ->
-                            let (store_, holeBindings_, (expr_, hcount_)) = uneval store holeBindings io e2 val hcount in
-                            (store_, holeBindings_, (Eop ws op e1 expr_, hcount_))
+                            let (store_, holeBindings_, (expr_, hcount_)) = uneval store holeBindings io e1 readOnly val hcount in
+                            (store_, holeBindings_, (Eop ws op expr_ e2, hcount_))
         VInt n ->
             let 
                 (newv1, newv2) =
                     case (v1, v2) of
-                        (VHole _ _, VHole _ _) ->
-                            case op of
-                                "+" -> (VInt n, VInt 0)
-                                "-" -> (VInt n, VInt 0)
-                                "*" -> (VInt n, VInt 1)
-                                "/" -> (VInt n, VInt 1)
-                                _ -> (VError "unsupported operation", VError "unsupported operation")
-                        (VInt n1, VHole _ _) ->
-                            case op of
-                                "+" -> (VInt n1, VInt (n - n1))
-                                "-" -> (VInt n1, VInt (n1 - n))
-                                "*" -> (VInt n1, VInt (n1 * n))
-                                "/" -> (VInt n1, VInt (n1 // n))
-                                _ -> (VError "unsupported operation", VError "unsupported operation")
-                        (VHole _ _, VInt n2) ->
+                        (_, VInt n2) ->
                             case op of  
                                 "+" -> (VInt (n - n2), VInt n2)
                                 "-" -> (VInt (n + n2), VInt n2)
                                 "*" -> (VInt (n // n2), VInt n2)
                                 "/" -> (VInt (n * n2), VInt n2)
                                 _ -> (VError "unsupported operation", VError "unsupported operation")
-                        (VInt n1, VInt _) ->
-                            case op of
-                                "+" -> (VInt n1, VInt (n - n1))
-                                "-" -> (VInt n1, VInt (n1 - n))
-                                "*" -> (VInt n1, VInt (n // n1))
-                                "/" -> (VInt n1, VInt (n1 * n))
-                                _ -> (VError "unsupported operation", VError "unsupported operation")
                         _ -> (VError "unsupported operation", VError "unsupported operation")
             in
             case (newv1, newv2) of
                 (VError _, VError _) -> ([], [], (EError ("arith: " ++ op), 0))
-                _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
+                _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
         VString s ->
             case op of
                 "++"->
                     let 
                         (newv1, newv2) =
                             case (v1, v2) of
-                                (VHole _ _, VHole _ _) -> (VString "", VString s)
-                                (VString s1, VHole _ _) -> 
-                                    let (s1_, s2_) = if (String.length s1) > (String.length s) then (s, "") else (String.left (String.length s1) s, String.dropLeft (String.length s1) s)
-                                    in
-                                    (VString s1_, VString s2_)
-                                (VHole _ _, VString s2) ->
-                                    let (s1_, s2_) = if (String.length s2) > (String.length s) then ("", s) else (String.dropRight (String.length s2) s, String.right (String.length s2) s)
-                                    in
-                                    (VString s1_, VString s2_)
-                                (VString s1, VString _) ->
-                                    let (s1_, s2_) = if (String.length s1) > (String.length s) then (s, "") else (String.left (String.length s1) s, String.dropLeft (String.length s1) s)
-                                    in
-                                    (VString s1_, VString s2_)
+                                -- (VHole _ _, VHole _ _) -> (VString "", VString s)
+                                -- (VString s1, VHole _ _) -> 
+                                --     let (s1_, s2_) = if (String.length s1) > (String.length s) then (s, "") else (String.left (String.length s1) s, String.dropLeft (String.length s1) s)
+                                --     in
+                                --     (VString s1_, VString s2_)
+                                (_, VString s2) ->
+                                    if String.length s2 > String.length s then (VError "unsupported operation", VError "unsupported operation")
+                                    else
+                                        let newv = String.right (String.length s2) s in
+                                        if newv == s2 then (VString (String.dropRight (String.length s2) s), v2) else (VError "unsupported operation", VError "unsupported operation")
                                 _ -> (VError "unsupported operation", VError "unsupported operation")
                     in
                     case (newv1, newv2) of
                         (VError info, VError _) -> ([], [], (EError ("arith: " ++ info), 0))
-                        _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
+                        _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
+                _ -> ([], [], (EError ("arith: unsupported operation for string"), 0))
+        VList vs ->
+            case op of
+                "++"->
+                    let 
+                        (newv1, newv2) =
+                            case (v1, v2) of
+                                -- (VHole _ _, VHole _ _) -> (VList [], VList vs)
+                                -- (VList vs1, VHole _ _) -> 
+                                --     let (vs1_, vs2_) = if (List.length vs1) > (List.length vs) then (vs, []) else (List.take (List.length vs1) vs, List.drop (List.length vs1) vs)
+                                --     in
+                                --     (VList vs1_, VList vs2_)
+                                (_, VList vs2) ->
+                                    if List.length vs2 > List.length vs then (VError "unsupported operation", VError "unsupported operation")
+                                    else
+                                        let newv = List.take (List.length vs2) vs in
+                                        if newv == vs2 then (VList (List.drop (List.length vs2) vs), v2) else (VError "unsupported operation", VError "unsupported operation")
+                                _ -> (VError "unsupported operation", VError "unsupported operation")
+                    in
+                    case (newv1, newv2) of
+                        (VError info, VError _) -> ([], [], (EError ("arith: " ++ info), 0))
+                        _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
                 _ -> ([], [], (EError ("arith: unsupported operation for string"), 0))
         _ -> ([], [], (EError ("arith: unsupported operation"), 0))
 
-comp : WS -> Expr -> Expr -> HoleBindings -> Store -> IO -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
-comp ws e1 e2 holeBindings store io val hcount op =
-    let v1 = eval store holeBindings io e1 in
-    let v2 = eval store holeBindings io e2 in
+tryupde2arith : WS -> Store -> HoleBindings -> IO -> Set String -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+tryupde2arith ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op =
     case val of
         VHole _ _ -> 
             case v1 of
@@ -612,39 +924,104 @@ comp ws e1 e2 holeBindings store io val hcount op =
                     case v2 of
                         VHole _ _ -> (store, holeBindings, (Eop ws op e1 e2, hcount))
                         _ ->
-                            let (store_, holeBindings_, (expr_, hcount_)) = uneval store holeBindings io e2 val hcount in
+                            let (store_, holeBindings_, (expr_, hcount_)) = uneval store holeBindings io e2 readOnly val hcount in
                             (store_, holeBindings_, (Eop ws op e1 expr_, hcount_))
+        VInt n ->
+            let 
+                (newv1, newv2) =
+                    case (v1, v2) of
+                        (VInt n1, _) ->
+                            case op of
+                                "+" -> (VInt n1, VInt (n - n1))
+                                "-" -> (VInt n1, VInt (n1 - n))
+                                "*" -> (VInt n1, VInt (n1 * n))
+                                "/" -> (VInt n1, VInt (n1 // n))
+                                _ -> (VError "unsupported operation", VError "unsupported operation")
+                        _ -> (VError "unsupported operation", VError "unsupported operation")
+            in
+            case (newv1, newv2) of
+                (VError _, VError _) -> ([], [], (EError ("arith: " ++ op), 0))
+                _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
+        VString s ->
+            case op of
+                "++"->
+                    let 
+                        (newv1, newv2) =
+                            case (v1, v2) of
+                                (VString s1, _) ->
+                                    if String.length s1 > String.length s then (VError "unsupported operation", VError "unsupported operation")
+                                    else
+                                        let newv = String.left (String.length s1) s in
+                                        if newv == s1 then (v1, VString (String.dropLeft (String.length s1) s)) else (VError "unsupported operation", VError "unsupported operation")
+                                _ -> (VError "unsupported operation", VError "unsupported operation")
+                    in
+                    case (newv1, newv2) of
+                        (VError info, VError _) -> ([], [], (EError ("arith: " ++ info), 0))
+                        _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
+                _ -> ([], [], (EError ("arith: unsupported operation for string"), 0))
+        VList vs ->
+            case op of
+                "++"->
+                    let 
+                        (newv1, newv2) =
+                            case (v1, v2) of
+                                (VList vs1, _) ->
+                                    if List.length vs1 > List.length vs then (VError "unsupported operation", VError "unsupported operation")
+                                    else
+                                        let newv = List.take (List.length vs1) vs in
+                                        if newv == vs1 then (v1, VList (List.drop (List.length vs1) vs)) else (VError "unsupported operation", VError "unsupported operation")
+                                _ -> (VError "unsupported operation", VError "unsupported operation")
+                    in
+                    case (newv1, newv2) of
+                        (VError info, VError _) -> ([], [], (EError ("arith: " ++ info), 0))
+                        _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
+                _ -> ([], [], (EError ("arith: unsupported operation for string"), 0))
+        _ -> ([], [], (EError ("arith: unsupported operation"), 0))
+
+
+arith : WS -> Expr -> Expr -> HoleBindings -> Store -> IO -> Set String -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+arith ws e1 e2 holeBindings store io readOnly val hcount op =
+    let v1 = eval store holeBindings io e1 in
+    let v2 = eval store holeBindings io e2 in
+    let v = eval store holeBindings io (Eop ws op e1 e2) in
+    if v == val then (store, holeBindings, (Eop ws op e1 e2, hcount))
+    else
+        let (e1store, e1holeBindings, (e1expr, e1hcount)) = tryupde1arith ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op in
+        case e1expr of
+            EError _ -> 
+                let (e2store, e2holeBindings, (e2expr, e2hcount)) = tryupde2arith ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op in
+                case e2expr of
+                    EError _ -> ([], [], (EError "error: uneval: both branches error", 0))
+                    _ -> (e2store, e2holeBindings, (e2expr, e2hcount))
+            _ -> (e1store, e1holeBindings, (e1expr, e1hcount))
+    
+tryupde1comp : WS -> Store -> HoleBindings -> IO -> Set String -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+tryupde1comp ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op =
+    case val of
+        VHole _ _ -> 
+            case v1 of
+                VHole _ _ -> (store, holeBindings, (Eop ws op e1 e2, hcount))
+                _ ->
+                    case v2 of
+                        VHole _ _ -> (store, holeBindings, (Eop ws op e1 e2, hcount))
+                        _ ->
+                            let (store_, holeBindings_, (expr_, hcount_)) = uneval store holeBindings io e1 readOnly val hcount in
+                            (store_, holeBindings_, (Eop ws op expr_ e2, hcount_))
         VBool True ->
             case op of
                 "==" -> 
                     let 
                         (newv1, newv2) =
                             case (v1, v2) of
-                                (VHole _ _, VInt n) -> (VInt n, VInt n)
-                                (VInt n, VHole _ _) -> (VInt n, VInt n)
-                                (VHole _ _, VString s) -> (VString s, VString s)
-                                (VString s, VHole _ _) -> (VString s, VString s)
-                                (VHole _ _, VBool True) -> (VBool True, VBool True)
-                                (VBool True, VHole _ _) -> (VBool True, VBool True)
-                                (VHole _ _, VBool False) -> (VBool False, VBool False)
-                                (VBool False, VHole _ _) -> (VBool False, VBool False)
-                                (VInt n1, VInt n2) -> if n1 == n2 then (v1, v2) else (VInt n1, VInt n1)
-                                (VBool True, VBool False) -> (VBool True, VBool True)
-                                (VBool False, VBool True) -> (VBool False, VBool False)
-                                (VString s1, VString s2) -> if s1 == s2 then (v1, v2) else (VString s1, VString s1)
-                                _ -> (VError "unsupported operation", VError "unsupported operation")
+                                (_, VHole _ _) -> (VError "unsupported operation", VError "unsupported operation")
+                                _ -> (v2, v2)
                     in
                     case (newv1, newv2) of
                         (VError _, VError _) -> ([], [], (EError "unsupported operation", 0))
-                        _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
+                        _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
                 "!=" -> 
-                    case (v1, v2) of
-                        (VHole _ _, VHole _ _) -> ([], [], (EError "Cannot infer in neq", 0)) 
-                        (VHole _ _, _) -> ([], [], (EError "Cannot infer in neq", 0))
-                        (_, VHole _ _) -> ([], [], (EError "Cannot infer in neq", 0))
-                        _ -> if v1 /= v2 then (store, holeBindings, (Eop ws op e1 e2, hcount)) else ([], [], (EError "Cannot infer in neq", 0))
+                    if v1 /= v2 then (store, holeBindings, (Eop ws op e1 e2, hcount)) else ([], [], (EError "Cannot infer in neq", 0))
                 _ ->
-                    let v = eval store holeBindings io (Eop ws op e1 e2) in
                     case v of
                         VBool True -> (store, holeBindings, (Eop ws op e1 e2, hcount))
                         VBool False ->
@@ -658,34 +1035,18 @@ comp ws e1 e2 holeBindings store io val hcount op =
         VBool False ->
             case op of
                 "==" -> 
-                    case (v1, v2) of
-                            (VHole _ _, VHole _ _) -> ([], [], (EError "Cannot infer in eq", 0)) 
-                            (VHole _ _, _) -> ([], [], (EError "Cannot infer in eq", 0))
-                            (_, VHole _ _) -> ([], [], (EError "Cannot infer in eq", 0))
-                            _ -> if v1 /= v2 then (store, holeBindings, (Eop ws op e1 e2, hcount)) else ([], [], (EError "Cannot infer in eq", 0))
+                    if v1 /= v2 then (store, holeBindings, (Eop ws op e1 e2, hcount)) else ([], [], (EError "Cannot infer in eq", 0))
                 "!=" ->
                     let 
                         (newv1, newv2) =
                             case (v1, v2) of
-                                (VHole _ _, VInt n) -> (VInt n, VInt n)
-                                (VInt n, VHole _ _) -> (VInt n, VInt n)
-                                (VHole _ _, VString s) -> (VString s, VString s)
-                                (VString s, VHole _ _) -> (VString s, VString s)
-                                (VHole _ _, VBool True) -> (VBool True, VBool True)
-                                (VBool True, VHole _ _) -> (VBool True, VBool True)
-                                (VHole _ _, VBool False) -> (VBool False, VBool False)
-                                (VBool False, VHole _ _) -> (VBool False, VBool False)
-                                (VInt n1, VInt n2) -> if n1 == n2 then (v1, v2) else (VInt n1, VInt n1)
-                                (VBool True, VBool False) -> (VBool True, VBool True)
-                                (VBool False, VBool True) -> (VBool False, VBool False)
-                                (VString s1, VString s2) -> if s1 == s2 then (v1, v2) else (VString s1, VString s1)
-                                _ -> (VError "unsupported operation", VError "unsupported operation")
+                                (_, VHole _ _) -> (VError "unsupported operation", VError "unsupported operation")
+                                _ -> (v2, v2)
                     in 
                     case (newv1, newv2) of
                         (VError _, VError _) -> ([], [], (EError "unsupported operation", 0))
-                        _ -> checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op
+                        _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
                 _ ->
-                    let v = eval store holeBindings io (Eop ws op e1 e2) in
                     case v of
                         VBool False -> (store, holeBindings, (Eop ws op e1 e2, hcount))
                         VBool True ->
@@ -699,28 +1060,111 @@ comp ws e1 e2 holeBindings store io val hcount op =
         _ -> ([], [], (EError "Unsupported value type for comp", 0))
 
 
-checkChange : WS -> Store -> HoleBindings -> IO -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
-checkChange ws store holeBindings io e1 e2 v1 v2 newv1 newv2 hcount op =
+
+tryupde2comp : WS -> Store -> HoleBindings -> IO -> Set String -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+tryupde2comp ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op =
+    case val of
+        VHole _ _ -> 
+            case v1 of
+                VHole _ _ -> (store, holeBindings, (Eop ws op e1 e2, hcount))
+                _ ->
+                    case v2 of
+                        VHole _ _ -> (store, holeBindings, (Eop ws op e1 e2, hcount))
+                        _ ->
+                            let (store_, holeBindings_, (expr_, hcount_)) = uneval store holeBindings io e2 readOnly val hcount in
+                            (store_, holeBindings_, (Eop ws op e1 expr_, hcount_))
+        VBool True ->
+            case op of
+                "==" -> 
+                    let 
+                        (newv1, newv2) =
+                            case (v1, v2) of
+                                (VHole _ _, _) -> (VError "unsupported operation", VError "unsupported operation")
+                                _ -> (v1, v1)
+                    in
+                    case (newv1, newv2) of
+                        (VError _, VError _) -> ([], [], (EError "unsupported operation", 0))
+                        _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
+                "!=" -> 
+                    if v1 /= v2 then (store, holeBindings, (Eop ws op e1 e2, hcount)) else ([], [], (EError "Cannot infer in neq", 0))
+                _ ->
+                    case v of
+                        VBool True -> (store, holeBindings, (Eop ws op e1 e2, hcount))
+                        VBool False ->
+                            case op of  
+                                ">" -> (store, holeBindings, (Eop ws "<=" e1 e2, hcount))
+                                "<" -> (store, holeBindings, (Eop ws ">=" e1 e2, hcount))
+                                ">=" -> (store, holeBindings, (Eop ws "<" e1 e2, hcount))
+                                "<=" -> (store, holeBindings, (Eop ws ">" e1 e2, hcount))
+                                _ -> ([], [], (EError "Cannot infer in comp", 0))
+                        _ -> ([], [], (EError "Cannot infer in comp", 0))
+        VBool False ->
+            case op of
+                "==" -> 
+                    if v1 /= v2 then (store, holeBindings, (Eop ws op e1 e2, hcount)) else ([], [], (EError "Cannot infer in eq", 0))
+                "!=" ->
+                    let 
+                        (newv1, newv2) =
+                            case (v1, v2) of
+                                (_, VHole _ _) -> (VError "unsupported operation", VError "unsupported operation")
+                                _ -> (v1, v1)
+                    in 
+                    case (newv1, newv2) of
+                        (VError _, VError _) -> ([], [], (EError "unsupported operation", 0))
+                        _ -> checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op
+                _ ->
+                    case v of
+                        VBool False -> (store, holeBindings, (Eop ws op e1 e2, hcount))
+                        VBool True ->
+                            case op of
+                                ">" -> (store, holeBindings, (Eop ws "<=" e1 e2, hcount))
+                                "<" -> (store, holeBindings, (Eop ws ">=" e1 e2, hcount))
+                                ">=" -> (store, holeBindings, (Eop ws "<" e1 e2, hcount))
+                                "<=" -> (store, holeBindings, (Eop ws ">" e1 e2, hcount))
+                                _ -> ([], [], (EError "Cannot infer in comp", 0))
+                        _ -> ([], [], (EError "Cannot infer in comp", 0))
+        _ -> ([], [], (EError "Unsupported value type for comp", 0))
+
+
+comp : WS -> Expr -> Expr -> HoleBindings -> Store -> IO -> Set String -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+comp ws e1 e2 holeBindings store io readOnly val hcount op =
+    let v1 = eval store holeBindings io e1 in
+    let v2 = eval store holeBindings io e2 in
+    let v = eval store holeBindings io (Eop ws op e1 e2) in
+    if v == val then (store, holeBindings, (Eop ws op e1 e2, hcount))
+    else
+        let (e1store, e1holeBindings, (e1expr, e1hcount)) = tryupde1comp ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op in
+        case e1expr of
+            EError _ -> 
+                let (e2store, e2holeBindings, (e2expr, e2hcount)) = tryupde2comp ws store holeBindings io readOnly e1 e2 v1 v2 v val hcount op in
+                case e2expr of
+                    EError _ -> ([], [], (EError "error: uneval: both branches error", 0))
+                    _ -> (e2store, e2holeBindings, (e2expr, e2hcount))
+            _ -> (e1store, e1holeBindings, (e1expr, e1hcount))
+    
+
+checkChange : WS -> Store -> HoleBindings -> IO -> Set String -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
+checkChange ws store holeBindings io readOnly e1 e2 v1 v2 newv1 newv2 hcount op =
     if newv1 == v1 && newv2 == v2 then
         (store, holeBindings, (Eop ws op e1 e2, hcount))
     else if newv1 == v1 then
         let
             (store2, holeBindings2, (expr2, hcount2)) =
-                uneval store holeBindings io e2 newv2 hcount
+                uneval store holeBindings io e2 readOnly newv2 hcount
         in
             (store2, holeBindings2, (Eop ws op e1 expr2, hcount2))
     else if newv2 == v2 then
         let
             (store1, holeBindings1, (expr1, hcount1)) =
-                uneval store holeBindings io e1 newv1 hcount
+                uneval store holeBindings io e1 readOnly newv1 hcount
         in
             (store1, holeBindings1, (Eop ws op expr1 e2, hcount1))
     else
         let
             (store1, holeBindings1, (expr1, hcount1)) =
-                uneval store holeBindings io e1 newv1 hcount
+                uneval store holeBindings io e1 readOnly newv1 hcount
             (store2, holeBindings2, (expr2, hcount2)) =
-                uneval store holeBindings io e2 newv2 hcount1
+                uneval store holeBindings io e2 readOnly newv2 hcount1
             store_ = mergeStore store1 store2 store
             holeBindings_ = mergeHoleBindings holeBindings1 holeBindings2 holeBindings
         in

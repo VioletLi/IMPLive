@@ -132,6 +132,12 @@ printExpr expr =
         EIndex _ e1 e2 ->
             printExpr e1 ++ "[" ++ printExpr e2 ++ "]"
 
+        ELength [s] e ->
+            printExpr e ++ ".length" ++ s
+
+        ELength _ e ->
+            printExpr e ++ ".length "
+
         EError info ->
             info
 

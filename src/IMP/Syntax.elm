@@ -24,6 +24,7 @@ type Expr
     | EParens WS Expr
     | EList WS (List Expr)
     | EIndex WS Expr Expr
+    | ELength WS Expr
 
 type Stmt 
     = SIf WS Expr Stmt Stmt
