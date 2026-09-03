@@ -6,3 +6,6 @@ while i < 4 do
     i := i + 1
 end;
 print sum
+
+store = [("input",VList [VInt 1,VInt 2,VInt 3,VInt 4]),("output",VList [])]
+newstore = [("input",VList []),("output",VList [VInt 15]),("i",VInt 4),("sum",VInt 15),("x",VInt 4)]

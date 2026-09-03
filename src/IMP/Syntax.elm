@@ -44,12 +44,10 @@ type Value
     | VError String
     | VList (List Value)
 
-type alias IO = List (String, List Value)
-
 type alias StmtID = Int
 
 type alias Store = List (String, Value)
 
-type alias RiStmts = List (StmtID, Stmt, (Store, IO))
+type alias RiStmts = List (StmtID, Stmt, Store)
 
-type alias HoleBindings = List (HoleName, (Store, IO), Value)
+type alias HoleBindings = List (HoleName, Store, Value)

@@ -33,6 +33,9 @@ varName =
             , "print"
             , "true"
             , "false"
+            , "length"
+            , "input"
+            , "output"
             ]
     }
 

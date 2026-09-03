@@ -9,30 +9,30 @@ import IMP.Utils exposing (preprocessStmt)
 import Set exposing (Set)
 
 
-emptyIO : IO
-emptyIO =
-    [("input", []), ("output", [])]
+-- emptyIO : IO
+-- emptyIO =
+--     [("input", []), ("output", [])]
 
 
-fwd : String -> IO -> FwdRes
-fwd code io =
+fwd : String -> FwdRes
+fwd code =
     case parse code of
         Ok stmt ->
             let (stmt_, _) = preprocessStmt stmt 0 in
-            exec [] io [] [] stmt_ Set.empty 0
+            exec [] [] [] stmt_ Set.empty 0
 
         Err _ ->
             { defaultFwdRes | store = [("error", VError "Parse error")] }
 
 
-bwd : String -> IO -> Store -> RiStmts -> IO -> String
-bwd code io newstore newris newio =
+bwd : String -> Store -> RiStmts -> String
+bwd code newstore newris =
     case parse code of
         Ok stmt ->
             let
                 (stmt_, hcount) = preprocessStmt stmt 0 
                 res =
-                    unexec [] io [] [] Set.empty stmt_ hcount 0 (newstore, newris, newio)
+                    unexec [] [] [] Set.empty stmt_ hcount 0 (newstore, newris)
             in
             (printStmt res.stmt) ++ "\n\n" ++ (printHoleBindings res.holeBindings)
 

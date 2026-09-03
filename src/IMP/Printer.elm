@@ -1,7 +1,7 @@
 module IMP.Printer exposing (..)
 
 import IMP.Syntax exposing (..)
-import IMP.Utils exposing (getIO)
+
 
 
 printStmt : Stmt -> String
@@ -204,13 +204,13 @@ printHoleName hn =
 
 printHoleBindings : HoleBindings -> String
 printHoleBindings hb =
-    List.map (\(h, (s, io), v) -> printHoleName h ++ " := " ++ (printStore s) ++ (printIO io) ++ (printValue v)) hb
+    List.map (\(h, s, v) -> printHoleName h ++ " := " ++ (printStore s) ++ (printValue v)) hb
     |> String.join "\n"
 
 printStore : Store -> String
 printStore s =
     "[" ++ (List.map (\(x, v) -> x ++ " := " ++ printValue v) s |> String.join ", ") ++ "] \n"
 
-printIO : IO -> String
-printIO io =
-    "input: [" ++ (List.map printValue (getIO io "input") |> String.join ", ") ++ "]\n output: [" ++ (List.map printValue (getIO io "output") |> String.join ", ") ++ "] \n"
+-- printIO : IO -> String
+-- printIO io =
+--     "input: [" ++ (List.map printValue (getIO io "input") |> String.join ", ") ++ "]\n output: [" ++ (List.map printValue (getIO io "output") |> String.join ", ") ++ "] \n"

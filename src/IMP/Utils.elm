@@ -81,12 +81,12 @@ lookup x store =
         (x_, v) :: rest -> if x == x_ then Just v else lookup x rest
         [] -> Nothing
 
-lookupHB : HoleName -> Store -> IO -> HoleBindings -> Maybe Value
-lookupHB h store io holeBindings =
+lookupHB : HoleName -> Store -> HoleBindings -> Maybe Value
+lookupHB h store holeBindings =
     case holeBindings of
-        (h_, (store_, io_), v) :: rest -> 
-            if h == h_ && (isSameStore store store_ ) && (isSameIO io io_) then Just v
-            else lookupHB h store io rest
+        (h_, store_, v) :: rest -> 
+            if h == h_ && (isSameStore store store_) then Just v
+            else lookupHB h store rest
         [] -> Nothing
 
 isSameStore : Store -> Store -> Bool
@@ -97,32 +97,24 @@ isSameStore store1 store2 =
         ([], []) -> True
         _ -> False
 
-isSameIO : IO -> IO -> Bool
-isSameIO io1 io2 =
-    case (io1, io2) of
-        ((n1, vs1) :: rest1, (n2, vs2) :: rest2) -> 
-            if n1 == n2 && vs1 == vs2 then isSameIO rest1 rest2 else False
-        ([], []) -> True
-        _ -> False
-
 updateStore : String -> Value -> Store -> Store
 updateStore x v store =
-    if x == "input" || x == "output" then store else 
+    -- if x == "input" || x == "output" then store else 
     case store of
         (x_, v_) :: rest -> if x == x_ then (x, v) :: rest else (x_, v_) :: updateStore x v rest
         [] -> (x, v) :: store
 
-getIO : IO -> String -> List Value
-getIO io n =
-    case io of 
-        (n_, v) :: rest -> if n == n_ then v else getIO rest n
-        [] -> []
+-- getIO : IO -> String -> List Value
+-- getIO io n =
+--     case io of 
+--         (n_, v) :: rest -> if n == n_ then v else getIO rest n
+--         [] -> []
 
-updateIO : IO -> String -> List Value -> IO
-updateIO io n vs =
-    case io of 
-        (n_, vs_) :: rest -> if n == n_ then (n, vs) :: rest else (n_, vs_) :: updateIO rest n vs
-        [] -> []
+-- updateIO : IO -> String -> List Value -> IO
+-- updateIO io n vs =
+--     case io of 
+--         (n_, vs_) :: rest -> if n == n_ then (n, vs) :: rest else (n_, vs_) :: updateIO rest n vs
+--         [] -> []
 
 modVars : Stmt -> List String
 modVars s =
@@ -143,30 +135,32 @@ unique ls =
             if List.member x rest then unique rest
             else x :: (unique rest)
 
-polluteState : List String -> Store -> IO -> SCount -> (Store, IO)
-polluteState mod store io scount =
+polluteState : List String -> Store -> SCount -> Store
+polluteState mod store scount =
     case mod of
-        [] -> (store, io)
+        [] -> store
         x :: rest ->
-            if x == "input" then 
-                let io_ = updateIO io x [VHole (HVar x) scount] in
-                polluteState rest store io_ scount
-            else if x == "output" then
-                let io_ = updateIO io x ((getIO io x)++[VHole (HVar x) scount]) in
-                polluteState rest store io_ scount
+            if x == "output" then
+                let oldval = lookup x store in
+                case oldval of
+                    Nothing -> [("error", VError "Variable not found")]
+                    Just (VList vs) ->
+                        let store_ = updateStore x (VList (vs ++ [VHole (HVar x) scount])) store in
+                        polluteState rest store_ scount
+                    _ -> [("error", VError "Unsupported expression")]
             else
                 let store_ = updateStore x (VHole (HVar x) scount) store in
-                polluteState rest store_ io scount
+                polluteState rest store_ scount
 
 substHole : HoleMap -> RiStmts -> RiStmts
 substHole holes ris =
     case ris of
         [] -> []
-        (id, s, (store, io)) :: rest ->
+        (id, s, store) :: rest ->
             let
                 news = substHoleinStmt id s holes
             in
-            (id, news, (store, io)) :: (substHole holes rest)
+            (id, news, store) :: (substHole holes rest)
 
 substHoleinStmt : StmtID -> Stmt -> HoleMap -> Stmt
 substHoleinStmt id s holes =
