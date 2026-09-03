@@ -10,3 +10,5 @@ newristmts = [(0,SAssign [] "mn" (EHole [] (HOri 0)),[("x1",VInt 2),("y1",VInt 3
 
 这个场景下的hole binding应该是哪个store？
 holeBindings = [(HOri 0,[("x1",VInt 1),("y1",VInt 2),("x2",VInt 4),("y2",VInt 5),("mx",VInt 2)],VInt 4)]
+
+问题是什么时候合并？
