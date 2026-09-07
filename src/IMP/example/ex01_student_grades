@@ -1,0 +1,14 @@
+students :=
+    [ [88, 89, 87]
+    , [76, 93, 95]
+    , [93, 79, 84]
+    ];
+hwr := 300;
+midr := 3;
+finr := 4;
+n := students.length;
+i := 0;
+while i < n do
+    print (hwr * students[i][0] / 10 + _);
+    i := i + 1
+end

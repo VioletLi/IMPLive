@@ -1,0 +1,8 @@
+states := [ ["Alabama", "AL?", ""]
+  , _
+  , ["Arkansas", "AR?", ""]];
+i := 0;
+while i < states.length do
+    print ([states[i][0], states[i][1]++", "++states[i][2]]);
+    i := i + 1
+end

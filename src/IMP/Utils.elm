@@ -4,6 +4,16 @@ import IMP.Syntax exposing (..)
 import Dict exposing (Dict)
 type alias HoleMap = Dict String Expr
 
+hasHole : List Value -> Bool
+hasHole vs =
+    case vs of
+        [] -> False
+        (VHole HTmp _) :: _ -> True
+        v :: rest -> 
+            case v of
+                VList vs_ -> (hasHole vs_) && hasHole rest
+                _ -> hasHole rest
+
 preprocessStmt : Stmt -> HCount -> (Stmt, HCount)
 preprocessStmt s hcount =
     case s of
@@ -200,6 +210,7 @@ holeKey h id =
         HOri n -> "o:" ++ (String.fromInt n)
         HVar x -> "v:" ++ x ++ "-" ++ (String.fromInt id)
         HTmp -> "t"
+        HSub h_ n -> (holeKey h_ id) ++ ". " ++ (String.fromInt n)
 
 value2Expr : Value -> Expr
 value2Expr v =

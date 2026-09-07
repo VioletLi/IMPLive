@@ -1,0 +1,11 @@
+i := 0;
+j := 4;
+res := [];
+while i < j do
+    res := res ++ [_];
+    i := i + 1
+end;
+print res
+
+store = [("input", VList []), ("output", VList [])]
+newstore = [("input",VList []),("output",VList [VList [VInt 1,VInt 2,VInt 3,VInt 4]]),("i",VInt 4),("j",VInt 4),("res",VList [VInt 1, VInt 2, VInt 3, VInt 4])]

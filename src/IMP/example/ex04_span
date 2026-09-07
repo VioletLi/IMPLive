@@ -1,0 +1,8 @@
+ls := [3, 2, 1];
+n := ls.length;
+res := [];
+i := 0;
+while i < n && ls[i] > 2 do
+    res := res ++ [_];
+    i := i + 1
+end

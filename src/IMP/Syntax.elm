@@ -11,6 +11,7 @@ type HoleName
     = HOri Int
     | HVar String
     | HTmp
+    | HSub HoleName Int
 
 type Expr 
     = EVar WS String

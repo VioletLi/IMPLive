@@ -185,6 +185,18 @@ simplifyExpr store e holeBindings =
             let e1_ = simplifyExpr store e1 holeBindings in
             let e2_ = simplifyExpr store e2 holeBindings in
             Eop [] op e1_ e2_
+        EList _ es ->
+            EList [] (List.map (\e_ -> simplifyExpr store e_ holeBindings) es)
+        EIndex _ e1 e2 ->
+            let e1_ = simplifyExpr store e1 holeBindings in
+            let e2_ = simplifyExpr store e2 holeBindings in
+            EIndex [] e1_ e2_
+        ELength _ e_ ->
+            let e__ = simplifyExpr store e_ holeBindings in
+            ELength [] e__
+        EParens _ e_ ->
+            let e__ = simplifyExpr store e_ holeBindings in
+            EParens [] e__
         _ -> e
 
 exec : Store -> HoleBindings -> RiStmts -> Stmt -> Set String -> SCount -> FwdRes
@@ -204,6 +216,19 @@ exec store holeBindings riStmts stmt readOnly scount =
                     , readOnly = newReadOnly
                     , scount = scount+1}
                 VError _ -> {defaultFwdRes | store = [("error", VError "Unsupported expression")]}
+                VList vs ->
+                    if hasHole vs then
+                        let resv = processHoleinList store vs x scount 0 in
+                        let rese = simplifyExpr store e holeBindings in
+                        { store = updateStore x (VList resv) store
+                        , riStmts = riStmts ++ [(scount, SAssign [] x rese, store)]
+                        , readOnly = newReadOnly
+                        , scount = scount+1}
+                    else
+                        { store = updateStore x (VList vs) store
+                        , riStmts = riStmts
+                        , readOnly = newReadOnly
+                        , scount = scount}
                 _ ->
                     { store = updateStore x v store
                     , riStmts = riStmts
@@ -277,11 +302,11 @@ exec store holeBindings riStmts stmt readOnly scount =
                     , scount = scount+1}
                 _ -> {defaultFwdRes | store = [("error", VError "Input not found")]}
         SPrint _ e -> 
+            let oldval = lookup "output" store in
             case eval store holeBindings e of
                 VHole HTmp _ -> 
                     let
                         e_ = simplifyExpr store e holeBindings
-                        oldval = lookup "output" store
                     in
                     case oldval of
                         Just (VList vs) -> 
@@ -292,8 +317,27 @@ exec store holeBindings riStmts stmt readOnly scount =
                             }
                         _ -> {defaultFwdRes | store = [("error", VError "Output not found")]}
                 VError _ -> {defaultFwdRes | store = [("error", VError "Unsupported expression")]}
+                VList vs ->
+                    if hasHole vs then
+                        let resv = processHoleinList store vs "output" scount 0 in
+                        let e_ = simplifyExpr store e holeBindings in
+                        case oldval of
+                            Just (VList vs_) ->
+                                { store = updateStore "output" (VList (vs_ ++ [VList resv])) store
+                                , riStmts = riStmts ++ [(scount, SPrint [] e_, store)]
+                                , readOnly = readOnly
+                                , scount = scount + 1
+                                }
+                            _ -> {defaultFwdRes | store = [("error", VError "Output not found")]}
+                    else
+                        case oldval of
+                            Just (VList vs_) ->
+                                { store = updateStore "output" (VList (vs_ ++ [VList vs])) store
+                                , riStmts = riStmts
+                                , readOnly = readOnly
+                                , scount = scount}
+                            _ -> {defaultFwdRes | store = [("error", VError "Output not found")]}
                 v ->
-                    let oldval = lookup "output" store in
                     case oldval of
                         Just (VList vs) ->
                             { store = updateStore "output" (VList (vs ++ [v])) store
@@ -325,6 +369,15 @@ substHoleInStmtStore ris execList h2eMap =
             let (resstmt, newh2eMap_) = substHoleInStmtStore rest execList newh2eMap in
             -- let newio = substHoleInIO io execList in
             ((id, s, newstore)::resstmt, newh2eMap_)
+
+processHoleinList : Store -> List Value -> String -> SCount -> HCount -> List Value
+processHoleinList store vs x scount hcount =
+    case vs of
+        [] -> []
+        (VHole HTmp _) :: rest ->
+            (VHole (HSub (HVar x) hcount) scount) :: (processHoleinList store rest x scount (hcount+1))
+        v :: rest ->
+            v :: (processHoleinList store rest x scount hcount)
 
 tryExec : HoleBindings -> RiStmts -> SCount -> (List (StmtID, Store), RiStmts)
 tryExec hb ris scount =
