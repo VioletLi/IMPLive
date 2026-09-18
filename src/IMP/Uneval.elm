@@ -1,7 +1,7 @@
 module IMP.Uneval exposing (..)
 
 import IMP.Syntax exposing (..)
-import IMP.Eval exposing (eval, exec)
+import IMP.Eval exposing (eval, exec, findIndex)
 import IMP.Utils exposing (..)
 import Newuneval exposing (uneval)
 import Set exposing (Set)
@@ -174,30 +174,43 @@ unevalList store holeBindings readOnly es vs hcount =
 unexec : Store -> HoleBindings -> RiStmts -> Set String -> Stmt -> HCount -> SCount -> (Store, RiStmts) -> UnexecRes
 unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriStmts) =
     case stmt of
-        SAssign ws x e -> 
+        SAssign ws e1 e2 -> 
             -- 如果这个生成了新的ristmt，那我就把更新之后的最后一条的store传回给上一条，删掉原来那条，不然就不动
             -- 反向是不是不需要生成新的residual statement？
-            let newval = lookup x newstore in
-            let val = eval store holeBindings e in
-            let oldval = lookup x store in
-            case (val, newval, oldval) of
-                (VHole _ _, Just nv, Just ov) -> 
-                    case nv of
-                        VHole (HVar x_) id_ -> 
-                            if x_ == x && id_ == scount then 
-                                -- 就是这一轮的final store，前向是hole反向回来也是hole，expression不动
-                                let userstore = getFinalRiStmtStore newriStmts in
-                                {
-                                    store = mergeStore userstore (updateStore x ov newstore) store,
-                                    holeBindings = holeBindings,
-                                    riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                                    stmt = stmt,
-                                    hcount = hcount
-                                }
-                                else 
-                                -- 不是这轮的final store，是某个修改后传回来的结果，应该更新当前轮expression
+            case e1 of
+                EVar _ x ->
+                    let newval = lookup x newstore in
+                    let val = eval store holeBindings e2 in
+                    let oldval = lookup x store in
+                    case (val, newval, oldval) of
+                        (VHole _ _, Just nv, Just ov) -> 
+                            case nv of
+                                VHole (HVar x_) id_ -> 
+                                    if x_ == x && id_ == scount then 
+                                        -- 就是这一轮的final store，前向是hole反向回来也是hole，expression不动
+                                        let userstore = getFinalRiStmtStore newriStmts in
+                                        {
+                                            store = mergeStore userstore (updateStore x ov newstore) store,
+                                            holeBindings = holeBindings,
+                                            riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                            stmt = stmt,
+                                            hcount = hcount
+                                        }
+                                        else 
+                                        -- 不是这轮的final store，是某个修改后传回来的结果，应该更新当前轮expression
+                                            let userstore = getFinalRiStmtStore newriStmts in
+                                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e2 readOnly nv hcount in
+                                            {
+                                                store = mergeStore userstore finalstore store,
+                                                holeBindings = newhb,
+                                                riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                                stmt = SAssign ws x newexpr,
+                                                hcount = hcount_
+                                            }
+                                _ ->
+                                    -- 不是hole，是某个修改后传回来的结果，应该更新当前轮expression
                                     let userstore = getFinalRiStmtStore newriStmts in
-                                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e readOnly nv hcount in
+                                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e2 readOnly nv hcount in
                                     {
                                         store = mergeStore userstore finalstore store,
                                         holeBindings = newhb,
@@ -205,61 +218,60 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         stmt = SAssign ws x newexpr,
                                         hcount = hcount_
                                     }
-                        _ ->
-                            -- 不是hole，是某个修改后传回来的结果，应该更新当前轮expression
-                            let userstore = getFinalRiStmtStore newriStmts in
-                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e readOnly nv hcount in
+                        (VList vs, Just nv, Just ov) ->
+                            if hasHole vs then
+                                let userstore = getFinalRiStmtStore newriStmts in
+                                let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e2 readOnly nv hcount in
+                                {
+                                    store = mergeStore userstore finalstore store,
+                                    holeBindings = newhb,
+                                    riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                    stmt = SAssign ws x newexpr,
+                                    hcount = hcount_
+                                }
+                                else
+                                let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e2 readOnly nv hcount in
+                                {
+                                    store = finalstore,
+                                    holeBindings = newhb,
+                                    riStmts = newriStmts,
+                                    stmt = SAssign ws x newexpr,
+                                    hcount = hcount_
+                                }
+                        (_, Just nv, Just ov) ->
+                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e2 readOnly nv hcount in
                             {
-                                store = mergeStore userstore finalstore store,
+                                store = finalstore,
                                 holeBindings = newhb,
-                                riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                riStmts = newriStmts,
                                 stmt = SAssign ws x newexpr,
                                 hcount = hcount_
                             }
-                (VList vs, Just nv, Just ov) ->
-                    if hasHole vs then
-                        let userstore = getFinalRiStmtStore newriStmts in
-                        let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e readOnly nv hcount in
-                        {
-                            store = mergeStore userstore finalstore store,
-                            holeBindings = newhb,
-                            riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                            stmt = SAssign ws x newexpr,
-                            hcount = hcount_
-                        }
-                        else
-                        let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e readOnly nv hcount in
-                        {
-                            store = finalstore,
-                            holeBindings = newhb,
-                            riStmts = newriStmts,
-                            stmt = SAssign ws x newexpr,
-                            hcount = hcount_
-                        }
-                (_, Just nv, Just ov) ->
-                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e readOnly nv hcount in
-                    {
-                        store = finalstore,
-                        holeBindings = newhb,
-                        riStmts = newriStmts,
-                        stmt = SAssign ws x newexpr,
-                        hcount = hcount_
-                    }
-                (VHole _ _, Just nv, Nothing) ->
-                    case nv of
-                        VHole (HVar x_) id_ -> 
-                            if x_ == x && id_ == scount then 
-                                let userstore = getFinalRiStmtStore newriStmts in
-                                {
-                                    store = mergeStore userstore (delStore x newstore) store,
-                                    holeBindings = holeBindings,
-                                    riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                                    stmt = stmt,
-                                    hcount = hcount
-                                }
-                                else 
+                        (VHole _ _, Just nv, Nothing) ->
+                            case nv of
+                                VHole (HVar x_) id_ -> 
+                                    if x_ == x && id_ == scount then 
+                                        let userstore = getFinalRiStmtStore newriStmts in
+                                        {
+                                            store = mergeStore userstore (delStore x newstore) store,
+                                            holeBindings = holeBindings,
+                                            riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                            stmt = stmt,
+                                            hcount = hcount
+                                        }
+                                        else 
+                                            let userstore = getFinalRiStmtStore newriStmts in
+                                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e2 readOnly nv hcount in
+                                            {
+                                                store = mergeStore userstore finalstore store,
+                                                holeBindings = newhb,
+                                                riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                                stmt = SAssign ws x newexpr,
+                                                hcount = hcount_
+                                            }
+                                _ ->
                                     let userstore = getFinalRiStmtStore newriStmts in
-                                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e readOnly nv hcount in
+                                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e2 readOnly nv hcount in
                                     {
                                         store = mergeStore userstore finalstore store,
                                         holeBindings = newhb,
@@ -267,46 +279,47 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         stmt = SAssign ws x newexpr,
                                         hcount = hcount_
                                     }
-                        _ ->
-                            let userstore = getFinalRiStmtStore newriStmts in
-                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e readOnly nv hcount in
+                        (VList vs, Just nv, Nothing) ->
+                            if hasHole vs then
+                                let userstore = getFinalRiStmtStore newriStmts in
+                                let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e2 readOnly nv hcount in
+                                {
+                                    store = mergeStore userstore finalstore store,
+                                    holeBindings = newhb,
+                                    riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                    stmt = SAssign ws x newexpr,
+                                    hcount = hcount_
+                                }
+                            else
+                                let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e2 readOnly nv hcount in
+                                {
+                                    store = finalstore,
+                                    holeBindings = newhb,
+                                    riStmts = newriStmts,
+                                    stmt = SAssign ws x newexpr,
+                                    hcount = hcount_
+                                }
+                        (_, Just nv, Nothing) ->
+                            let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e2 readOnly nv hcount in
                             {
-                                store = mergeStore userstore finalstore store,
+                                store = finalstore,
                                 holeBindings = newhb,
-                                riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                                riStmts = newriStmts,
                                 stmt = SAssign ws x newexpr,
                                 hcount = hcount_
                             }
-                (VList vs, Just nv, Nothing) ->
-                    if hasHole vs then
-                        let userstore = getFinalRiStmtStore newriStmts in
-                        let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e readOnly nv hcount in
-                        {
-                            store = mergeStore userstore finalstore store,
-                            holeBindings = newhb,
-                            riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                            stmt = SAssign ws x newexpr,
-                            hcount = hcount_
-                        }
-                    else
-                        let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e readOnly nv hcount in
-                        {
-                            store = finalstore,
-                            holeBindings = newhb,
-                            riStmts = newriStmts,
-                            stmt = SAssign ws x newexpr,
-                            hcount = hcount_
-                        }
-                (_, Just nv, Nothing) ->
-                    let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e readOnly nv hcount in
-                    {
-                        store = finalstore,
-                        holeBindings = newhb,
-                        riStmts = newriStmts,
-                        stmt = SAssign ws x newexpr,
-                        hcount = hcount_
-                    }
-                _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SAssign: newval not found"}
+                        _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SAssign: newval not found"}
+                EIndex _ _ _ ->
+                    let (x, path) = findIndex store holeBindings e1 in
+                    let oldv = lookup x store in
+                    let newv = lookup x newstore in
+                    let val = eval store holeBindings e2 in
+                    case val of
+                        VHole _ _ ->
+                            let userstore = getFinalRiStmtStore newriStmts in
+                        VList vs ->
+                        _ ->
+                    
         SSkip _ -> 
             { store = newstore
             , holeBindings = holeBindings

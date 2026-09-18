@@ -13,11 +13,11 @@ printStmt stmt =
         SSkip _ ->
             "skip "
 
-        SAssign [s1, s2] x e ->
-            x ++ s1 ++ ":=" ++ s2 ++ printExpr e
+        SAssign [s] e1 e2 ->
+            printExpr e1 ++ ":=" ++ s ++ printExpr e2
 
-        SAssign _ x e ->
-            x ++ " := " ++ printExpr e
+        SAssign _ e1 e2 ->
+            printExpr e1 ++ " := " ++ printExpr e2
 
         SRead [s1, s2] x ->
             "read" ++ s1 ++ x ++ s2
@@ -201,6 +201,8 @@ printHoleName hn =
 
         HTmp ->
             "*"
+
+        HSub h id -> printHoleName h ++ "_" ++ (String.fromInt id)
 
 printHoleBindings : HoleBindings -> String
 printHoleBindings hb =

@@ -30,7 +30,7 @@ type Expr
 type Stmt 
     = SIf WS Expr Stmt Stmt
     | SWhile WS Expr Stmt
-    | SAssign WS String Expr
+    | SAssign WS Expr Expr
     | SRead WS String
     | SPrint WS Expr
     | SSeq WS Stmt Stmt

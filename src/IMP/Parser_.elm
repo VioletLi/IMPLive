@@ -258,9 +258,8 @@ skip =
 
 assign : Parser Stmt
 assign =
-    succeed (\x s1 s2 e -> SAssign [s1, s2] x e)
-        |= varName
-        |= mSpaces
+    succeed (\e1 s e2 -> SAssign [s] e1 e2)
+        |= lazy (\_ -> expr)
         |. symbol ":="
         |= mSpaces
         |= lazy (\_ -> expr)

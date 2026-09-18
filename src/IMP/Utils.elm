@@ -11,7 +11,8 @@ hasHole vs =
         (VHole HTmp _) :: _ -> True
         v :: rest -> 
             case v of
-                VList vs_ -> (hasHole vs_) && hasHole rest
+                VList vs_ -> (hasHole vs_) || (hasHole rest)
+                VHole _ _ -> True
                 _ -> hasHole rest
 
 preprocessStmt : Stmt -> HCount -> (Stmt, HCount)
@@ -26,9 +27,10 @@ preprocessStmt s hcount =
             let (e_, hcount_) = preprocessExpr e hcount in
             let (s__, hcount__) = preprocessStmt s_ hcount_ in
             (SWhile ws e_ s__, hcount_)
-        SAssign ws x e -> 
-            let (e_, hcount_) = preprocessExpr e hcount in
-            (SAssign ws x e_, hcount_)
+        SAssign ws e1 e2 -> 
+            let (e1_, hcount_) = preprocessExpr e1 hcount in
+            let (e2_, hcount__) = preprocessExpr e2 hcount_ in
+            (SAssign ws e1_ e2_, hcount__)
         SRead ws x -> 
             (SRead ws x, hcount)
         SPrint ws e -> 
@@ -129,13 +131,24 @@ updateStore x v store =
 modVars : Stmt -> List String
 modVars s =
     case s of
-        SAssign _ x _ -> [x]
+        SAssign _ e _ -> 
+            case e of
+                EVar _ x -> [x]
+                EIndex _ e1 e2 -> [findVar e1]
+                _ -> []
         SIf _ _ s1 s2 -> modVars s1 ++ modVars s2
         SWhile _ _ s_ -> modVars s_
         SRead _ x -> [x, "input"]
         SPrint _ _ -> ["output"]
         SSeq _ s1 s2 -> modVars s1 ++ modVars s2
         _ -> []
+
+findVar : Expr -> String
+findVar e =
+    case e of
+        EVar _ x -> x
+        EIndex _ e1 _ -> findVar e1
+        _ -> "error"
 
 unique : List a -> List a
 unique ls =
@@ -177,7 +190,7 @@ substHoleinStmt id s holes =
     case s of
         SIf ws e s1 s2 -> SIf ws (substHoleinExpr id e holes) (substHoleinStmt id s1 holes) (substHoleinStmt id s2 holes)
         SWhile ws e s_ -> SWhile ws (substHoleinExpr id e holes) (substHoleinStmt id s_ holes)
-        SAssign ws x e -> SAssign ws x (substHoleinExpr id e holes)
+        SAssign ws e1 e2 -> SAssign ws (substHoleinExpr id e1 holes) (substHoleinExpr id e2 holes)
         SRead ws x -> SRead ws x
         SPrint ws e -> SPrint ws (substHoleinExpr id e holes)
         SSeq ws s1 s2 -> SSeq ws (substHoleinStmt id s1 holes) (substHoleinStmt id s2 holes)
@@ -200,7 +213,7 @@ substHoleinExpr id e holes =
         EError s -> EError s
         ENot ws e_ -> ENot ws (substHoleinExpr id e_ holes)
         EParens ws e_ -> EParens ws (substHoleinExpr id e_ holes)
-        EList ws es -> EList ws (List.map (\e_ -> substHoleinExpr id e holes) es)
+        EList ws es -> EList ws (List.map (\e_ -> substHoleinExpr id e_ holes) es)
         EIndex ws e1 e2 -> EIndex ws (substHoleinExpr id e1 holes) (substHoleinExpr id e2 holes)
         ELength ws e_ -> ELength ws (substHoleinExpr id e_ holes)
 
@@ -242,3 +255,62 @@ nthValue vs i =
         case vs of
             v :: rest -> if i == 0 then v else nthValue rest (i - 1)
             [] -> VError "Index out of range"
+
+updateValue : Value -> Value -> Value -> Value
+updateValue path vs v =
+    case vs of
+        VList vs_ ->
+            case path of
+                VList (VInt i :: []) ->
+                    VList (List.take i vs_ ++ [v] ++ List.drop (i + 1) vs_)
+                VList (VInt i :: rest) ->
+                    let oriv = List.head (List.reverse (List.take (i+1) vs_)) in
+                    case oriv of
+                        Just oriv_ ->
+                            let newv = updateValue (VList rest) oriv_ v in
+                            VList (List.take i vs_ ++ [newv] ++ List.drop (i + 1) vs_)
+                        _ -> VError "Index out of range"
+                _ -> VError "Unsupported expression"
+        _ -> VError "Unsupported expression"
+
+findVal : Value -> Value -> Value
+findVal path vs =
+    case path of
+        VList [] ->
+            vs
+
+        VList (VInt i :: rest) ->
+            case vs of
+                VList nvs ->
+                    findVal (VList rest) (nthValue nvs i)
+
+                _ ->
+                    VError "Index not found"
+
+        _ ->
+            VError "Index not found"
+
+nameToPath : HoleName -> Value
+nameToPath h =
+    VList (nameToPathList h)
+
+nameToPathList : HoleName -> List Value
+nameToPathList h =
+    case h of
+        HSub h_ n ->
+            nameToPathList h_ ++ [VInt n]
+
+        _ ->
+            []
+
+pathToName : HoleName -> Value -> HoleName
+pathToName prefix path =
+    case path of
+        VList [] ->
+            prefix
+
+        VList (VInt i :: rest) ->
+            pathToName (HSub prefix i) (VList rest)
+
+        _ ->
+            prefix
