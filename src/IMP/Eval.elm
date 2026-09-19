@@ -624,7 +624,7 @@ substHoleInStore store execList h2eMap =
                 let val = lookup x store_ in
                 case val of
                     Just v ->
-                        let nd = Dict.insert (holeKey h id) (value2Expr v) h2eMap in
+                        let nd = Dict.insert (valHoleKey h id) (value2Expr v) h2eMap in
                         let (newstore, newh2eMap) = substHoleInStore rest execList nd in
                         ((x, v)::newstore, newh2eMap)
                     Nothing -> ([], h2eMap)
@@ -750,7 +750,7 @@ substHoleAt execList x v path h2eMap =
                     Just newx ->
                         let
                             v_ = findVal path newx
-                            nd = Dict.insert (holeKey h id) (value2Expr v_) h2eMap
+                            nd = Dict.insert (valHoleKey h id) (value2Expr v) h2eMap
                         in
                         (v_, nd)
 

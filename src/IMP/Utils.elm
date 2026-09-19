@@ -203,9 +203,8 @@ substHoleinExpr id e holes =
         EVar ws x -> EVar ws x
         Eop ws op e1 e2 -> Eop ws op (substHoleinExpr id e1 holes) (substHoleinExpr id e2 holes)
         EInt ws i -> EInt ws i
-        EHole ws h_ -> 
-            let expr = Dict.get (holeKey h_ id) holes in
-            case expr of
+        EHole ws h_ ->
+            case Dict.get (exprHoleKey h_) holes of
                 Just expr_ -> expr_
                 Nothing -> EHole ws h_
         EBool ws b -> EBool ws b
@@ -217,13 +216,21 @@ substHoleinExpr id e holes =
         EIndex ws e1 e2 -> EIndex ws (substHoleinExpr id e1 holes) (substHoleinExpr id e2 holes)
         ELength ws e_ -> ELength ws (substHoleinExpr id e_ holes)
 
-holeKey : HoleName -> StmtID -> String
-holeKey h id =
+encodeHoleId h id =
     case h of
-        HOri n -> "o:" ++ (String.fromInt n)
-        HVar x -> "v:" ++ x ++ "-" ++ (String.fromInt id)
+        HVar x -> HVar (x ++ "-" ++ String.fromInt id)
+        HSub h_ n -> HSub (encodeHoleId h_ id) n
+        _ -> h
+
+exprHoleKey h =
+    case h of
+        HOri n -> "o:" ++ String.fromInt n
+        HVar x -> "v:" ++ x
         HTmp -> "t"
-        HSub h_ n -> (holeKey h_ id) ++ ". " ++ (String.fromInt n)
+        HSub h_ n -> exprHoleKey h_ ++ ". " ++ String.fromInt n
+
+valHoleKey h id =
+    exprHoleKey (encodeHoleId h id)
 
 value2Expr : Value -> Expr
 value2Expr v =
@@ -231,7 +238,7 @@ value2Expr v =
         VInt i -> EInt [] i
         VBool b -> EBool [] b
         VString s -> EString [] s
-        VHole h _ -> EHole [] h
+        VHole h id -> EHole [] (encodeHoleId h id)
         VList vs -> EList [] (List.map value2Expr vs)
         VError _ -> EError "Unsupported expression"
 
