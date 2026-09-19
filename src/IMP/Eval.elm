@@ -250,7 +250,7 @@ exec store holeBindings riStmts stmt readOnly scount =
                         VError _ -> {defaultFwdRes | store = [("error", VError "Unsupported expression")]}
                         VList vs ->
                             if hasHole vs then
-                                let (resv, _) = processHoleinList store vs x scount 0 in
+                                let resv = processHoleinList vs x scount (VList []) in
                                 let rese = simplifyExpr store e2 holeBindings in
                                 { store = updateStore x (VList resv) store
                                 , riStmts = riStmts ++ [(scount, SAssign [] e1 rese, store)]
@@ -286,7 +286,7 @@ exec store holeBindings riStmts stmt readOnly scount =
                                 Just (VList vs) ->
                                     case v of
                                         VHole _ _ ->
-                                            let newv = updateValue path (VList vs) (VHole (HVar x) scount) in
+                                            let newv = updateValue path (VList vs) (VHole (pathToName (HVar x) path) scount) in
                                             let e1_ = simplifyExpr store e1 holeBindings in
                                             let e2_ = simplifyExpr store e2 holeBindings in
                                             {
@@ -297,7 +297,7 @@ exec store holeBindings riStmts stmt readOnly scount =
                                             }
                                         VList vs_ ->
                                             if hasHole vs_ then
-                                                let (resv, _) = processHoleinList store vs_ x scount 0 in
+                                                let resv = processHoleinList vs_ x scount path in
                                                 let e1_ = simplifyExpr store e1 holeBindings in
                                                 let e2_ = simplifyExpr store e2 holeBindings in
                                                 let newv = updateValue path (VList vs) (VList resv) in
@@ -399,7 +399,7 @@ exec store holeBindings riStmts stmt readOnly scount =
                     in
                     case oldval of
                         Just (VList vs) -> 
-                            { store = updateStore "output" (VList (vs ++ [VHole (HVar "output") scount])) store
+                            { store = updateStore "output" (VList (vs ++ [VHole (pathToName (HVar "output") (VList [VInt (List.length vs)])) scount])) store
                             , riStmts = riStmts ++ [(scount, SPrint [] e_, store)]
                             , readOnly = readOnly
                             , scount = scount + 1
@@ -408,10 +408,10 @@ exec store holeBindings riStmts stmt readOnly scount =
                 VError _ -> {defaultFwdRes | store = [("error", VError "Unsupported expression")]}
                 VList vs ->
                     if hasHole vs then
-                        let (resv, _) = processHoleinList store vs "output" scount 0 in
                         let e_ = simplifyExpr store e holeBindings in
                         case oldval of
                             Just (VList vs_) ->
+                                let resv = processHoleinList vs "output" scount (VList [VInt (List.length vs_)]) in
                                 { store = updateStore "output" (VList (vs_ ++ [VList resv])) store
                                 , riStmts = riStmts ++ [(scount, SPrint [] e_, store)]
                                 , readOnly = readOnly
@@ -459,26 +459,40 @@ substHoleInStmtStore ris execList h2eMap =
             -- let newio = substHoleInIO io execList in
             ((id, s, newstore)::resstmt, newh2eMap_)
 
-processHoleinList : Store -> List Value -> String -> SCount -> HCount -> (List Value, HCount)
-processHoleinList store vs x scount hcount =
-    case vs of
-        [] -> ([], hcount)
-        (VHole HTmp _) :: rest ->
-            let
-                (vs_, hcount_) = processHoleinList store rest x scount (hcount+1)
-            in
-            
-            ((VHole (HSub (HVar x) hcount) scount) :: vs_, hcount_)
-        (VList vs_) :: rest ->
-            let 
-                (vs__, hcount_) = processHoleinList store vs_ x scount hcount
-                (resv, hcount__) = processHoleinList store rest x scount hcount_
-            in
-                ((VList vs__) :: resv, hcount__)
-        v :: rest ->
-            let (vs_, hcount_) = processHoleinList store rest x scount hcount in
-            (v :: vs_, hcount_)
+processHoleinList : List Value -> String -> SCount -> Value -> List Value
+processHoleinList vs x scount path =
+    processHoleinListWalk vs x scount path 0
 
+processHoleinListWalk : List Value -> String -> SCount -> Value -> Int -> List Value
+processHoleinListWalk vs x scount path i =
+    case vs of
+        [] ->
+            []
+
+        v :: rest ->
+            let
+                path_ =
+                    case path of
+                        VList p ->
+                            VList (p ++ [VInt i])
+
+                        _ ->
+                            VList [VInt i]
+            in
+            processHoleAt v x scount path_
+                :: processHoleinListWalk rest x scount path (i + 1)
+
+processHoleAt : Value -> String -> SCount -> Value -> Value
+processHoleAt v x scount path =
+    case v of
+        VHole HTmp _ ->
+            VHole (pathToName (HVar x) path) scount
+
+        VList inner ->
+            VList (processHoleinList inner x scount path)
+
+        _ ->
+            v
 tryExec : HoleBindings -> RiStmts -> SCount -> (List (StmtID, Store), RiStmts)
 tryExec hb ris scount =
     case ris of
@@ -613,31 +627,32 @@ tryExec hb ris scount =
 substHoleInStore : Store -> List (StmtID, Store) -> HoleMap -> (Store, HoleMap)
 substHoleInStore store execList h2eMap =
     case store of
-        [] -> ([], h2eMap)
-        ("output", VList vs) :: rest ->
-            let newoutput = substHoleInOutput vs execList 0 in
-            let (newstore, newh2eMap) = substHoleInStore rest execList h2eMap in
-            (("output", VList newoutput)::newstore, newh2eMap)
+        [] ->
+            ([], h2eMap)
+
         (x, VHole h id) :: rest ->
             if List.any (\(id_, _) -> id_ == id) execList then
                 let store_ = findStore id execList in
-                let val = lookup x store_ in
-                case val of
+                case lookup x store_ of
                     Just v ->
                         let nd = Dict.insert (valHoleKey h id) (value2Expr v) h2eMap in
                         let (newstore, newh2eMap) = substHoleInStore rest execList nd in
-                        ((x, v)::newstore, newh2eMap)
-                    Nothing -> ([], h2eMap)
+                        ((x, v) :: newstore, newh2eMap)
+
+                    Nothing ->
+                        ([], h2eMap)
             else
                 let (newstore, newh2eMap) = substHoleInStore rest execList h2eMap in
-                ((x, VHole h id)::newstore, newh2eMap)
+                ((x, VHole h id) :: newstore, newh2eMap)
+
         (x, VList vs) :: rest ->
             let (newvs, newh2eMap) = substHoleInList execList x vs (VList []) h2eMap in
             let (newstore, newh2eMap_) = substHoleInStore rest execList newh2eMap in
-            ((x, VList newvs)::newstore, newh2eMap_)
+            ((x, VList newvs) :: newstore, newh2eMap_)
+
         (x, v) :: rest ->
             let (newstore, newh2eMap) = substHoleInStore rest execList h2eMap in
-            ((x, v)::newstore, newh2eMap)
+            ((x, v) :: newstore, newh2eMap)
 
 findStore : Int -> List (Int, Store) -> Store
 findStore id execList =
@@ -678,24 +693,6 @@ findStore id execList =
 --             else
 --                 findIO id rest
 
-substHoleInOutput : List Value -> List (StmtID, Store) -> Int -> List Value
-substHoleInOutput output execList vid =
-    case output of
-        [] -> []
-        (VHole h id) :: rest ->
-            if List.any (\(id_, _) -> id_ == id) execList then
-                let store = findStore id execList in
-                let output_ = lookup "output" store in
-                case output_ of
-                    Just (VList vs) ->
-                        (List.drop vid vs) ++ (substHoleInOutput rest execList (vid+1))
-                    _ ->
-                        []
-            else
-                (VHole h id) :: (substHoleInOutput rest execList (vid+1))
-        v :: rest ->
-            v :: (substHoleInOutput rest execList (vid+1))
-
 
 findIndex : Store -> HoleBindings -> Expr -> (String, Value)
 findIndex store holeBindings e =
@@ -730,13 +727,54 @@ substHoleInListWalk execList x vs path i h2eMap =
             let
                 path_ =
                     case path of
-                        VList p -> VList (p ++ [VInt i])
-                        _ -> VList [VInt i]
+                        VList p ->
+                            VList (p ++ [VInt i])
 
-                (v_, nd) = substHoleAt execList x v path_ h2eMap
-                (rest_, nd_) = substHoleInListWalk execList x rest path (i + 1) nd
+                        _ ->
+                            VList [VInt i]
             in
-            (v_ :: rest_, nd_)
+            case (x, v, path_) of
+                -- if/while 污染：#output 代表从这里起整段未知 output
+                ("output", VHole (HVar "output") id, VList [ VInt vid ]) ->
+                    if List.any (\(id_, _) -> id_ == id) execList then
+                        case lookup "output" (findStore id execList) of
+                            Just (VList nvs) ->
+                                let
+                                    suffix =
+                                        List.drop vid nvs
+
+                                    holeExpr =
+                                        case suffix of
+                                            [ one ] ->
+                                                value2Expr one
+
+                                            _ ->
+                                                value2Expr (VList suffix)
+
+                                    nd =
+                                        Dict.insert (valHoleKey (HVar "output") id) holeExpr h2eMap
+
+                                    (rest_, nd_) =
+                                        substHoleInListWalk execList x rest path (i + 1) nd
+                                in
+                                (suffix ++ rest_, nd_)
+
+                            _ ->
+                                let (rest_, nd_) = substHoleInListWalk execList x rest path (i + 1) h2eMap in
+                                (v :: rest_, nd_)
+                    else
+                        let (rest_, nd_) = substHoleInListWalk execList x rest path (i + 1) h2eMap in
+                        (v :: rest_, nd_)
+
+                _ ->
+                    let
+                        (v_, nd) =
+                            substHoleAt execList x v path_ h2eMap
+
+                        (rest_, nd_) =
+                            substHoleInListWalk execList x rest path (i + 1) nd
+                    in
+                    (v_ :: rest_, nd_)
 
 substHoleAt : List (StmtID, Store) -> String -> Value -> Value -> HoleMap -> (Value, HoleMap)
 substHoleAt execList x v path h2eMap =

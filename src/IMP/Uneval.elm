@@ -121,28 +121,31 @@ uneval store holeBindings expr readOnly val hcount =
                 VHole _ _ ->
                     (store, holeBindings, (EHole ws (HOri hcount), hcount + 1))
                 _ -> ([],[],(EError "unsupported value type for EList", 0))
-        EIndex ws e1 e2 ->
-            let oldv = eval store holeBindings e1 in
-            let index = eval store holeBindings e2 in
-            case (oldv, index, val) of
-                (_, VHole _ _, VHole _ _) -> (store, holeBindings, (expr, hcount))
-                (VHole _ _, _, VHole _ _) -> (store, holeBindings, (expr, hcount))
-                (VString s, VInt i, VString s_) ->
-                    if i >= 0 && i < String.length s && String.length s_ == 1 then
-                        let newv = String.left i s ++ s_ ++ String.dropLeft (i + 1) s in
-                        let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings e1 readOnly (VString newv) hcount in
-                        (newstore, newhb, (EIndex ws newexpr e2, hcount_))
-                    else ([],[],(EError "index out of range or string length not 1", 0))
-                (VString s, VInt i, VHole _ _) ->
-                    let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings e1 readOnly val hcount in
-                    (newstore, newhb, (EIndex ws newexpr e2, hcount_))
-                (VList vs, VInt i, _) ->
-                    if i >= 0 && i < List.length vs then
-                        let newv = List.take i vs ++ val :: List.drop (i + 1) vs in
-                        let (newstore, newhb, (newexpr, hcount_)) = uneval store holeBindings e1 readOnly (VList newv) hcount in
-                        (newstore, newhb, (EIndex ws newexpr e2, hcount_))
-                    else ([],[],(EError "index out of range", 0))
-                _ -> ([],[],(EError "unsupported expression", 0))
+        EIndex _ _ _ ->
+            let (x, path) = findIndex store holeBindings expr in
+            case path of
+                VHole _ _ ->
+                    (store, holeBindings, (expr, hcount))
+                VList _ ->
+                    if x == "error" then
+                        ([], [], (EError "error", 0))
+                    else if Set.member x readOnly then
+                        ([], [], (EError "variable is read only", 0))
+                    else
+                        case lookup x store of
+                            Just (VHole _ _) ->
+                                (store, holeBindings, (expr, hcount))
+                            Just xv ->
+                                let newx = writeIndexValue path xv val in
+                                case newx of
+                                    VError s ->
+                                        ([], [], (EError s, 0))
+                                    _ ->
+                                        (updateStore x newx store, holeBindings, (expr, hcount))
+                            Nothing ->
+                                ([], [], (EError "variable not found when updating", 0))
+                _ ->
+                    ([], [], (EError "unsupported expression", 0))
         ELength ws e ->
             let v = eval store holeBindings e in
             case (v, val) of
@@ -178,7 +181,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
             -- 如果这个生成了新的ristmt，那我就把更新之后的最后一条的store传回给上一条，删掉原来那条，不然就不动
             -- 反向是不是不需要生成新的residual statement？
             case e1 of
-                EVar _ x ->
+                EVar ws1 x ->
                     let newval = lookup x newstore in
                     let val = eval store holeBindings e2 in
                     let oldval = lookup x store in
@@ -204,7 +207,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                                 store = mergeStore userstore finalstore store,
                                                 holeBindings = newhb,
                                                 riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                                                stmt = SAssign ws x newexpr,
+                                                stmt = SAssign ws (EVar ws1 x) newexpr,
                                                 hcount = hcount_
                                             }
                                 _ ->
@@ -215,7 +218,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         store = mergeStore userstore finalstore store,
                                         holeBindings = newhb,
                                         riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                                        stmt = SAssign ws x newexpr,
+                                        stmt = SAssign ws (EVar ws1 x) newexpr,
                                         hcount = hcount_
                                     }
                         (VList vs, Just nv, Just ov) ->
@@ -226,7 +229,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     store = mergeStore userstore finalstore store,
                                     holeBindings = newhb,
                                     riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                                    stmt = SAssign ws x newexpr,
+                                    stmt = SAssign ws (EVar ws1 x) newexpr,
                                     hcount = hcount_
                                 }
                                 else
@@ -235,7 +238,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     store = finalstore,
                                     holeBindings = newhb,
                                     riStmts = newriStmts,
-                                    stmt = SAssign ws x newexpr,
+                                    stmt = SAssign ws (EVar ws1 x) newexpr,
                                     hcount = hcount_
                                 }
                         (_, Just nv, Just ov) ->
@@ -244,7 +247,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                 store = finalstore,
                                 holeBindings = newhb,
                                 riStmts = newriStmts,
-                                stmt = SAssign ws x newexpr,
+                                stmt = SAssign ws (EVar ws1 x) newexpr,
                                 hcount = hcount_
                             }
                         (VHole _ _, Just nv, Nothing) ->
@@ -266,7 +269,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                                 store = mergeStore userstore finalstore store,
                                                 holeBindings = newhb,
                                                 riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                                                stmt = SAssign ws x newexpr,
+                                                stmt = SAssign ws (EVar ws1 x) newexpr,
                                                 hcount = hcount_
                                             }
                                 _ ->
@@ -276,7 +279,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         store = mergeStore userstore finalstore store,
                                         holeBindings = newhb,
                                         riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                                        stmt = SAssign ws x newexpr,
+                                        stmt = SAssign ws (EVar ws1 x) newexpr,
                                         hcount = hcount_
                                     }
                         (VList vs, Just nv, Nothing) ->
@@ -287,7 +290,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     store = mergeStore userstore finalstore store,
                                     holeBindings = newhb,
                                     riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                                    stmt = SAssign ws x newexpr,
+                                    stmt = SAssign ws (EVar ws1 x) newexpr,
                                     hcount = hcount_
                                 }
                             else
@@ -296,7 +299,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     store = finalstore,
                                     holeBindings = newhb,
                                     riStmts = newriStmts,
-                                    stmt = SAssign ws x newexpr,
+                                    stmt = SAssign ws (EVar ws1 x) newexpr,
                                     hcount = hcount_
                                 }
                         (_, Just nv, Nothing) ->
@@ -305,7 +308,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                 store = finalstore,
                                 holeBindings = newhb,
                                 riStmts = newriStmts,
-                                stmt = SAssign ws x newexpr,
+                                stmt = SAssign ws (EVar ws1 x) newexpr,
                                 hcount = hcount_
                             }
                         _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SAssign: newval not found"}
@@ -314,12 +317,94 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                     let oldv = lookup x store in
                     let newv = lookup x newstore in
                     let val = eval store holeBindings e2 in
-                    case val of
-                        VHole _ _ ->
+                    case (path, oldv, newv) of
+                        -- IndetLoc：整棵还原，不改 e2
+                        (VHole _ _, Just ov, Just _) ->
                             let userstore = getFinalRiStmtStore newriStmts in
-                        VList vs ->
+                            { store = mergeStore userstore (updateStore x ov newstore) store
+                            , holeBindings = holeBindings
+                            , riStmts = List.take (List.length newriStmts - 1) newriStmts
+                            , stmt = stmt
+                            , hcount = hcount
+                            }
+                        -- path 确定
+                        (VList p, Just ov, Just nv) ->
+                            let
+                                vprime = findVal (VList p) nv
+                                vo = findVal (VList p) ov
+                                store1 = updateStore x (updateValue (VList p) nv vo) newstore
+                                userstore = getFinalRiStmtStore newriStmts
+                                pop =
+                                    List.take (List.length newriStmts - 1) newriStmts
+                            in
+                            case (val, vprime) of
+                                -- 本轮留下的标量洞，用户没改
+                                (VHole _ _, VHole _ id) ->
+                                    if id == scount then
+                                        { store = mergeStore userstore store1 store
+                                        , holeBindings = holeBindings
+                                        , riStmts = pop
+                                        , stmt = stmt
+                                        , hcount = hcount
+                                        }
+                                    else
+                                        let (finalstore, newhb, (newexpr, hcount_)) =
+                                                uneval store1 holeBindings e2 readOnly vprime hcount
+                                        in
+                                        { store = mergeStore userstore finalstore store
+                                        , holeBindings = newhb
+                                        , riStmts = pop
+                                        , stmt = SAssign ws e1 newexpr
+                                        , hcount = hcount_
+                                        }
+                                -- RHS 不确定（标量洞或带洞 list），用户改了或 list residual
+                                (VHole _ _, _) ->
+                                    let (finalstore, newhb, (newexpr, hcount_)) =
+                                            uneval store1 holeBindings e2 readOnly vprime hcount
+                                    in
+                                    { store = mergeStore userstore finalstore store
+                                    , holeBindings = newhb
+                                    , riStmts = pop
+                                    , stmt = SAssign ws e1 newexpr
+                                    , hcount = hcount_
+                                    }
+                                (VList vs, _) ->
+                                    if hasHole vs then
+                                        let (finalstore, newhb, (newexpr, hcount_)) =
+                                                uneval store1 holeBindings e2 readOnly vprime hcount
+                                        in
+                                        { store = mergeStore userstore finalstore store
+                                        , holeBindings = newhb
+                                        , riStmts = pop
+                                        , stmt = SAssign ws e1 newexpr
+                                        , hcount = hcount_
+                                        }
+                                    else
+                                        let (finalstore, newhb, (newexpr, hcount_)) =
+                                                uneval store1 holeBindings e2 readOnly vprime hcount
+                                        in
+                                        { store = finalstore
+                                        , holeBindings = newhb
+                                        , riStmts = newriStmts
+                                        , stmt = SAssign ws e1 newexpr
+                                        , hcount = hcount_
+                                        }
+                                -- 确定赋值
+                                _ ->
+                                    let (finalstore, newhb, (newexpr, hcount_)) =
+                                            uneval store1 holeBindings e2 readOnly vprime hcount
+                                    in
+                                    { store = finalstore
+                                    , holeBindings = newhb
+                                    , riStmts = newriStmts
+                                    , stmt = SAssign ws e1 newexpr
+                                    , hcount = hcount_
+                                    }
                         _ ->
-                    
+                            { defaultUnexecRes | stmt = SError "Error: unexecStmt: SAssign: index not found" }
+                _ ->
+                    { defaultUnexecRes | stmt = SError "Error: unexecStmt: SAssign: unsupported lhs" }
+                            
         SSkip _ -> 
             { store = newstore
             , holeBindings = holeBindings
@@ -403,96 +488,77 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                         _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SRead: input not found"}
                 _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SRead: input not found"}
             
-        SPrint ws e -> 
-            let val = eval store holeBindings e in
-            let newout = lookup "output" newstore in
-            let oldout = lookup "output" store in
-            case val of
-                VHole _ _ -> 
-                    let userstore = getFinalRiStmtStore newriStmts in
-                    case (newout, oldout) of
-                        (Just (VList vs), Just (VList os)) ->
-                            if List.length vs == List.length os + 1 then
-                                let newval = List.head (List.reverse vs) in
-                                let newstore_ = updateStore "output" (VList (List.take (List.length os) vs)) newstore in
-                                case newval of
-                                    Just v ->
-                                        let (finalstore, newhb, (newexpr, hcount_)) = uneval newstore_ holeBindings e readOnly v hcount in
-                                        {
-                                            store = mergeStore userstore finalstore store,
-                                            holeBindings = newhb,
-                                            riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                                            stmt = SPrint ws newexpr,
-                                            hcount = hcount_
+        SPrint ws e ->
+            let
+                val = eval store holeBindings e
+                newout = lookup "output" newstore
+                oldout = lookup "output" store
+            in
+            case (newout, oldout) of
+                (Just (VList vs), Just (VList os)) ->
+                    if List.length vs == List.length os + 1 then
+                        case List.head (List.reverse vs) of
+                            Just vprime ->
+                                let
+                                    store1 =
+                                        updateStore "output" (VList (List.take (List.length os) vs)) newstore
+
+                                    userstore =
+                                        getFinalRiStmtStore newriStmts
+
+                                    pop =
+                                        List.take (List.length newriStmts - 1) newriStmts
+
+                                    goUneval merge pop_ =
+                                        let
+                                            (finalstore, newhb, (newexpr, hcount_)) =
+                                                uneval store1 holeBindings e readOnly vprime hcount
+                                        in
+                                        { store =
+                                            if merge then
+                                                mergeStore userstore finalstore store
+                                            else
+                                                finalstore
+                                        , holeBindings = newhb
+                                        , riStmts = pop_
+                                        , stmt = SPrint ws newexpr
+                                        , hcount = hcount_
                                         }
-                                    Nothing -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: newval not found"}
-                            else
-                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output length mismatch"}
-                        _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output not found"}
-                VError info -> { defaultUnexecRes | stmt = SError ("Error: unexecStmt: SPrint: " ++ info)}
-                VList vs_ ->
-                    if hasHole vs_ then
-                        let userstore = getFinalRiStmtStore newriStmts in
-                        case (newout, oldout) of
-                            (Just (VList vs), Just (VList os)) ->
-                                if List.length vs == List.length os + 1 then
-                                    let newval = List.head (List.reverse vs) in
-                                    let newstore_ = updateStore "output" (VList (List.take (List.length os) vs)) newstore in
-                                    case newval of
-                                        Just v ->
-                                            let (finalstore, newhb, (newexpr, hcount_)) = uneval newstore_ holeBindings e readOnly v hcount in
-                                            {
-                                                store = mergeStore userstore finalstore store,
-                                                holeBindings = newhb,
-                                                riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
-                                                stmt = SPrint ws newexpr,
-                                                hcount = hcount_
+                                in
+                                case (val, vprime) of
+                                    -- 本轮标量洞，用户没改
+                                    (VHole _ _, VHole _ id) ->
+                                        if id == scount then
+                                            { store = mergeStore userstore store1 store
+                                            , holeBindings = holeBindings
+                                            , riStmts = pop
+                                            , stmt = stmt
+                                            , hcount = hcount
                                             }
-                                        Nothing -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: newval not found"}
-                                else
-                                    { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output length mismatch"}
-                            _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output not found"}
+                                        else
+                                            goUneval True pop
+
+                                    -- RHS 不确定，用户改了或 list residual
+                                    (VHole _ _, _) ->
+                                        goUneval True pop
+
+                                    (VList vs2, _) ->
+                                        if hasHole vs2 then
+                                            goUneval True pop
+                                        else
+                                            goUneval False newriStmts
+
+                                    -- 确定 print
+                                    _ ->
+                                        goUneval False newriStmts
+
+                            Nothing ->
+                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: newval not found" }
                     else
-                        case (newout, oldout) of
-                            (Just (VList vs), Just (VList os)) ->
-                                if List.length vs == List.length os + 1 then
-                                    let newval = List.head (List.reverse vs) in
-                                    let newstore_ = updateStore "output" (VList (List.take (List.length os) vs)) newstore in
-                                    case newval of
-                                        Just v ->
-                                            let (finalstore, newhb, (newexpr, hcount_)) = uneval newstore_ holeBindings e readOnly v hcount in
-                                            {
-                                                store = finalstore,
-                                                holeBindings = newhb,
-                                                riStmts = newriStmts,
-                                                stmt = SPrint ws newexpr,
-                                                hcount = hcount_
-                                            }
-                                        Nothing -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: newval not found"}
-                                else 
-                                    { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output length mismatch"}
-                            _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output not found"}
+                        { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output length mismatch" }
 
                 _ ->
-                    case (newout, oldout) of
-                        (Just (VList vs), Just (VList os)) ->
-                            if List.length vs == List.length os + 1 then
-                                let newval = List.head (List.reverse vs) in
-                                let newstore_ = updateStore "output" (VList (List.take (List.length os) vs)) newstore in
-                                case newval of
-                                    Just v ->
-                                        let (finalstore, newhb, (newexpr, hcount_)) = uneval newstore_ holeBindings e readOnly v hcount in
-                                        {
-                                            store = finalstore,
-                                            holeBindings = newhb,
-                                            riStmts = newriStmts,
-                                            stmt = SPrint ws newexpr,
-                                            hcount = hcount_
-                                        }
-                                    Nothing -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: newval not found"}
-                            else 
-                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output length mismatch"}
-                        _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output not found"}
+                    { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output not found" }        
         SIf ws e s1 s2 -> 
             let guard = eval store holeBindings e in
             case guard of
@@ -1428,14 +1494,6 @@ getFinalRiStmtStore riStmts =
         _ :: rest -> getFinalRiStmtStore rest
         _ -> []
 
--- mergeIO : IO -> IO -> IO -> IO
--- mergeIO io1 io2 io3 =
---     let (input1, input2, input3) = (getIO io1 "input", getIO io2 "input", getIO io3 "input") in
---     let (output1, output2, output3) = (getIO io1 "output", getIO io2 "output", getIO io3 "output") in
---     let newinput = if input1 /= input3 then input1 else input2 in
---     let newoutput = if output1 /= output3 then output1 else output2 in
---     [("input", newinput), ("output", newoutput)]
-
 unpollute : Store -> Store -> SCount -> Store
 unpollute store oristore scount =
     case store of
@@ -1479,3 +1537,48 @@ unpollute store oristore scount =
 --                 _ -> output
 --     in
 --     [("input", newinput), ("output", newoutput)]
+
+writeIndexValue : Value -> Value -> Value -> Value
+writeIndexValue path xv val =
+    case path of
+        VList [] ->
+            val
+        VList [ VInt i ] ->
+            case xv of
+                VList vs ->
+                    if i >= 0 && i < List.length vs then
+                        updateValue path xv val
+                    else
+                        VError "index out of range"
+                VString s ->
+                    if i >= 0 && i < String.length s then
+                        case val of
+                            VString s_ ->
+                                if String.length s_ == 1 then
+                                    VString (String.left i s ++ s_ ++ String.dropLeft (i + 1) s)
+                                else
+                                    VError "index out of range or string length not 1"
+                            VHole _ _ ->
+                                val
+                            _ ->
+                                VError "unsupported expression"
+                    else
+                        VError "index out of range"
+                _ ->
+                    VError "unsupported expression"
+        VList (VInt i :: rest) ->
+            case xv of
+                VList vs ->
+                    if i >= 0 && i < List.length vs then
+                        let inner_ = writeIndexValue (VList rest) (nthValue vs i) val in
+                        case inner_ of
+                            VError s ->
+                                VError s
+                            _ ->
+                                updateValue (VList [ VInt i ]) xv inner_
+                    else
+                        VError "index out of range"
+                _ ->
+                    VError "unsupported expression"
+        _ ->
+            VError "unsupported expression"
