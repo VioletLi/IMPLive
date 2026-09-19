@@ -5,6 +5,99 @@ import Parser exposing (..)
 import Parser.Expression exposing (..)
 import IMP.Syntax exposing (..)
 
+parseExpr : String -> Result (List DeadEnd) Expr
+parseExpr =
+    run (succeed identity |. mSpaces |= expr |. end)
+
+
+parseValue : String -> Result (List DeadEnd) Value
+parseValue =
+    run (succeed identity |. mSpaces |= value_ |. end)
+
+
+value_ : Parser Value
+value_ =
+    oneOf
+        [ vlist
+        , vstring
+        , vtrue
+        , vfalse
+        , vint
+        ]
+
+
+vint : Parser Value
+vint =
+    oneOf
+        [ succeed (\n -> VInt -n)
+            |. symbol "-"
+            |= int
+            |. mSpaces
+        , succeed VInt
+            |= int
+            |. mSpaces
+        ]
+
+
+vtrue : Parser Value
+vtrue =
+    succeed (VBool True)
+        |. keyword "true"
+        |. mSpaces
+
+
+vfalse : Parser Value
+vfalse =
+    succeed (VBool False)
+        |. keyword "false"
+        |. mSpaces
+
+
+vstring : Parser Value
+vstring =
+    succeed VString
+        |. symbol "\""
+        |= string_
+        |. symbol "\""
+        |. mSpaces
+
+
+vlist : Parser Value
+vlist =
+    succeed VList
+        |. symbol "["
+        |. mSpaces
+        |= vlistItems
+        |. symbol "]"
+        |. mSpaces
+
+
+vlistItems : Parser (List Value)
+vlistItems =
+    oneOf
+        [ succeed (\v rest -> v :: rest)
+            |= lazy (\_ -> value_)
+            |= vlistTail
+        , succeed []
+        ]
+
+
+vlistTail : Parser (List Value)
+vlistTail =
+    loop [] vlistTailHelper
+
+
+vlistTailHelper : List Value -> Parser (Step (List Value) (List Value))
+vlistTailHelper revItems =
+    oneOf
+        [ succeed (\v -> Loop (v :: revItems))
+            |. symbol ","
+            |. mSpaces
+            |= lazy (\_ -> value_)
+        , succeed ()
+            |> map (\_ -> Done (List.reverse revItems))
+        ]
+
 
 mSpaces : Parser String
 mSpaces =

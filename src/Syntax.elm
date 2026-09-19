@@ -1,4 +1,4 @@
-module Syntax exposing (..)
+module Syntax exposing (..)module Syntax exposing (..)
 
 type alias Info = String
 

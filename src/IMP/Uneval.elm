@@ -3,7 +3,6 @@ module IMP.Uneval exposing (..)
 import IMP.Syntax exposing (..)
 import IMP.Eval exposing (eval, exec, findIndex)
 import IMP.Utils exposing (..)
-import Newuneval exposing (uneval)
 import Set exposing (Set)
 
 type alias UnexecRes = 

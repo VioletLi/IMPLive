@@ -442,7 +442,7 @@ fill holes hb fwdRes =
         newris = substHole holes fwdRes.riStmts
         (execList, newris_) = tryExec hb newris fwdRes.scount
     in
-        if List.isEmpty execList then {fwdRes | riStmts = newris_}
+        if List.isEmpty execList then reindexResiduals { fwdRes | riStmts = newris_ }
         else
             let (store_, h2eMap) = substHoleInStore fwdRes.store execList Dict.empty in
             let (newris__, h2eMap_) = substHoleInStmtStore newris_ execList h2eMap in
@@ -805,3 +805,140 @@ substHoleAt execList x v path h2eMap =
 
         _ ->
             (v, h2eMap)
+
+reindexResiduals : FwdRes -> FwdRes
+reindexResiduals fwdRes =
+    let
+        idMap : Dict Int Int
+        idMap =
+            fwdRes.riStmts
+                |> List.indexedMap (\newId (oldId, _, _) -> (oldId, newId))
+                |> Dict.fromList
+
+        mapId : Int -> Int
+        mapId id =
+            Dict.get id idMap |> Maybe.withDefault id
+
+        newris =
+            List.map
+                (\(id, s, st) ->
+                    ( mapId id
+                    , reindexStmt mapId s
+                    , reindexStore mapId st
+                    )
+                )
+                fwdRes.riStmts
+    in
+    { fwdRes
+        | riStmts = newris
+        , store = reindexStore mapId fwdRes.store
+        , scount = List.length newris
+    }
+
+
+reindexStore : (Int -> Int) -> Store -> Store
+reindexStore mapId store =
+    List.map (\(x, v) -> (x, reindexValue mapId v)) store
+
+
+reindexValue : (Int -> Int) -> Value -> Value
+reindexValue mapId v =
+    case v of
+        VHole h id ->
+            VHole (reindexHoleName mapId h) (mapId id)
+
+        VList vs ->
+            VList (List.map (reindexValue mapId) vs)
+
+        _ ->
+            v
+
+
+reindexStmt : (Int -> Int) -> Stmt -> Stmt
+reindexStmt mapId s =
+    case s of
+        SAssign ws e1 e2 ->
+            SAssign ws (reindexExpr mapId e1) (reindexExpr mapId e2)
+
+        SIf ws e s1 s2 ->
+            SIf ws (reindexExpr mapId e) (reindexStmt mapId s1) (reindexStmt mapId s2)
+
+        SWhile ws e body ->
+            SWhile ws (reindexExpr mapId e) (reindexStmt mapId body)
+
+        SPrint ws e ->
+            SPrint ws (reindexExpr mapId e)
+
+        SSeq ws s1 s2 ->
+            SSeq ws (reindexStmt mapId s1) (reindexStmt mapId s2)
+
+        _ ->
+            s
+
+
+reindexExpr : (Int -> Int) -> Expr -> Expr
+reindexExpr mapId e =
+    case e of
+        EHole ws h ->
+            EHole ws (reindexHoleName mapId h)
+
+        Eop ws op e1 e2 ->
+            Eop ws op (reindexExpr mapId e1) (reindexExpr mapId e2)
+
+        ENot ws e1 ->
+            ENot ws (reindexExpr mapId e1)
+
+        EParens ws e1 ->
+            EParens ws (reindexExpr mapId e1)
+
+        EList ws es ->
+            EList ws (List.map (reindexExpr mapId) es)
+
+        EIndex ws e1 e2 ->
+            EIndex ws (reindexExpr mapId e1) (reindexExpr mapId e2)
+
+        ELength ws e1 ->
+            ELength ws (reindexExpr mapId e1)
+
+        _ ->
+            e
+
+
+-- store 里一般是 #x / #x.0，id 在 VHole 第二项
+-- residual 表达式里是 encodeHoleId 过后的 #x-3
+reindexHoleName : (Int -> Int) -> HoleName -> HoleName
+reindexHoleName mapId h =
+    case h of
+        HVar x ->
+            case splitIdSuffix x of
+                Just (base, oldId) ->
+                    HVar (base ++ "-" ++ String.fromInt (mapId oldId))
+
+                Nothing ->
+                    HVar x
+
+        HSub h_ n ->
+            HSub (reindexHoleName mapId h_) n
+
+        _ ->
+            h
+
+
+splitIdSuffix : String -> Maybe (String, Int)
+splitIdSuffix s =
+    case List.reverse (String.indexes "-" s) of
+        i :: _ ->
+            let
+                base =
+                    String.left i s
+
+                rest =
+                    String.dropLeft (i + 1) s
+            in
+            if String.isEmpty base then
+                Nothing
+            else
+                Maybe.map (\n -> (base, n)) (String.toInt rest)
+
+        [] ->
+            Nothing

@@ -213,6 +213,24 @@ printStore : Store -> String
 printStore s =
     "[" ++ (List.map (\(x, v) -> x ++ " := " ++ printValue v) s |> String.join ", ") ++ "] \n"
 
+
+printOutput : Store -> String
+printOutput store =
+    printValue (outputValue store)
+
+
+outputValue : Store -> Value
+outputValue store =
+    case store of
+        ( "output", v ) :: _ ->
+            v
+
+        _ :: rest ->
+            outputValue rest
+
+        [] ->
+            VList []
+
 -- printIO : IO -> String
 -- printIO io =
 --     "input: [" ++ (List.map printValue (getIO io "input") |> String.join ", ") ++ "]\n output: [" ++ (List.map printValue (getIO io "output") |> String.join ", ") ++ "] \n"

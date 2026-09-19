@@ -1,14 +1,14 @@
 port module Main exposing (..)
 
-import View
 import Browser exposing (..)
+import Controller exposing (evalCodeToModel, openFill, saveAndFill, openInput, saveInput, unevalCodeToModel)
+import Dict
 import Html exposing (Html)
-import Model exposing (Msg(..), Model, Mode(..))
-import Syntax exposing (HoleName(..), Value(..))
+import Model exposing (Model, Mode(..), Msg(..))
+import Set
 import String exposing (left)
-import Parser_ exposing (parseHoleName)
-import Controller exposing (evalCodeToModel)
-import UnEval exposing (updateContext, updateCode)
+import View
+
 
 main : Program () Model Msg
 main =
@@ -21,7 +21,8 @@ main =
 
 
 init : () -> ( Model, Cmd Msg )
-init _ = (Model.initModel, Cmd.none)
+init _ =
+    ( Model.initModel, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -30,92 +31,122 @@ update msg model =
         SaveCode newCode ->
             let
                 newModel =
-                    evalCodeToModel newCode model.holeBindings
-
-                cmd =
-                    if newModel.mode == HTML then
-                        sendOutput newModel.output
-                    else
-                        setConsoleVisible newModel.output
+                    evalCodeToModel newCode model
             in
-            (newModel, cmd)
+            ( newModel, setConsoleVisible newModel.output )
 
         OutputChange newOutput ->
             let
-                (nop, flag, cmd) = 
-                    if  model.mode == Console && left 9 newOutput == "<textarea" 
-                    then
-                        (model.output, False, Cmd.none)
+                ( nop, flag, cmd ) =
+                    if model.mode == Console && left 9 newOutput == "<textarea" then
+                        ( model.output, False, Cmd.none )
+
                     else
-                        (newOutput, True, setAceRed ())
+                        ( newOutput, True, setAceRed () )
             in
-            ({model | output = nop
-                    , isOutputChange = flag}, cmd)
+            ( { model | output = nop, isOutputChange = flag }, cmd )
 
-        ContextChange index newVal ->
-            let 
-                context =
-                    updateContext index newVal model
+        FillAndResume ->
+            ( openFill model, Cmd.none )
 
+        ToggleFillHole key ->
+            ( { model
+                | fillSelected =
+                    if Set.member key model.fillSelected then
+                        Set.remove key model.fillSelected
+
+                    else
+                        Set.insert key model.fillSelected
+              }
+            , Cmd.none
+            )
+
+        EditFillHole key text ->
+            ( { model | fillDraft = Dict.insert key text model.fillDraft }, Cmd.none )
+
+        SaveFills ->
+            let
+                newModel =
+                    saveAndFill model
             in
-            case context of
-                [] ->
-                    ({model | editContextItem = (index, newVal) 
-                            , isOutputChange = True }, setAceRed ())
-                _ ->
-                    ({model | context = context
-                            , isOutputChange = True
-                            , editContextItem = (-1, "") }, setAceRed ())
-        
-        ChangeCurrentHole selected ->
-            ({model | currentContext = 
-                        case (parseHoleName selected) of
-                            Result.Ok hn -> hn
-                            Result.Err _ -> HOri -1
-                    , path = []
-            }, Cmd.none)
+            ( newModel
+            , Cmd.batch
+                [ setConsoleVisible newModel.output
+                , sendCode ( newModel.code, False )
+                ]
+            )
 
-        ChangePath (holename, index, varname) ->
-            ({ model | path = model.path++[(holename, index, varname)]
-            }, Cmd.none)
+        CancelFill ->
+            ( { model
+                | filling = False
+                , oriHoles = []
+                , fillDraft = Dict.empty
+                , fillSelected = Set.empty
+              }
+            , Cmd.none
+            )
+
+        SelectResidual id ->
+            ( { model | currentContext = id }, Cmd.none )
 
         Preview ->
             let
-                (newHB, newCode) =
-                    updateCode model
-
+                newModel =
+                    unevalCodeToModel model False
             in
-            ({model | code = newCode
-                    , holeBindings = newHB
-            }, sendCode (newCode, False))
+            ( newModel
+            , Cmd.batch
+                [ setConsoleVisible newModel.output
+                , sendCode ( newModel.code, False )
+                ]
+            )
 
         Update ->
             let
-                (newHB, newCode) =
-                    updateCode model
+                newModel =
+                    unevalCodeToModel model True
             in
-            ({model | code         = newCode
-                    , codeBackup   = newCode
-                    , holeBindings = newHB
-                    , hbBackup     = newHB
-                    , isOutputChange = False
-            }, sendCode (newCode, False))
-
+            ( newModel
+            , Cmd.batch
+                [ setConsoleVisible newModel.output
+                , sendCode ( newModel.code, False )
+                ]
+            )
 
         Revert ->
-            ({model | code = model.codeBackup
-                    , holeBindings = model.hbBackup
-            }, sendCode (model.codeBackup, model.isOutputChange))
+            ( { model
+                | code = model.codeBackup
+                , holeBindings = model.hbBackup
+              }
+            , sendCode ( model.codeBackup, model.isOutputChange )
+            )
 
         ClearHB ->
-            ({model | holeBindings = []}, Cmd.none)
+            ( { model | holeBindings = [] }, Cmd.none )
+
+        OpenInput ->
+            ( openInput model, Cmd.none )
+
+        EditInput text ->
+            ( { model | inputDraft = text }, Cmd.none )
+
+        SaveInput ->
+            let
+                newModel =
+                    saveInput model
+            in
+            ( newModel, setConsoleVisible newModel.output )
+
+        CancelInput ->
+            ( { model | editingInput = False, inputDraft = "" }, Cmd.none )
 
 
 view : Model -> Html Msg
-view = View.view
+view =
+    View.view
 
 
-port sendCode : (String, Bool) -> Cmd msg
+port sendCode : ( String, Bool ) -> Cmd msg
 port sendOutput : String -> Cmd msg
 port setAceRed : () -> Cmd msg
 port setConsoleVisible : String -> Cmd msg
