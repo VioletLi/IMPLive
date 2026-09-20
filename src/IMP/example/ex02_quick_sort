@@ -1,0 +1,43 @@
+a := [4, 2, 6, 5, 3, 1, 7];
+st := [a];
+sp := 0;
+out := [];
+while sp >= 0 do
+    ls := st[sp];
+    sp := sp - 1;
+    if ls.length <= 1 then
+        out := out ++ ls
+    else
+        pivot := ls[0];
+        smaller := [];
+        bigger := [];
+        i := 1;
+        while i < ls.length do
+            if ls[i] < pivot then
+                smaller := smaller ++ [ls[i]]
+            else
+                bigger := bigger ++ [ls[i]]
+            end;
+            i := i + 1
+        end;
+        sp := sp + 1;
+        if sp < st.length then
+            st[sp] := bigger
+        else
+            st := st ++ [bigger]
+        end;
+        sp := sp + 1;
+        if sp < st.length then
+            st[sp] := [pivot]
+        else
+            st := st ++ [[pivot]]
+        end;
+        sp := sp + 1;
+        if sp < st.length then
+            st[sp] := smaller
+        else
+            st := st ++ [smaller]
+        end
+    end
+end;
+print out
