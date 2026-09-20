@@ -4,11 +4,11 @@ import Model exposing (..)
 import Set
 import Debug exposing (toString)
 import Dict
-import IMP.Parser_ exposing (parse, parseExpr, parseValue)
+import IMP.Parser_ exposing (parse, parseExpr, parseStore, parseValue)
 import IMP.Eval exposing (exec, fill)
 import IMP.Uneval exposing (unexec)
 import IMP.Utils exposing (preprocessStmt, exprHoleKey, lookup, updateStore, substHoleinStmt)
-import IMP.Printer exposing (printOutput, printStmt, printValue)
+import IMP.Printer exposing (printOutput, printStmt, printStore, printValue)
 import IMP.Syntax exposing (..)
 
 
@@ -31,6 +31,7 @@ evalCodeToModel code model =
                 , output = printOutput res.store
                 , isOutputChange = False
                 , currentContext = -1
+                , contextDraft = ""
                 , hbBackup = model.holeBindings
             }
 
@@ -47,68 +48,86 @@ evalCodeToModel code model =
 
 unevalCodeToModel : Model -> Bool -> Model
 unevalCodeToModel model commit =
-    case parseValue model.output of
-        Ok (VList vs) ->
-            case parse model.code of
-                Ok stmt ->
-                    let
-                        ( stmt_, hcount ) =
-                            preprocessStmt stmt 0
+    case applyContextDraft model of
+        Err info ->
+            { model | output = info }
 
-                        newstore =
-                            updateStore "output" (VList vs) model.store
-
-                        res =
-                            unexec model.startStore model.holeBindings [] Set.empty stmt_ hcount 0 ( newstore, model.riStmts )
-                    in
-                    case res.stmt of
-                        SError info ->
-                            { model | output = info }
-
-                        _ ->
+        Ok model1 ->
+            case parseValue model1.output of
+                Ok (VList vs) ->
+                    case parse model1.code of
+                        Ok stmt ->
                             let
-                                newCode =
-                                    printStmt res.stmt
+                                ( stmt_, hcount ) =
+                                    preprocessStmt stmt 0
+
+                                newstore =
+                                    updateStore "output" (VList vs) model1.store
+
+                                res =
+                                    unexec model1.startStore model1.holeBindings [] Set.empty stmt_ hcount 0 ( newstore, model1.riStmts )
                             in
-                            { model
-                                | code = newCode
-                                , holeBindings = res.holeBindings
-                                , riStmts = res.riStmts
-                                , store = newstore
-                                , output = printValue (VList vs)
-                                , codeBackup =
-                                    if commit then
-                                        newCode
+                            case res.stmt of
+                                SError info ->
+                                    { model1 | output = info }
 
-                                    else
-                                        model.codeBackup
-                                , hbBackup =
-                                    if commit then
-                                        res.holeBindings
+                                _ ->
+                                    let
+                                        newCode =
+                                            printStmt res.stmt
 
-                                    else
-                                        model.hbBackup
-                                , isOutputChange =
-                                    if commit then
-                                        False
+                                        keepId =
+                                            keepContextId model1.currentContext res.riStmts
+                                    in
+                                    { model1
+                                        | code = newCode
+                                        , holeBindings = res.holeBindings
+                                        , riStmts = res.riStmts
+                                        , store = newstore
+                                        , output = printValue (VList vs)
+                                        , codeBackup =
+                                            if commit then
+                                                newCode
 
-                                    else
-                                        model.isOutputChange
-                                , currentContext = -1
-                            }
+                                            else
+                                                model1.codeBackup
+                                        , hbBackup =
+                                            if commit then
+                                                res.holeBindings
 
-                Err info ->
-                    { model | output = toString info }
+                                            else
+                                                model1.hbBackup
+                                        , isOutputChange =
+                                            if commit then
+                                                False
 
-        Ok _ ->
-            { model | output = "Output must be a list, e.g. [1]" }
+                                            else
+                                                model1.isOutputChange
+                                        , currentContext = keepId
+                                        , contextDraft = printRiContext keepId res.riStmts
+                                    }
 
-        Err _ ->
-            { model | output = "Parse error in output" }
+                        Err info ->
+                            { model1 | output = toString info }
+
+                Ok _ ->
+                    { model1 | output = "Output must be a list, e.g. [1]" }
+
+                Err _ ->
+                    { model1 | output = "Parse error in output" }
 
 
 openFill : Model -> Model
 openFill model =
+    let
+        model1 =
+            commitContextDraft model
+    in
+    openFillWith model1
+
+
+openFillWith : Model -> Model
+openFillWith model =
     case parse model.code of
         Ok stmt ->
             let
@@ -134,6 +153,16 @@ openFill model =
 
 saveAndFill : Model -> Model
 saveAndFill model =
+    case applyContextDraft model of
+        Err info ->
+            { model | output = info }
+
+        Ok model1 ->
+            saveAndFillWith model1
+
+
+saveAndFillWith : Model -> Model
+saveAndFillWith model =
     let
         parsed =
             model.fillSelected
@@ -179,6 +208,9 @@ saveAndFill model =
 
                     Err _ ->
                         model.code
+
+            keepId =
+                keepContextId model.currentContext res.riStmts
         in
         { model
             | filling = False
@@ -190,7 +222,8 @@ saveAndFill model =
             , store = res.store
             , riStmts = res.riStmts
             , output = printOutput res.store
-            , currentContext = -1
+            , currentContext = keepId
+            , contextDraft = printRiContext keepId res.riStmts
             , oriHoles = []
             , fillDraft = Dict.empty
             , fillSelected = Set.empty
@@ -235,6 +268,104 @@ saveInput model =
 
         Err _ ->
             { model | output = "Parse error in input" }
+
+
+selectResidual : StmtID -> Model -> Model
+selectResidual id model =
+    let
+        model1 =
+            commitContextDraft model
+    in
+    { model1
+        | currentContext = id
+        , contextDraft = printRiContext id model1.riStmts
+    }
+
+
+contextChange : String -> Model -> Model
+contextChange text model =
+    commitContextDraft { model | contextDraft = text }
+
+
+commitContextDraft : Model -> Model
+commitContextDraft model =
+    case parseContextDraft model of
+        Ok store ->
+            { model | riStmts = updateRiStore model.currentContext store model.riStmts }
+
+        Err _ ->
+            model
+
+
+applyContextDraft : Model -> Result String Model
+applyContextDraft model =
+    if model.currentContext < 0 then
+        Ok model
+
+    else
+        case parseContextDraft model of
+            Ok store ->
+                Ok { model | riStmts = updateRiStore model.currentContext store model.riStmts }
+
+            Err info ->
+                Err info
+
+
+parseContextDraft : Model -> Result String Store
+parseContextDraft model =
+    if model.currentContext < 0 then
+        Err "No residual selected"
+
+    else
+        case parseStore model.contextDraft of
+            Ok store ->
+                Ok store
+
+            Err _ ->
+                Err "Parse error in residual context"
+
+
+updateRiStore : StmtID -> Store -> RiStmts -> RiStmts
+updateRiStore id store ris =
+    List.map
+        (\( id_, s, st ) ->
+            if id_ == id then
+                ( id_, s, store )
+
+            else
+                ( id_, s, st )
+        )
+        ris
+
+
+printRiContext : StmtID -> RiStmts -> String
+printRiContext id ris =
+    case riStoreOf id ris of
+        Just store ->
+            printStore store
+
+        Nothing ->
+            ""
+
+
+riStoreOf : StmtID -> RiStmts -> Maybe Store
+riStoreOf id ris =
+    case List.filter (\( id_, _, _ ) -> id_ == id) ris of
+        ( _, _, store ) :: _ ->
+            Just store
+
+        [] ->
+            Nothing
+
+
+keepContextId : StmtID -> RiStmts -> StmtID
+keepContextId id ris =
+    if List.any (\( id_, _, _ ) -> id_ == id) ris then
+        id
+
+    else
+        -1
+
 
 collectOriInRiStmts : RiStmts -> List HoleName
 collectOriInRiStmts ris =

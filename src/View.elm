@@ -216,19 +216,17 @@ displayResidualRow selected ( id, stmt, _ ) =
 
 displaySelectedStore : Model -> Html Msg
 displaySelectedStore model =
-    let
-        selected =
-            List.filter (\( id, _, _ ) -> id == model.currentContext) model.riStmts
-    in
-    case selected of
-        ( _, _, store ) :: _ ->
-            Html.div
-                [ Attr.style "padding" "8px"
-                , Attr.style "font-family" "Verdana"
-                , Attr.style "font-size" "14px"
-                , Attr.style "white-space" "pre-wrap"
-                ]
-                [ Html.text (printStore store) ]
+    if model.currentContext < 0 then
+        Html.text ""
 
-        [] ->
-            Html.text ""
+    else
+        Html.div [ Attr.id "context-area" ]
+            [ Html.div [ Attr.class "area-title" ]
+                [ Html.text "CONTEXT" ]
+            , Html.textarea
+                [ Attr.id "console-context"
+                , Attr.value model.contextDraft
+                , Events.onInput ContextChange
+                ]
+                []
+            ]

@@ -15,6 +15,81 @@ parseValue =
     run (succeed identity |. mSpaces |= value_ |. end)
 
 
+parseStore : String -> Result (List DeadEnd) Store
+parseStore =
+    run (succeed identity |. mSpaces |= store_ |. end)
+
+
+store_ : Parser Store
+store_ =
+    succeed identity
+        |. symbol "["
+        |. mSpaces
+        |= storeItems
+        |. symbol "]"
+        |. mSpaces
+
+
+storeItems : Parser Store
+storeItems =
+    oneOf
+        [ succeed (\bind rest -> bind :: rest)
+            |= storeBind
+            |= storeTail
+        , succeed []
+        ]
+
+
+storeBind : Parser ( String, Value )
+storeBind =
+    succeed (\x v -> ( x, v ))
+        |= storeVar
+        |. mSpaces
+        |. symbol ":="
+        |. mSpaces
+        |= lazy (\_ -> value_)
+
+
+storeTail : Parser Store
+storeTail =
+    loop [] storeTailHelper
+
+
+storeTailHelper : Store -> Parser (Step Store Store)
+storeTailHelper revItems =
+    oneOf
+        [ succeed (\bind -> Loop (bind :: revItems))
+            |. symbol ","
+            |. mSpaces
+            |= storeBind
+        , succeed ()
+            |> map (\_ -> Done (List.reverse revItems))
+        ]
+
+
+storeVar : Parser String
+storeVar =
+    variable
+        { start = Char.isLower
+        , inner = \c -> Char.isAlphaNum c || c == '_'
+        , reserved =
+            Set.fromList
+                [ "if"
+                , "then"
+                , "else"
+                , "end"
+                , "while"
+                , "do"
+                , "skip"
+                , "read"
+                , "print"
+                , "true"
+                , "false"
+                , "length"
+                ]
+        }
+
+
 value_ : Parser Value
 value_ =
     oneOf
