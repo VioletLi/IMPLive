@@ -1410,46 +1410,77 @@ comp ws e1 e2 holeBindings store readOnly val hcount op =
             _ -> (estore, eholeBindings, (eexpr, ehcount))
     
 
+exprOk : Expr -> Bool
+exprOk e =
+    case e of
+        EError _ ->
+            False
+
+        _ ->
+            True
+
+
 checkChange : WS -> Store -> HoleBindings -> Set String -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
 checkChange ws store holeBindings readOnly e1 e2 v1 v2 newv1 newv2 hcount op =
     if newv1 == v1 && newv2 == v2 then
         (store, holeBindings, (Eop ws op e1 e2, hcount))
-    else if newv1 == v1 then
-        let
-            (store2, holeBindings2, (expr2, hcount2)) =
-                uneval store holeBindings e2 readOnly newv2 hcount
-        in
-            (store2, holeBindings2, (Eop ws op e1 expr2, hcount2))
-    else if newv2 == v2 then
-        let
-            (store1, holeBindings1, (expr1, hcount1)) =
-                uneval store holeBindings e1 readOnly newv1 hcount
-        in
-            (store1, holeBindings1, (Eop ws op expr1 e2, hcount1))
     else
         let
+            leftChanged =
+                newv1 /= v1
+
+            rightChanged =
+                newv2 /= v2
+
             (store1, holeBindings1, (expr1, hcount1)) =
-                uneval store holeBindings e1 readOnly newv1 hcount
+                if leftChanged then
+                    uneval store holeBindings e1 readOnly newv1 hcount
+                else
+                    (store, holeBindings, (e1, hcount))
 
             (store2, holeBindings2, (expr2, hcount2)) =
-                uneval store holeBindings e2 readOnly newv2 hcount1
-        in
-        case (expr1, expr2) of
-            (EError _, EError _) ->
-                ([], [], (EError "error: uneval: both branches error", 0))
+                if rightChanged then
+                    uneval store holeBindings e2 readOnly newv2 hcount1
+                else
+                    (store, holeBindings, (e2, hcount1))
 
-            (EError _, _) ->
-                (store2, holeBindings2, (Eop ws op e1 expr2, hcount2))
+            ok1 =
+                exprOk expr1
 
-            (_, EError _) ->
-                (store1, holeBindings1, (Eop ws op expr1 e2, hcount1))
+            ok2 =
+                exprOk expr2
 
-            _ ->
+            both =
                 ( mergeStore store1 store2 store
                 , mergeHoleBindings holeBindings1 holeBindings2 holeBindings
                 , (Eop ws op expr1 expr2, hcount2)
                 )
-        
+
+            leftOnly =
+                (store1, holeBindings1, (Eop ws op expr1 e2, hcount1))
+
+            rightOnly =
+                (store2, holeBindings2, (Eop ws op e1 expr2, hcount2))
+
+            fail =
+                ([], [], (EError "error: uneval: operand update failed", 0))
+        in
+        if leftChanged && rightChanged then
+            if ok1 && ok2 then
+                both
+            else if ok1 then
+                leftOnly
+            else
+                rightOnly
+        else if leftChanged then
+            if ok1 then
+                leftOnly
+            else
+                fail
+        else if ok2 then
+            rightOnly
+        else
+            fail 
 mergeValue : Value -> Value -> Value -> Value
 mergeValue orig v1 v2 =
     case (orig, v1, v2) of

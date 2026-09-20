@@ -464,13 +464,18 @@ fill : HoleMap -> HoleBindings -> FwdRes -> FwdRes
 fill holes hb fwdRes =
     let
         newris = substHole holes fwdRes.riStmts
-        (execList, newris_) = tryExec hb newris fwdRes.scount
+        (execList, newris_, partial) = tryExec hb newris fwdRes.scount fwdRes.store
+        store1 = substStoreByMap partial fwdRes.store
     in
-        if List.isEmpty execList then reindexResiduals { fwdRes | riStmts = newris_ }
+        if List.isEmpty execList then
+            if Dict.isEmpty partial then
+                reindexResiduals { fwdRes | riStmts = newris_, store = store1 }
+            else
+                fill Dict.empty hb { fwdRes | store = store1, riStmts = newris_ }
         else
-            let (store_, h2eMap) = substHoleInStore fwdRes.store execList Dict.empty in
+            let (store_, h2eMap) = substHoleInStore store1 execList Dict.empty in
             let (newris__, h2eMap_) = substHoleInStmtStore newris_ execList h2eMap in
-            fill h2eMap_ hb {fwdRes | store = store_, riStmts = newris__}
+            fill (Dict.union h2eMap_ partial) hb {fwdRes | store = store_, riStmts = newris__}
         -- let (io_, iomap) = substHoleInIO fwdRes.io execList Dict.empty in
 
 substHoleInStmtStore : RiStmts -> List (StmtID, Store) -> HoleMap -> (RiStmts, HoleMap)
@@ -482,6 +487,102 @@ substHoleInStmtStore ris execList h2eMap =
             let (resstmt, newh2eMap_) = substHoleInStmtStore rest execList newh2eMap in
             -- let newio = substHoleInIO io execList in
             ((id, s, newstore)::resstmt, newh2eMap_)
+
+holeDiff : Value -> Value -> HoleMap -> HoleMap
+holeDiff old new acc =
+    case (old, new) of
+        (VHole h id, _) ->
+            if old == new then
+                acc
+            else
+                Dict.insert (valHoleKey h id) (value2Expr new) acc
+
+        (VList os, VList ns) ->
+            holeDiffList os ns acc
+
+        _ ->
+            acc
+
+
+holeDiffList : List Value -> List Value -> HoleMap -> HoleMap
+holeDiffList os ns acc =
+    case (os, ns) of
+        (o :: os_, n :: ns_) ->
+            holeDiffList os_ ns_ (holeDiff o n acc)
+
+        _ ->
+            acc
+
+
+exprToValue : Expr -> Value
+exprToValue e =
+    case e of
+        EInt _ i ->
+            VInt i
+
+        EBool _ b ->
+            VBool b
+
+        EString _ s ->
+            VString s
+
+        EList _ es ->
+            VList (List.map exprToValue es)
+
+        EHole _ h ->
+            VHole h -1
+
+        _ ->
+            eval [] [] e
+
+
+substValByMap : HoleMap -> Value -> Value
+substValByMap holes v =
+    case v of
+        VHole h id ->
+            case Dict.get (valHoleKey h id) holes of
+                Just e ->
+                    exprToValue e
+
+                Nothing ->
+                    v
+
+        VList vs ->
+            VList (List.map (substValByMap holes) vs)
+
+        _ ->
+            v
+
+
+substStoreByMap : HoleMap -> Store -> Store
+substStoreByMap holes store =
+    List.map (\(x, v) -> (x, substValByMap holes v)) store
+
+
+patchRiVar : String -> Value -> RiStmts -> RiStmts
+patchRiVar x v ris =
+    List.map (\(id, s, store) -> (id, s, updateStore x v store)) ris
+
+
+replaceOutputRow : Int -> Value -> Store -> Store
+replaceOutputRow i row store =
+    case lookup "output" store of
+        Just (VList vs) ->
+            if i >= 0 && i < List.length vs then
+                updateStore "output" (VList (List.take i vs ++ [ row ] ++ List.drop (i + 1) vs)) store
+            else if i == List.length vs then
+                updateStore "output" (VList (vs ++ [ row ])) store
+            else
+                store
+
+        _ ->
+            store
+
+
+patchRiOutputRow : Int -> Value -> RiStmts -> RiStmts
+patchRiOutputRow i row ris =
+    List.map (\(id, s, store) -> (id, s, replaceOutputRow i row store)) ris
+
 
 processHoleinList : List Value -> String -> SCount -> Value -> List Value
 processHoleinList vs x scount path =
@@ -517,128 +618,252 @@ processHoleAt v x scount path =
 
         _ ->
             v
-tryExec : HoleBindings -> RiStmts -> SCount -> (List (StmtID, Store), RiStmts)
-tryExec hb ris scount =
+keepResidual : HoleBindings -> RiStmts -> SCount -> Store -> StmtID -> Stmt -> Store -> (List (StmtID, Store), RiStmts, HoleMap)
+keepResidual hb rest scount env id s store =
+    let
+        (exec_, stmt_, partial) =
+            tryExec hb rest scount env
+    in
+    (exec_, (id, s, store) :: stmt_, partial)
+
+
+partialAssign : HoleBindings -> RiStmts -> SCount -> Store -> StmtID -> Stmt -> Store -> String -> Value -> Value -> (List (StmtID, Store), RiStmts, HoleMap)
+partialAssign hb rest scount env id s store x oldv newv =
+    let
+        partial =
+            holeDiff oldv newv Dict.empty
+
+        rest_ =
+            substHole partial (patchRiVar x newv rest)
+
+        env_ =
+            substStoreByMap partial (updateStore x newv env)
+
+        (exec_, stmt_, partial_) =
+            tryExec hb rest_ scount env_
+    in
+    (exec_, (id, s, store) :: stmt_, Dict.union partial partial_)
+
+
+tryExec : HoleBindings -> RiStmts -> SCount -> Store -> (List (StmtID, Store), RiStmts, HoleMap)
+tryExec hb ris scount env =
     case ris of
-        [] -> ([], [])
+        [] ->
+            ([], [], Dict.empty)
+
         (id, s, store) :: rest ->
             case s of
-                SAssign ws e1 e2 ->
+                SAssign _ e1 e2 ->
                     case e1 of
                         EVar _ x ->
                             let v = eval store hb e2 in 
                             case v of
-                                VHole HTmp _ -> 
-                                    let (exec_, stmt_) = tryExec hb rest scount in
-                                    (exec_, (id, s, store)::stmt_)
+                                VHole HTmp _ ->
+                                    keepResidual hb rest scount env id s store
+
                                 VList vs ->
                                     if hasHole vs then
-                                        let (exec_, stmt_) = tryExec hb rest scount in
-                                        (exec_, (id, s, store)::stmt_)
+                                        let
+                                            newv =
+                                                VList (processHoleinList vs x id (VList []))
+
+                                            oldv =
+                                                case lookup x env of
+                                                    Just ov ->
+                                                        ov
+
+                                                    Nothing ->
+                                                        case lookup x store of
+                                                            Just ov ->
+                                                                ov
+
+                                                            Nothing ->
+                                                                VList []
+                                        in
+                                        partialAssign hb rest scount env id s store x oldv newv
                                     else
-                                        let (exec_, stmt_) = tryExec hb rest scount in
-                                        ((id, updateStore x v store)::exec_, stmt_)
+                                        let (exec_, stmt_, partial) = tryExec hb rest scount (updateStore x v env) in
+                                        ((id, updateStore x v store)::exec_, stmt_, partial)
+
                                 _ ->
-                                    let (exec_, stmt_) = tryExec hb rest scount in
-                                    ((id, updateStore x v store)::exec_, stmt_)
-                        EIndex _ e1_ e2_ ->
+                                    let (exec_, stmt_, partial) = tryExec hb rest scount (updateStore x v env) in
+                                    ((id, updateStore x v store)::exec_, stmt_, partial)
+
+                        EIndex _ _ _ ->
                             let (x, path) = findIndex store hb e1 in
                             let v = eval store hb e2 in
                             case path of
                                 VHole _ _ ->
-                                    let (exec_, stmt_) = tryExec hb rest scount in
-                                    (exec_, (id, s, store)::stmt_)
-                                VList _ ->
+                                    keepResidual hb rest scount env id s store
+
+                                VList p ->
                                     case lookup x store of
                                         Just (VList vs) ->
                                             case v of
                                                 VHole _ _ ->
-                                                    let (exec_, stmt_) = tryExec hb rest scount in
-                                                    (exec_, (id, s, store)::stmt_)
+                                                    keepResidual hb rest scount env id s store
+
                                                 VList vs_ ->
                                                     if hasHole vs_ then
-                                                        let (exec_, stmt_) = tryExec hb rest scount in
-                                                        (exec_, (id, s, store)::stmt_)
+                                                        let
+                                                            resv =
+                                                                processHoleinList vs_ x id (VList p)
+
+                                                            newv =
+                                                                updateValue (VList p) (VList vs) (VList resv)
+
+                                                            oldv =
+                                                                case lookup x env of
+                                                                    Just ov ->
+                                                                        ov
+
+                                                                    Nothing ->
+                                                                        VList vs
+                                                        in
+                                                        partialAssign hb rest scount env id s store x oldv newv
                                                     else
-                                                        let (exec_, stmt_) = tryExec hb rest scount in
-                                                        ((id, updateStore x (updateValue path (VList vs) v) store)::exec_, stmt_)
+                                                        let
+                                                            store1 =
+                                                                updateStore x (updateValue (VList p) (VList vs) v) store
+                                                            (exec_, stmt_, partial) =
+                                                                tryExec hb rest scount (updateStore x (updateValue (VList p) (VList vs) v) env)
+                                                        in
+                                                        ((id, store1)::exec_, stmt_, partial)
+
                                                 _ ->
-                                                    let (exec_, stmt_) = tryExec hb rest scount in
-                                                    ((id, updateStore x (updateValue path (VList vs) v) store)::exec_, stmt_)
+                                                    let
+                                                        store1 =
+                                                            updateStore x (updateValue (VList p) (VList vs) v) store
+                                                        (exec_, stmt_, partial) =
+                                                            tryExec hb rest scount (updateStore x (updateValue (VList p) (VList vs) v) env)
+                                                    in
+                                                    ((id, store1)::exec_, stmt_, partial)
+
                                         _ ->
-                                            ([], [])
+                                            ([], [], Dict.empty)
+
                                 _ ->
-                                    ([], [])
-                        _ -> ([], [])
+                                    ([], [], Dict.empty)
+
+                        _ ->
+                            ([], [], Dict.empty)
                         
-                SIf ws e s1 s2 -> 
+                SIf _ e s1 s2 ->
                     let v = eval store hb e in 
                     case v of
-                        VHole HTmp _ -> 
-                            let (exec_, stmt_) = tryExec hb rest scount in
-                            (exec_, (id, s, store)::stmt_)
+                        VHole HTmp _ ->
+                            keepResidual hb rest scount env id s store
+
                         VBool True ->
                             let res = exec store hb [] s1 Set.empty scount in
-                            let (exec_, stmt_) = tryExec hb rest res.scount in
-                            ((id, res.store)::exec_, res.riStmts++stmt_)
-                        VBool False -> 
+                            let (exec_, stmt_, partial) = tryExec hb rest res.scount res.store in
+                            ((id, res.store)::exec_, res.riStmts++stmt_, partial)
+
+                        VBool False ->
                             let res = exec store hb [] s2 Set.empty scount in
-                            let (exec_, stmt_) = tryExec hb rest res.scount in
-                            ((id, res.store)::exec_, res.riStmts++stmt_)
-                        _ -> ([], [])
-                SWhile ws e s_ -> 
+                            let (exec_, stmt_, partial) = tryExec hb rest res.scount res.store in
+                            ((id, res.store)::exec_, res.riStmts++stmt_, partial)
+
+                        _ ->
+                            ([], [], Dict.empty)
+
+                SWhile ws e s_ ->
                     let v = eval store hb e in 
                     case v of
-                        VHole HTmp _ -> 
-                            let (exec_, stmt_) = tryExec hb rest scount in
-                            (exec_, (id, SIf [] e (SSeq [] s_ (SWhile ws e s_)) (SSkip []), store)::stmt_)
+                        VHole HTmp _ ->
+                            keepResidual hb rest scount env id (SIf [] e (SSeq [] s_ (SWhile ws e s_)) (SSkip [])) store
+
                         VBool True ->
                             let res = exec store hb [] (SSeq [] s_ (SWhile ws e s_)) Set.empty scount in
-                            let (exec_, stmt_) = tryExec hb rest res.scount in
-                            ((id, res.store)::exec_, res.riStmts++stmt_)
-                        VBool False -> 
-                            let (exec_, stmt_) = tryExec hb rest scount in
-                            ((id, store)::exec_, stmt_)
-                        _ -> ([], [])
-                SRead _ x -> 
+                            let (exec_, stmt_, partial) = tryExec hb rest res.scount res.store in
+                            ((id, res.store)::exec_, res.riStmts++stmt_, partial)
+
+                        VBool False ->
+                            let (exec_, stmt_, partial) = tryExec hb rest scount env in
+                            ((id, store)::exec_, stmt_, partial)
+
+                        _ ->
+                            ([], [], Dict.empty)
+
+                SRead _ x ->
                     let vs = lookup "input" store in
                     case vs of
-                        Just (VHole _ _) -> 
-                            let (exec_, stmt_) = tryExec hb rest scount in
-                            (exec_, (id, SRead [] x, store)::stmt_)
+                        Just (VHole _ _) ->
+                            keepResidual hb rest scount env id (SRead [] x) store
+
                         Just _ ->
                             let res = exec store hb [] (SRead [] x) Set.empty scount in
-                            let (exec_, stmt_) = tryExec hb rest res.scount in
-                            ((id, res.store)::exec_, res.riStmts++stmt_)
-                        _ -> ([(-2, [])], [])
+                            let (exec_, stmt_, partial) = tryExec hb rest res.scount res.store in
+                            ((id, res.store)::exec_, res.riStmts++stmt_, partial)
+
+                        _ ->
+                            ([(-2, [])], [], Dict.empty)
                         
-                SPrint ws e -> 
+                SPrint ws e ->
                     let v = eval store hb e in 
                     case v of
-                        VHole HTmp _ -> 
-                            let (exec_, stmt_) = tryExec hb rest scount in
-                            (exec_, (id, s, store)::stmt_)
+                        VHole HTmp _ ->
+                            keepResidual hb rest scount env id s store
+
                         VList vs ->
                             if hasHole vs then
-                                let (exec_, stmt_) = tryExec hb rest scount in
-                                (exec_, (id, s, store)::stmt_)
+                                case lookup "output" store of
+                                    Just (VList os) ->
+                                        let
+                                            rowIdx =
+                                                List.length os
+
+                                            newRow =
+                                                VList (processHoleinList vs "output" id (VList [ VInt rowIdx ]))
+
+                                            oldRow =
+                                                case lookup "output" env of
+                                                    Just (VList evs) ->
+                                                        nthValue evs rowIdx
+
+                                                    _ ->
+                                                        VList vs
+
+                                            partial =
+                                                holeDiff oldRow newRow Dict.empty
+
+                                            rest_ =
+                                                substHole partial (patchRiOutputRow rowIdx newRow rest)
+
+                                            env_ =
+                                                substStoreByMap partial (replaceOutputRow rowIdx newRow env)
+
+                                            (exec_, stmt_, partial_) =
+                                                tryExec hb rest_ scount env_
+                                        in
+                                        (exec_, (id, s, store) :: stmt_, Dict.union partial partial_)
+
+                                    _ ->
+                                        ([], [], Dict.empty)
                             else
-                                let (exec_, stmt_) = tryExec hb rest scount in
-                                let oldv = lookup "output" store in
-                                case oldv of
+                                case lookup "output" store of
                                     Just (VList vs_) ->
-                                        ((id, updateStore "output" (VList (vs_ ++ [VList vs])) store)::exec_, stmt_)
-                                    _ -> ([],[])
+                                        let
+                                            store1 =
+                                                updateStore "output" (VList (vs_ ++ [VList vs])) store
+                                            (exec_, stmt_, partial) =
+                                                tryExec hb rest scount (updateStore "output" (VList (vs_ ++ [VList vs])) env)
+                                        in
+                                        ((id, store1)::exec_, stmt_, partial)
+
+                                    _ ->
+                                        ([], [], Dict.empty)
 
                         VError _ ->
-                            let (exec_, stmt_) = tryExec hb rest scount in
-                            (exec_, (id, s, store)::stmt_)
+                            keepResidual hb rest scount env id s store
                                 
                         _ ->
                             let res = exec store hb [] (SPrint ws e) Set.empty scount in
-                            let (exec_, stmt_) = tryExec hb rest res.scount in
-                            ((id, res.store)::exec_, res.riStmts++stmt_)
-                _ -> ([(-2, [])], [])
+                            let (exec_, stmt_, partial) = tryExec hb rest res.scount res.store in
+                            ((id, res.store)::exec_, res.riStmts++stmt_, partial)
+
+                _ ->
+                    ([(-2, [])], [], Dict.empty)
 -- 如果能运行就把语句直接从residual删掉，记录被删掉的id，io/store,不然就更新，被删掉的id需要对应着去找到剩余的所有残余语句中的store，更新store的值
 
 isCompleted : StmtID -> List (StmtID, Store) -> Bool
