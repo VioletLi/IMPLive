@@ -1,6 +1,4 @@
 module IMP.Syntax exposing (..)
-import Syntax exposing (MValue(..))
-import Syntax exposing (Expr(..))
 
 type alias WS = List String
 

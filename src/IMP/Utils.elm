@@ -297,6 +297,49 @@ findVal path vs =
         _ ->
             VError "Index not found"
 
+holeBaseVar : HoleName -> Maybe String
+holeBaseVar h =
+    case h of
+        HVar x ->
+            Just x
+
+        HSub h_ _ ->
+            holeBaseVar h_
+
+        _ ->
+            Nothing
+
+
+lookupHoleVal : HoleName -> Store -> Maybe Value
+lookupHoleVal h store =
+    case holeBaseVar h of
+        Just x ->
+            case lookup x store of
+                Just v ->
+                    case nameToPath h of
+                        VList [] ->
+                            Just v
+
+                        path ->
+                            case v of
+                                VHole _ _ ->
+                                    Just v
+
+                                _ ->
+                                    case findVal path v of
+                                        VError _ ->
+                                            Nothing
+
+                                        v_ ->
+                                            Just v_
+
+                Nothing ->
+                    Nothing
+
+        Nothing ->
+            Nothing
+
+
 nameToPath : HoleName -> Value
 nameToPath h =
     VList (nameToPathList h)
