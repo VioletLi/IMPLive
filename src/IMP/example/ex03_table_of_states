@@ -1,5 +1,5 @@
 states := [ ["Alabama", "AL?", ""]
-  , _
+  , [_, _, _]
   , ["Arkansas", "AR?", ""]];
 i := 0;
 while i < states.length do

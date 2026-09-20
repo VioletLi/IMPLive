@@ -186,8 +186,17 @@ simplifyExpr store e holeBindings =
             let e2_ = simplifyExpr store e2 holeBindings in
             let v = eval store holeBindings (Eop [] op e1_ e2_) in
             case v of
-                VHole HTmp _ -> Eop [] op e1_ e2_
-                _ -> value2Expr v
+                VHole _ _ ->
+                    Eop [] op e1_ e2_
+
+                VList vs ->
+                    if hasHole vs then
+                        Eop [] op e1_ e2_
+                    else
+                        value2Expr v
+
+                _ ->
+                    value2Expr v
         EList _ es ->
             EList [] (List.map (\e_ -> simplifyExpr store e_ holeBindings) es)
         EIndex _ e1 e2 ->
@@ -217,8 +226,11 @@ simplifyExpr store e holeBindings =
                                     else 
                                         EError "Index out of range"
                                 _ -> EError "Unsupported expression"
-                        _ -> EError "Unsupported expression"
-                _ -> EError "Unsupported expression"
+                        VHole _ _ ->
+                            EIndex [] (simplifyExpr store e1 holeBindings) (simplifyExpr store e2 holeBindings)
+                        _ -> EIndex [] (simplifyExpr store e1 holeBindings) (simplifyExpr store e2 holeBindings)
+                _ ->
+                    EIndex [] (simplifyExpr store e1 holeBindings) (simplifyExpr store e2 holeBindings)
         ELength _ e_ ->
             let e__ = simplifyExpr store e_ holeBindings in
             case e__ of
@@ -517,14 +529,12 @@ tryExec hb ris scount =
                             let v = eval store hb e2 in 
                             case v of
                                 VHole HTmp _ -> 
-                                    let e_ = simplifyExpr store e2 hb in
                                     let (exec_, stmt_) = tryExec hb rest scount in
-                                    (exec_, (id, SAssign ws (EVar [] x) e_, store)::stmt_)
+                                    (exec_, (id, s, store)::stmt_)
                                 VList vs ->
                                     if hasHole vs then
-                                        let newe = simplifyExpr store e2 hb in
                                         let (exec_, stmt_) = tryExec hb rest scount in
-                                        (exec_, (id, SAssign ws (EVar [] x) newe, store)::stmt_)
+                                        (exec_, (id, s, store)::stmt_)
                                     else
                                         let (exec_, stmt_) = tryExec hb rest scount in
                                         ((id, updateStore x v store)::exec_, stmt_)
@@ -536,25 +546,19 @@ tryExec hb ris scount =
                             let v = eval store hb e2 in
                             case path of
                                 VHole _ _ ->
-                                    let e1s = simplifyLhs store e1 hb in
-                                    let e2s = simplifyExpr store e2 hb in
                                     let (exec_, stmt_) = tryExec hb rest scount in
-                                    (exec_, (id, SAssign ws e1s e2s, store)::stmt_)
+                                    (exec_, (id, s, store)::stmt_)
                                 VList _ ->
                                     case lookup x store of
                                         Just (VList vs) ->
                                             case v of
                                                 VHole _ _ ->
-                                                    let e1s = simplifyLhs store e1 hb in
-                                                    let e2s = simplifyExpr store e2 hb in
                                                     let (exec_, stmt_) = tryExec hb rest scount in
-                                                    (exec_, (id, SAssign ws e1s e2s, store)::stmt_)
+                                                    (exec_, (id, s, store)::stmt_)
                                                 VList vs_ ->
                                                     if hasHole vs_ then
-                                                        let e1s = simplifyLhs store e1 hb in
-                                                        let e2s = simplifyExpr store e2 hb in
                                                         let (exec_, stmt_) = tryExec hb rest scount in
-                                                        (exec_, (id, SAssign ws e1s e2s, store)::stmt_)
+                                                        (exec_, (id, s, store)::stmt_)
                                                     else
                                                         let (exec_, stmt_) = tryExec hb rest scount in
                                                         ((id, updateStore x (updateValue path (VList vs) v) store)::exec_, stmt_)
@@ -571,9 +575,8 @@ tryExec hb ris scount =
                     let v = eval store hb e in 
                     case v of
                         VHole HTmp _ -> 
-                            let e_ = simplifyExpr store e hb in
                             let (exec_, stmt_) = tryExec hb rest scount in
-                            (exec_, (id, SIf ws e_ s1 s2, store)::stmt_)
+                            (exec_, (id, s, store)::stmt_)
                         VBool True ->
                             let res = exec store hb [] s1 Set.empty scount in
                             let (exec_, stmt_) = tryExec hb rest res.scount in
@@ -613,14 +616,12 @@ tryExec hb ris scount =
                     let v = eval store hb e in 
                     case v of
                         VHole HTmp _ -> 
-                            let e_ = simplifyExpr store e hb in
                             let (exec_, stmt_) = tryExec hb rest scount in
-                            (exec_, (id, SPrint ws e_, store)::stmt_)
+                            (exec_, (id, s, store)::stmt_)
                         VList vs ->
                             if hasHole vs then
-                                let e_ = simplifyExpr store e hb in
                                 let (exec_, stmt_) = tryExec hb rest scount in
-                                (exec_, (id, SPrint ws e_, store)::stmt_)
+                                (exec_, (id, s, store)::stmt_)
                             else
                                 let (exec_, stmt_) = tryExec hb rest scount in
                                 let oldv = lookup "output" store in
@@ -628,6 +629,10 @@ tryExec hb ris scount =
                                     Just (VList vs_) ->
                                         ((id, updateStore "output" (VList (vs_ ++ [VList vs])) store)::exec_, stmt_)
                                     _ -> ([],[])
+
+                        VError _ ->
+                            let (exec_, stmt_) = tryExec hb rest scount in
+                            (exec_, (id, s, store)::stmt_)
                                 
                         _ ->
                             let res = exec store hb [] (SPrint ws e) Set.empty scount in

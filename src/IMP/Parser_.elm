@@ -18,11 +18,87 @@ parseValue =
 value_ : Parser Value
 value_ =
     oneOf
-        [ vlist
+        [ vhole
+        , vlist
         , vstring
         , vtrue
         , vfalse
         , vint
+        ]
+
+
+vhole : Parser Value
+vhole =
+    succeed VHole
+        |. symbol "{"
+        |. mSpaces
+        |= holeName
+        |. mSpaces
+        |. symbol "@"
+        |. mSpaces
+        |= holeId
+        |. mSpaces
+        |. symbol "}"
+        |. mSpaces
+
+
+holeId : Parser Int
+holeId =
+    oneOf
+        [ succeed negate
+            |. symbol "-"
+            |= int
+        , int
+        ]
+
+
+holeName : Parser HoleName
+holeName =
+    oneOf
+        [ succeed HTmp
+            |. symbol "*"
+        , succeed identity
+            |. symbol "#"
+            |= holeNameAfterHash
+        ]
+
+
+holeNameAfterHash : Parser HoleName
+holeNameAfterHash =
+    holeNameBase |> andThen holeSubs
+
+
+holeNameBase : Parser HoleName
+holeNameBase =
+    oneOf
+        [ succeed HOri
+            |= int
+        , succeed HVar
+            |= holeVar
+        ]
+
+
+holeVar : Parser String
+holeVar =
+    variable
+        { start = Char.isLower
+        , inner = Char.isAlphaNum
+        , reserved = Set.empty
+        }
+
+
+holeSubs : HoleName -> Parser HoleName
+holeSubs acc =
+    loop acc holeSubsHelper
+
+
+holeSubsHelper : HoleName -> Parser (Step HoleName HoleName)
+holeSubsHelper acc =
+    oneOf
+        [ succeed (\n -> Loop (HSub acc n))
+            |. symbol "_"
+            |= int
+        , succeed (Done acc)
         ]
 
 

@@ -137,8 +137,8 @@ uneval store holeBindings expr readOnly val hcount =
                             Just xv ->
                                 let newx = writeIndexValue path xv val in
                                 case newx of
-                                    VError s ->
-                                        ([], [], (EError s, 0))
+                                    VError _ ->
+                                        (store, holeBindings, (expr, hcount))
                                     _ ->
                                         (updateStore x newx store, holeBindings, (expr, hcount))
                             Nothing ->
@@ -168,10 +168,20 @@ unevalList : Store -> HoleBindings -> Set String -> List Expr -> List Value -> H
 unevalList store holeBindings readOnly es vs hcount =
     case (es, vs) of
         (e :: es_, v :: vs_) ->
-            let (newstore_, newhb_, (newexprs, hcount_)) = unevalList store holeBindings readOnly es_ vs_ hcount in
-            let (estore_, ehb_, (eexpr, ehcount_)) = uneval store holeBindings e readOnly v hcount_ in
-            (mergeStore estore_ newstore_ store, mergeHoleBindings ehb_ newhb_ holeBindings, (eexpr :: newexprs, ehcount_))
-        _ -> (store, holeBindings, ([], hcount))
+            let
+                (storeTail, hbTail, (exprs, hcount_)) =
+                    unevalList store holeBindings readOnly es_ vs_ hcount
+
+                (storeHead, hbHead, (eexpr, hcount__)) =
+                    uneval store holeBindings e readOnly v hcount_
+            in
+            ( mergeStore storeHead storeTail store
+            , mergeHoleBindings hbHead hbTail holeBindings
+            , (eexpr :: exprs, hcount__)
+            )
+
+        _ ->
+            (store, holeBindings, ([], hcount))
 
 unexec : Store -> HoleBindings -> RiStmts -> Set String -> Stmt -> HCount -> SCount -> (Store, RiStmts) -> UnexecRes
 unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriStmts) =
@@ -942,15 +952,18 @@ tryupdearith ws store holeBindings readOnly e1 e2 v1 v2 v val hcount op =
                     let 
                         (newv1, newv2) =
                             case (v1, v2) of
-                                (VHole _ _, VHole _ _) -> (VList [], VList vs)
-                                (VList vs1, VHole _ _) -> 
-                                    let (vs1_, vs2_) = if (List.length vs1) > (List.length vs) then (vs, []) else (List.take (List.length vs1) vs, List.drop (List.length vs1) vs)
-                                    in
-                                    (VList vs1_, VList vs2_)
+                                (VHole _ _, VHole _ _) ->
+                                    (VList vs, VList [])
+                                (VList vs1, VHole _ _) ->
+                                    if List.length vs1 <= List.length vs && List.take (List.length vs1) vs == vs1 then
+                                        (v1, VList (List.drop (List.length vs1) vs))
+                                    else
+                                        (VList vs, VList [])
                                 (VHole _ _, VList vs2) ->
-                                    let (vs1_, vs2_) = if (List.length vs2) > (List.length vs) then ([], vs) else (List.drop (List.length vs2) vs, List.take (List.length vs2) vs)
-                                    in
-                                    (VList vs1_, VList vs2_)
+                                    if List.length vs2 <= List.length vs && List.drop (List.length vs - List.length vs2) vs == vs2 then
+                                        (VList (List.take (List.length vs - List.length vs2) vs), v2)
+                                    else
+                                        (VList vs, VList [])
                                 (VList vs1, VList vs2) ->
                                     let (vs1_, vs2_) = if (List.length vs1) > (List.length vs) then (vs, []) else (List.take (List.length vs1) vs, List.drop (List.length vs1) vs)
                                     in
@@ -967,15 +980,18 @@ tryupdearith ws store holeBindings readOnly e1 e2 v1 v2 v val hcount op =
                     let 
                         (newv1, newv2) =
                             case (v1, v2) of
-                                (VHole _ _, VHole _ _) -> (VString "", VString s)
-                                (VString s1, VHole _ _) -> 
-                                    let (s1_, s2_) = if (String.length s1) > (String.length s) then (s, "") else (String.left (String.length s1) s, String.dropLeft (String.length s1) s)
-                                    in
-                                    (VString s1_, VString s2_)
+                                (VHole _ _, VHole _ _) ->
+                                    (VString s, VString "")
+                                (VString s1, VHole _ _) ->
+                                    if String.length s1 <= String.length s && String.left (String.length s1) s == s1 then
+                                        (v1, VString (String.dropLeft (String.length s1) s))
+                                    else
+                                        (VString s, VString "")
                                 (VHole _ _, VString s2) ->
-                                    let (s1_, s2_) = if (String.length s2) > (String.length s) then ("", s) else (String.dropRight (String.length s2) s, String.right (String.length s2) s)
-                                    in
-                                    (VString s1_, VString s2_)
+                                    if String.length s2 <= String.length s && String.right (String.length s2) s == s2 then
+                                        (VString (String.dropRight (String.length s2) s), v2)
+                                    else
+                                        (VString s, VString "")
                                 (VString s1, VString _) ->
                                     let (s1_, s2_) = if (String.length s1) > (String.length s) then (s, "") else (String.left (String.length s1) s, String.dropLeft (String.length s1) s)
                                     in
@@ -1414,20 +1430,69 @@ checkChange ws store holeBindings readOnly e1 e2 v1 v2 newv1 newv2 hcount op =
         let
             (store1, holeBindings1, (expr1, hcount1)) =
                 uneval store holeBindings e1 readOnly newv1 hcount
+
             (store2, holeBindings2, (expr2, hcount2)) =
                 uneval store holeBindings e2 readOnly newv2 hcount1
-            store_ = mergeStore store1 store2 store
-            holeBindings_ = mergeHoleBindings holeBindings1 holeBindings2 holeBindings
         in
-            (store_, holeBindings_, (Eop ws op expr1 expr2, hcount2))
+        case (expr1, expr2) of
+            (EError _, EError _) ->
+                ([], [], (EError "error: uneval: both branches error", 0))
+
+            (EError _, _) ->
+                (store2, holeBindings2, (Eop ws op e1 expr2, hcount2))
+
+            (_, EError _) ->
+                (store1, holeBindings1, (Eop ws op expr1 e2, hcount1))
+
+            _ ->
+                ( mergeStore store1 store2 store
+                , mergeHoleBindings holeBindings1 holeBindings2 holeBindings
+                , (Eop ws op expr1 expr2, hcount2)
+                )
         
+mergeValue : Value -> Value -> Value -> Value
+mergeValue orig v1 v2 =
+    case (orig, v1, v2) of
+        (VList os, VList vs1, VList vs2) ->
+            VList (mergeList os vs1 vs2)
+
+        _ ->
+            if v1 /= orig then
+                v1
+            else
+                v2
+
+
+mergeList : List Value -> List Value -> List Value -> List Value
+mergeList os vs1 vs2 =
+    case (os, vs1, vs2) of
+        (o :: os_, a :: as_, b :: bs_) ->
+            mergeValue o a b :: mergeList os_ as_ bs_
+
+        _ ->
+            if vs1 /= os then
+                vs1
+            else
+                vs2
+
+
 mergeStore : Store -> Store -> Store -> Store
 mergeStore store1 store2 store3 =
     case (store1, store2, store3) of
-        ((x1, v1)::store1_, (x2, v2)::store2_, (x3, v3)::store3_) ->
-            if v1 /= v3 then (x1, v1) :: mergeStore store1_ store2_ store3_
-            else (x2, v2) :: mergeStore store1_ store2_ store3_
-        _ -> []
+        ([], [], _) ->
+            []
+
+        ([], _, _) ->
+            store2
+
+        (_, [], _) ->
+            store1
+
+        ((x1, v1) :: store1_, (_, v2) :: store2_, (_, v3) :: store3_) ->
+            (x1, mergeValue v3 v1 v2) :: mergeStore store1_ store2_ store3_
+
+        _ ->
+            []
 
 mergeHoleBindings : HoleBindings -> HoleBindings -> HoleBindings -> HoleBindings
 mergeHoleBindings hb1 hb2 hb =
@@ -1453,10 +1518,14 @@ mergeHoleBindings hb1 hb2 hb =
                 VError _ ->
                     newE2 :: resMerge
                 _ ->
-                    if v1 /= v then
-                        newE1 :: resMerge
-                    else 
-                        newE2 :: resMerge
+                    case v2 of
+                        VError _ ->
+                            if v1 /= v then
+                                newE1 :: resMerge
+                            else
+                                (hn, store, v) :: resMerge
+                        _ ->
+                            (hn, store, mergeValue v v1 v2) :: resMerge
 
         [] -> union hb1 hb2
 
@@ -1563,6 +1632,8 @@ writeIndexValue path xv val =
                                 VError "unsupported expression"
                     else
                         VError "index out of range"
+                VHole _ _ ->
+                    xv
                 _ ->
                     VError "unsupported expression"
         VList (VInt i :: rest) ->
@@ -1577,6 +1648,8 @@ writeIndexValue path xv val =
                                 updateValue (VList [ VInt i ]) xv inner_
                     else
                         VError "index out of range"
+                VHole _ _ ->
+                    xv
                 _ ->
                     VError "unsupported expression"
         _ ->

@@ -89,11 +89,11 @@ printExpr expr =
         EVar _ x ->
             x ++ " "
 
-        EHole [s] _ ->
-            "_" ++ s
+        EHole [s] h ->
+            printHoleExpr h ++ s
 
-        EHole _ _ ->
-            "_"
+        EHole _ h ->
+            printHoleExpr h
 
         ENot [s] e ->
             "!" ++ s ++ printExpr e
@@ -180,14 +180,24 @@ printValue v =
         VString s ->
             "\"" ++ s ++ "\""
 
-        VHole hn _ ->
-            "{ " ++ printHoleName hn ++ " }"
+        VHole hn id ->
+            "{ " ++ printHoleName hn ++ "@" ++ String.fromInt id ++ " }"
 
         VList vs ->
             "[" ++ (List.map printValue vs |> String.join ", ") ++ "]"
 
         VError info ->
             info
+
+
+printHoleExpr : HoleName -> String
+printHoleExpr h =
+    case h of
+        HOri _ ->
+            "_"
+
+        _ ->
+            "{ " ++ printHoleName h ++ " }"
 
 
 printHoleName : HoleName -> String
