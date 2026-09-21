@@ -585,18 +585,33 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                     else
                         case (s1, s2) of
                             (SSeq ws1 s_ (SWhile ws2 e_ sw), SSkip _) ->
-                                let fres = exec store holeBindings riStmts s_ readOnly scount in
-                                let (guardstore, guardhb, (guardexpr, guardhcount)) = uneval newstore holeBindings e_ fres.readOnly (VBool False) hcount in
-                                let bres = unexec store guardhb riStmts fres.readOnly s_ guardhcount fres.scount (guardstore, newriStmts) in
-                                let (exprstore, exprhb, (expr, hcount_)) = uneval store bres.holeBindings e readOnly (VBool True) bres.hcount in
-                                let unpollutedstore = unpollute exprstore store scount in
-                                {
-                                    store = mergeStore userstore unpollutedstore store,
-                                    holeBindings = exprhb,
-                                    riStmts = List.take ((List.length bres.riStmts) - 1) bres.riStmts,
-                                    stmt = SIf ws expr (SSeq ws1 bres.stmt (SWhile ws2 guardexpr sw)) (SSkip []),
-                                    hcount = hcount_
-                                }
+                                case eval newstore holeBindings e of
+                                    VBool False ->
+                                        let
+                                            fres =
+                                                exec store holeBindings riStmts s_ readOnly (scount + 1)
+
+                                            bres =
+                                                unexec store holeBindings riStmts readOnly s_ hcount (scount + 1) ( newstore, fres.riStmts )
+                                        in
+                                        case eval bres.store bres.holeBindings e of
+                                            VBool True ->
+                                                let
+                                                    unpollutedstore =
+                                                        unpollute bres.store store scount
+                                                in
+                                                { store = mergeStore userstore unpollutedstore store
+                                                , holeBindings = bres.holeBindings
+                                                , riStmts = List.take (List.length newriStmts - 1) newriStmts
+                                                , stmt = SIf ws e (SSeq ws1 bres.stmt (SWhile ws2 e_ sw)) (SSkip [])
+                                                , hcount = bres.hcount
+                                                }
+
+                                            _ ->
+                                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SWhile: guard is not true before the last iteration" }
+
+                                    _ ->
+                                        { defaultUnexecRes | stmt = SError "Error: unexecStmt: SWhile: guard is not false after the loop" }
                             _ ->
                                 let bres = unexec store holeBindings riStmts readOnly s1 hcount scount (newstore, newriStmts) in
                                 case bres.stmt of
