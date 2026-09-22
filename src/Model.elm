@@ -29,7 +29,7 @@ type alias Model =
     , mode: Mode
     , editingInput : Bool
     , inputDraft : String
-    , contextDraft : String
+    , contextDrafts : Dict String String
     }
 
 
@@ -42,7 +42,7 @@ type Msg
     | ClearHB
     | FillAndResume
     | SelectResidual StmtID
-    | ContextChange String
+    | ContextValueChange String String
     | ToggleFillHole String
     | EditFillHole String String
     | SaveFills
@@ -77,5 +77,5 @@ initModel =
     , fillSelected = Set.empty
     , editingInput = False
     , inputDraft = ""
-    , contextDraft = ""
+    , contextDrafts = Dict.empty
     }

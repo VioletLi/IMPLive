@@ -1,7 +1,7 @@
 port module Main exposing (..)
 
 import Browser exposing (..)
-import Controller exposing (evalCodeToModel, openFill, saveAndFill, openInput, saveInput, unevalCodeToModel, selectResidual, contextChange)
+import Controller exposing (evalCodeToModel, openFill, saveAndFill, openInput, saveInput, unevalCodeToModel, selectResidual, contextValueChange)
 import Dict
 import Html exposing (Html)
 import Model exposing (Model, Mode(..), Msg(..))
@@ -89,8 +89,8 @@ update msg model =
         SelectResidual id ->
             ( selectResidual id model, Cmd.none )
 
-        ContextChange text ->
-            ( contextChange text model, Cmd.none )
+        ContextValueChange x text ->
+            ( contextValueChange x text model, Cmd.none )
 
         Preview ->
             let

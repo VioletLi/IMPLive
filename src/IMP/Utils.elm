@@ -142,6 +142,20 @@ isSameStore store1 store2 =
         ([], []) -> True
         _ -> False
 
+
+sameVars : List String -> Store -> Store -> Bool
+sameVars xs s1 s2 =
+    case xs of
+        [] ->
+            True
+
+        x :: rest ->
+            if lookup x s1 == lookup x s2 then
+                sameVars rest s1 s2
+
+            else
+                False
+
 updateStore : String -> Value -> Store -> Store
 updateStore x v store =
     -- if x == "input" || x == "output" then store else 

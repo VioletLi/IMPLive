@@ -223,10 +223,34 @@ displaySelectedStore model =
         Html.div [ Attr.id "context-area" ]
             [ Html.div [ Attr.class "area-title" ]
                 [ Html.text "CONTEXT" ]
-            , Html.textarea
-                [ Attr.id "console-context"
-                , Attr.value model.contextDraft
-                , Events.onInput ContextChange
+            , Html.table [ Attr.id "context-store-table" ]
+                (Html.th [ Attr.class "hole-name" ] [ Html.text "Variable" ]
+                    :: Html.th [] [ Html.text "Value" ]
+                    :: displayContextRows model
+                )
+            ]
+
+
+displayContextRows : Model -> List (Html Msg)
+displayContextRows model =
+    case List.filter (\( id, _, _ ) -> id == model.currentContext) model.riStmts of
+        ( _, _, store ) :: _ ->
+            List.map (displayContextRow model) store
+
+        [] ->
+            []
+
+
+displayContextRow : Model -> ( String, Value ) -> Html Msg
+displayContextRow model ( x, v ) =
+    Html.tr []
+        [ Html.td [ Attr.class "hole-name" ] [ Html.text x ]
+        , Html.td []
+            [ Html.input
+                [ Attr.class "context-item"
+                , Attr.value (Maybe.withDefault (printValue v) (Dict.get x model.contextDrafts))
+                , Events.onInput (ContextValueChange x)
                 ]
                 []
             ]
+        ]

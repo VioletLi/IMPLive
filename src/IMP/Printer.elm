@@ -277,7 +277,18 @@ printStore s =
 
 printOutput : Store -> String
 printOutput store =
-    printValue (outputValue store)
+    case outputValue store of
+        VList vs ->
+            printOutputList vs
+
+        v ->
+            printValue v
+
+
+printOutputList : List Value -> String
+printOutputList vs =
+    List.map printValue vs
+        |> String.join "\n"
 
 
 outputValue : Store -> Value

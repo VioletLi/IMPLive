@@ -4,11 +4,11 @@ import Model exposing (..)
 import Set
 import Debug exposing (toString)
 import Dict
-import IMP.Parser_ exposing (parse, parseExpr, parseStore, parseValue)
+import IMP.Parser_ exposing (parse, parseExpr, parseValue)
 import IMP.Eval exposing (exec, fill)
 import IMP.Uneval exposing (unexec)
 import IMP.Utils exposing (prepareStmt, attachFuncs, substHoleinFuncEnv, exprHoleKey, lookup, updateStore, substHoleinStmt)
-import IMP.Printer exposing (printOutput, printStmt, printStore, printValue)
+import IMP.Printer exposing (printOutput, printOutputList, printStmt, printValue)
 import IMP.Syntax exposing (..)
 
 
@@ -31,7 +31,7 @@ evalCodeToModel code model =
                 , output = printOutput res.store
                 , isOutputChange = False
                 , currentContext = -1
-                , contextDraft = ""
+                , contextDrafts = Dict.empty
                 , hbBackup = model.holeBindings
             }
 
@@ -53,8 +53,8 @@ unevalCodeToModel model commit =
             { model | output = info }
 
         Ok model1 ->
-            case parseValue model1.output of
-                Ok (VList vs) ->
+            case parseOutputText model1.output of
+                Ok vs ->
                     case parse model1.code of
                         Ok stmt ->
                             let
@@ -84,7 +84,7 @@ unevalCodeToModel model commit =
                                         , holeBindings = res.holeBindings
                                         , riStmts = res.riStmts
                                         , store = newstore
-                                        , output = printValue (VList vs)
+                                        , output = printOutputList vs
                                         , codeBackup =
                                             if commit then
                                                 newCode
@@ -104,17 +104,14 @@ unevalCodeToModel model commit =
                                             else
                                                 model1.isOutputChange
                                         , currentContext = keepId
-                                        , contextDraft = printRiContext keepId res.riStmts
+                                        , contextDrafts = contextDraftsOf keepId res.riStmts
                                     }
 
                         Err info ->
                             { model1 | output = toString info }
 
-                Ok _ ->
-                    { model1 | output = "Output must be a list, e.g. [1]" }
-
-                Err _ ->
-                    { model1 | output = "Parse error in output" }
+                Err info ->
+                    { model1 | output = info }
 
 
 openFill : Model -> Model
@@ -241,7 +238,7 @@ saveAndFillWith model =
             , riStmts = res.riStmts
             , output = printOutput res.store
             , currentContext = keepId
-            , contextDraft = printRiContext keepId res.riStmts
+            , contextDrafts = contextDraftsOf keepId res.riStmts
             , oriHoles = []
             , fillDraft = Dict.empty
             , fillSelected = Set.empty
@@ -296,13 +293,25 @@ selectResidual id model =
     in
     { model1
         | currentContext = id
-        , contextDraft = printRiContext id model1.riStmts
+        , contextDrafts = contextDraftsOf id model1.riStmts
     }
 
 
-contextChange : String -> Model -> Model
-contextChange text model =
-    commitContextDraft { model | contextDraft = text }
+contextValueChange : String -> String -> Model -> Model
+contextValueChange x text model =
+    let
+        drafts =
+            Dict.insert x text model.contextDrafts
+
+        model1 =
+            { model | contextDrafts = drafts }
+    in
+    case parseStoreDrafts (riStoreOf model.currentContext model.riStmts) drafts of
+        Ok store ->
+            { model1 | riStmts = updateRiStore model.currentContext store model.riStmts }
+
+        Err _ ->
+            model1
 
 
 commitContextDraft : Model -> Model
@@ -335,12 +344,61 @@ parseContextDraft model =
         Err "No residual selected"
 
     else
-        case parseStore model.contextDraft of
-            Ok store ->
-                Ok store
+        parseStoreDrafts (riStoreOf model.currentContext model.riStmts) model.contextDrafts
 
-            Err _ ->
-                Err "Parse error in residual context"
+
+parseStoreDrafts : Maybe Store -> Dict.Dict String String -> Result String Store
+parseStoreDrafts maybeStore drafts =
+    case maybeStore of
+        Nothing ->
+            Err "No residual selected"
+
+        Just orig ->
+            parseStoreDraftsWalk orig drafts
+
+
+parseStoreDraftsWalk : Store -> Dict.Dict String String -> Result String Store
+parseStoreDraftsWalk orig drafts =
+    case orig of
+        [] ->
+            Ok []
+
+        ( x, oldv ) :: rest ->
+            case Dict.get x drafts of
+                Just src ->
+                    case parseValue src of
+                        Ok v ->
+                            Result.map (\rest_ -> ( x, v ) :: rest_) (parseStoreDraftsWalk rest drafts)
+
+                        Err _ ->
+                            Err ("Parse error in " ++ x)
+
+                Nothing ->
+                    Result.map (\rest_ -> ( x, oldv ) :: rest_) (parseStoreDraftsWalk rest drafts)
+
+
+parseOutputText : String -> Result String (List Value)
+parseOutputText src =
+    src
+        |> String.lines
+        |> List.map String.trim
+        |> List.filter (\line -> line /= "")
+        |> parseOutputLines
+
+
+parseOutputLines : List String -> Result String (List Value)
+parseOutputLines lines =
+    case lines of
+        [] ->
+            Ok []
+
+        line :: rest ->
+            case parseValue line of
+                Ok v ->
+                    Result.map (\vs -> v :: vs) (parseOutputLines rest)
+
+                Err _ ->
+                    Err "Parse error in output"
 
 
 updateRiStore : StmtID -> Store -> RiStmts -> RiStmts
@@ -356,14 +414,14 @@ updateRiStore id store ris =
         ris
 
 
-printRiContext : StmtID -> RiStmts -> String
-printRiContext id ris =
+contextDraftsOf : StmtID -> RiStmts -> Dict.Dict String String
+contextDraftsOf id ris =
     case riStoreOf id ris of
         Just store ->
-            printStore store
+            Dict.fromList (List.map (\( x, v ) -> ( x, printValue v )) store)
 
         Nothing ->
-            ""
+            Dict.empty
 
 
 riStoreOf : StmtID -> RiStmts -> Maybe Store

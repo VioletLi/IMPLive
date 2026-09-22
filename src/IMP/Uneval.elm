@@ -729,11 +729,13 @@ unexec funcEnv store holeBindings riStmts readOnly stmt hcount scount (newstore,
                 VHole _ _ -> 
                     let oldres = exec funcEnv store holeBindings riStmts stmt readOnly scount in
                     let userstore = getFinalRiStmtStore newriStmts in
-                    if isSameStore oldres.store newstore then
+                    let maymod = unique (modVars funcEnv s1 ++ modVars funcEnv s2) in
+                    if sameVars maymod oldres.store newstore then
+                        let unpollutedstore = unpollute newstore store scount in
                         {
-                            store = userstore,
+                            store = mergeStore userstore unpollutedstore store,
                             holeBindings = holeBindings,
-                            riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
+                            riStmts = dropRiStmt scount newriStmts,
                             stmt = SIf ws e s1 s2,
                             hcount = hcount
                             , funcEnv = funcEnv
@@ -758,7 +760,7 @@ unexec funcEnv store holeBindings riStmts readOnly stmt hcount scount (newstore,
                                                 in
                                                 { store = mergeStore userstore unpollutedstore store
                                                 , holeBindings = bres.holeBindings
-                                                , riStmts = List.take (List.length newriStmts - 1) newriStmts
+                                                , riStmts = dropRiStmt scount newriStmts
                                                 , stmt = SIf ws e (SSeq ws1 bres.stmt (SWhile ws2 e_ sw)) (SSkip [])
                                                 , hcount = bres.hcount
                                                 , funcEnv = bres.funcEnv
@@ -783,7 +785,7 @@ unexec funcEnv store holeBindings riStmts readOnly stmt hcount scount (newstore,
                                                 {
                                                     store = mergeStore userstore unpollutedstore store,
                                                     holeBindings = newhb,
-                                                    riStmts = bres2.riStmts,
+                                                    riStmts = dropRiStmt scount bres2.riStmts,
                                                     stmt = SIf ws newexpr s1 bres2.stmt,
                                                     hcount = hcount_
                                                     , funcEnv = bres2.funcEnv
@@ -794,7 +796,7 @@ unexec funcEnv store holeBindings riStmts readOnly stmt hcount scount (newstore,
                                         {
                                             store = mergeStore userstore unpollutedstore store,
                                             holeBindings = newhb,
-                                            riStmts = bres.riStmts,
+                                            riStmts = dropRiStmt scount bres.riStmts,
                                             stmt = SIf ws newexpr bres.stmt s2,
                                             hcount = hcount_
                                             , funcEnv = bres.funcEnv
@@ -1773,6 +1775,11 @@ getFinalRiStmtStore riStmts =
         (_, _, store) :: [] -> store
         _ :: rest -> getFinalRiStmtStore rest
         _ -> []
+
+
+dropRiStmt : SCount -> RiStmts -> RiStmts
+dropRiStmt id ris =
+    List.filter (\( id_, _, _ ) -> id_ /= id) ris
 
 unpollute : Store -> Store -> SCount -> Store
 unpollute store oristore scount =
