@@ -178,14 +178,11 @@ table td {
     width: 98%;
     height: 42%;
     margin: 4px;
+    overflow-y: auto;
 }
 
-#console-context {
-    font-family: "Verdana";
+#context-store-table {
     width: 100%;
-    height: calc(100% - 24px);
-    border: 1px solid #ccc;
-    resize: none;
 }
 
 #output-area {
