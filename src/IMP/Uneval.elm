@@ -784,7 +784,7 @@ unexec funcEnv store holeBindings riStmts readOnly stmt hcount scount (newstore,
                                                     store = mergeStore userstore unpollutedstore store,
                                                     holeBindings = newhb,
                                                     riStmts = bres2.riStmts,
-                                                    stmt = SIf ws newexpr bres2.stmt s2,
+                                                    stmt = SIf ws newexpr s1 bres2.stmt,
                                                     hcount = hcount_
                                                     , funcEnv = bres2.funcEnv
                                                 }

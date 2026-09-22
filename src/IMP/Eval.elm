@@ -704,11 +704,6 @@ replaceOutputRow i row store =
             store
 
 
-patchRiOutputRow : Int -> Value -> RiStmts -> RiStmts
-patchRiOutputRow i row ris =
-    List.map (\(id, s, store) -> (id, s, replaceOutputRow i row store)) ris
-
-
 processHoleinList : List Value -> String -> SCount -> Value -> List Value
 processHoleinList vs x scount path =
     processHoleinListWalk vs x scount path 0
@@ -924,68 +919,54 @@ tryExec funcEnv hb ris scount env =
                         _ ->
                             ([(-2, [])], [], Dict.empty)
                         
-                SPrint ws e ->
-                    let v = eval store hb e in 
-                    case v of
-                        VHole HTmp _ ->
-                            keepResidual funcEnv hb rest scount env id s store
+                SPrint _ e ->
+                    let
+                        v =
+                            eval store hb e
 
-                        VList vs ->
-                            if hasHole vs then
-                                case lookup "output" store of
-                                    Just (VList os) ->
-                                        let
-                                            rowIdx =
-                                                List.length os
+                        rowIdx =
+                            case lookup "output" store of
+                                Just (VList os) ->
+                                    List.length os
 
-                                            newRow =
-                                                VList (processHoleinList vs "output" id (VList [ VInt rowIdx ]))
+                                _ ->
+                                    0
 
-                                            oldRow =
-                                                case lookup "output" env of
-                                                    Just (VList evs) ->
-                                                        nthValue evs rowIdx
+                        slot =
+                            outputRowAt env rowIdx
 
-                                                    _ ->
-                                                        VList vs
+                        complete env_ store_ =
+                            let
+                                ( exec_, stmt_, partial ) =
+                                    tryExec funcEnv hb rest scount env_
+                            in
+                            ( ( id, store_ ) :: exec_, stmt_, partial )
 
-                                            partial =
-                                                holeDiff oldRow newRow Dict.empty
+                        ready x =
+                            case x of
+                                VError _ ->
+                                    False
 
-                                            rest_ =
-                                                substHole partial (patchRiOutputRow rowIdx newRow rest)
+                                _ ->
+                                    not (isIndet x)
+                    in
+                    case slot of
+                        Just slotv ->
+                            if ready slotv then
+                                complete env env
 
-                                            env_ =
-                                                substStoreByMap partial (replaceOutputRow rowIdx newRow env)
+                            else if ready v then
+                                complete (replaceOutputRow rowIdx v env) (replaceOutputRow rowIdx v store)
 
-                                            (exec_, stmt_, partial_) =
-                                                tryExec funcEnv hb rest_ scount env_
-                                        in
-                                        (exec_, (id, s, store) :: stmt_, Dict.union partial partial_)
-
-                                    _ ->
-                                        ([], [], Dict.empty)
                             else
-                                case lookup "output" store of
-                                    Just (VList vs_) ->
-                                        let
-                                            store1 =
-                                                updateStore "output" (VList (vs_ ++ [VList vs])) store
-                                            (exec_, stmt_, partial) =
-                                                tryExec funcEnv hb rest scount (updateStore "output" (VList (vs_ ++ [VList vs])) env)
-                                        in
-                                        ((id, store1)::exec_, stmt_, partial)
+                                keepResidual funcEnv hb rest scount env id s store
 
-                                    _ ->
-                                        ([], [], Dict.empty)
+                        Nothing ->
+                            if ready v then
+                                complete (replaceOutputRow rowIdx v env) (replaceOutputRow rowIdx v store)
 
-                        VError _ ->
-                            keepResidual funcEnv hb rest scount env id s store
-                                
-                        _ ->
-                            let res = exec funcEnv store hb [] (SPrint ws e) Set.empty scount in
-                            let (exec_, stmt_, partial) = tryExec funcEnv hb rest res.scount res.store in
-                            ((id, res.store)::exec_, res.riStmts++stmt_, partial)
+                            else
+                                keepResidual funcEnv hb rest scount env id s store
 
                 SFuncDef _ _ _ _ ->
                     ([(-2, [])], [], Dict.empty)

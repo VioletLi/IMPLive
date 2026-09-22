@@ -15,6 +15,33 @@ hasHole vs =
                 VHole _ _ -> True
                 _ -> hasHole rest
 
+
+isIndet : Value -> Bool
+isIndet v =
+    case v of
+        VHole _ _ ->
+            True
+
+        VList vs ->
+            hasHole vs
+
+        _ ->
+            False
+
+
+outputRowAt : Store -> Int -> Maybe Value
+outputRowAt store i =
+    case lookup "output" store of
+        Just (VList vs) ->
+            if i >= 0 && i < List.length vs then
+                List.head (List.drop i vs)
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
 preprocessStmt : Stmt -> HCount -> (Stmt, HCount)
 preprocessStmt s hcount =
     case s of
