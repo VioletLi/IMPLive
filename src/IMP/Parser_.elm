@@ -86,6 +86,7 @@ storeVar =
                 , "true"
                 , "false"
                 , "length"
+                , "func"
                 ]
         }
 
@@ -280,6 +281,7 @@ varName =
             , "length"
             , "input"
             , "output"
+            , "func"
             ]
     }
 
@@ -557,6 +559,81 @@ while_ =
         |= mSpaces
 
 
+funcDef : Parser Stmt
+funcDef =
+    succeed (\s1 name sOpen parts sClose body sEnd ->
+            let
+                (commaWs, params) =
+                    parts
+            in
+            SFuncDef (s1 :: sOpen :: commaWs ++ [sClose, sEnd]) name params body)
+        |. keyword "func"
+        |= mSpaces
+        |= varName
+        |. mSpaces
+        |. symbol "("
+        |= mSpaces
+        |= paramItems
+        |. symbol ")"
+        |= mSpaces
+        |= lazy (\_ -> stmt)
+        |. keyword "end"
+        |= mSpaces
+
+
+paramItems : Parser ( List String, List String )
+paramItems =
+    oneOf
+        [ succeed (\p rest ->
+                ( List.map Tuple.first rest
+                , p :: List.map Tuple.second rest
+                ))
+            |= varName
+            |. mSpaces
+            |= paramTail
+        , succeed ( [], [] )
+        ]
+
+
+paramTail : Parser (List ( String, String ))
+paramTail =
+    loop [] paramTailHelper
+
+
+paramTailHelper : List ( String, String ) -> Parser (Step (List ( String, String )) (List ( String, String )))
+paramTailHelper revItems =
+    oneOf
+        [ succeed (\s p -> Loop ( ( s, p ) :: revItems ))
+            |. symbol ","
+            |= mSpaces
+            |= varName
+            |. mSpaces
+        , succeed ()
+            |> map (\_ -> Done (List.reverse revItems))
+        ]
+
+
+funcCall : Parser Stmt
+funcCall =
+    (succeed (\name sOpen -> ( name, sOpen ))
+        |= varName
+        |. mSpaces
+        |. symbol "("
+        |= mSpaces
+    )
+        |> backtrackable
+        |> andThen
+            (\( name, sOpen ) ->
+                succeed
+                    (\( commaWs, args ) sClose ->
+                        SFuncCall (sOpen :: commaWs ++ [ sClose ]) name args
+                    )
+                    |= listItems
+                    |. symbol ")"
+                    |= mSpaces
+            )
+
+
 astmt : Parser Stmt
 astmt =
     oneOf
@@ -565,6 +642,8 @@ astmt =
     , while_
     , read_
     , print_
+    , funcDef
+    , funcCall
     , assign
     ]
 

@@ -7,7 +7,7 @@ import Dict
 import IMP.Parser_ exposing (parse, parseExpr, parseStore, parseValue)
 import IMP.Eval exposing (exec, fill)
 import IMP.Uneval exposing (unexec)
-import IMP.Utils exposing (preprocessStmt, exprHoleKey, lookup, updateStore, substHoleinStmt)
+import IMP.Utils exposing (prepareStmt, attachFuncs, substHoleinFuncEnv, exprHoleKey, lookup, updateStore, substHoleinStmt)
 import IMP.Printer exposing (printOutput, printStmt, printStore, printValue)
 import IMP.Syntax exposing (..)
 
@@ -17,11 +17,11 @@ evalCodeToModel code model =
     case parse code of
         Ok stmt ->
             let
-                (stmt_, _) =
-                    preprocessStmt stmt 0
+                (stmt_, _, funcEnv) =
+                    prepareStmt stmt
 
                 res =
-                    exec model.startStore model.holeBindings [] stmt_ Set.empty 0
+                    exec funcEnv model.startStore model.holeBindings [] stmt_ Set.empty 0
             in
             { model
                 | code = code
@@ -58,14 +58,14 @@ unevalCodeToModel model commit =
                     case parse model1.code of
                         Ok stmt ->
                             let
-                                ( stmt_, hcount ) =
-                                    preprocessStmt stmt 0
+                                ( stmt_, hcount, funcEnv ) =
+                                    prepareStmt stmt
 
                                 newstore =
                                     updateStore "output" (VList vs) model1.store
 
                                 res =
-                                    unexec model1.startStore model1.holeBindings [] Set.empty stmt_ hcount 0 ( newstore, model1.riStmts )
+                                    unexec funcEnv model1.startStore model1.holeBindings [] Set.empty stmt_ hcount 0 ( newstore, model1.riStmts )
                             in
                             case res.stmt of
                                 SError info ->
@@ -74,7 +74,7 @@ unevalCodeToModel model commit =
                                 _ ->
                                     let
                                         newCode =
-                                            printStmt res.stmt
+                                            printStmt (attachFuncs res.funcEnv res.stmt)
 
                                         keepId =
                                             keepContextId model1.currentContext res.riStmts
@@ -131,12 +131,13 @@ openFillWith model =
     case parse model.code of
         Ok stmt ->
             let
-                (stmt_, _) =
-                    preprocessStmt stmt 0
+                (stmt_, _, funcEnv) =
+                    prepareStmt stmt
 
                 holes =
                     uniqueOri
                         (collectOriInStmt stmt_
+                            ++ collectOriInFuncEnv funcEnv
                             ++ collectOriInRiStmts model.riStmts
                         )
             in
@@ -190,7 +191,20 @@ saveAndFillWith model =
     else
         let
             res =
-                fill holeDict model.holeBindings
+                let
+                    funcEnv =
+                        case parse model.code of
+                            Ok stmt ->
+                                let
+                                    ( _, _, env ) =
+                                        prepareStmt stmt
+                                in
+                                env
+
+                            Err _ ->
+                                []
+                in
+                fill funcEnv holeDict model.holeBindings
                     { store = model.store
                     , riStmts = model.riStmts
                     , scount = List.length model.riStmts
@@ -201,10 +215,14 @@ saveAndFillWith model =
                 case parse model.code of
                     Ok stmt ->
                         let
-                            ( stmt_, _ ) =
-                                preprocessStmt stmt 0
+                            ( stmt_, _, funcEnv ) =
+                                prepareStmt stmt
                         in
-                        printStmt (substHoleinStmt 0 stmt_ holeDict)
+                        printStmt
+                            (attachFuncs
+                                (substHoleinFuncEnv 0 funcEnv holeDict)
+                                (substHoleinStmt 0 stmt_ holeDict)
+                            )
 
                     Err _ ->
                         model.code
@@ -372,6 +390,11 @@ collectOriInRiStmts ris =
     List.concatMap (\( _, s, _ ) -> collectOriInStmt s) ris
 
 
+collectOriInFuncEnv : FuncEnv -> List HoleName
+collectOriInFuncEnv env =
+    List.concatMap (\f -> collectOriInStmt f.body) env
+
+
 collectOriInStmt : Stmt -> List HoleName
 collectOriInStmt s =
     case s of
@@ -389,6 +412,12 @@ collectOriInStmt s =
 
         SSeq _ s1 s2 ->
             collectOriInStmt s1 ++ collectOriInStmt s2
+
+        SFuncDef _ _ _ body ->
+            collectOriInStmt body
+
+        SFuncCall _ _ args ->
+            List.concatMap collectOriInExpr args
 
         _ ->
             []

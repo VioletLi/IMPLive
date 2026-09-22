@@ -52,6 +52,34 @@ printStmt stmt =
         SSeq _ s1 s2 ->
             printStmt s1 ++ "; " ++ printStmt s2
 
+        SFuncDef (s1 :: sOpen :: rest) name params body ->
+            case List.reverse rest of
+                sEnd :: sClose :: commasRev ->
+                    "func" ++ s1 ++ name ++ "(" ++ sOpen
+                        ++ printIdents (List.reverse commasRev) params
+                        ++ ")" ++ sClose ++ printStmt body ++ "end" ++ sEnd
+
+                _ ->
+                    "func " ++ name ++ "(" ++ String.join ", " params ++ ") "
+                        ++ printStmt body ++ "end "
+
+        SFuncDef _ name params body ->
+            "func " ++ name ++ "(" ++ String.join ", " params ++ ") "
+                ++ printStmt body ++ "end "
+
+        SFuncCall (sOpen :: rest) name args ->
+            case List.reverse rest of
+                sClose :: commasRev ->
+                    name ++ "(" ++ sOpen
+                        ++ printListBody (List.reverse commasRev) args
+                        ++ ")" ++ sClose
+
+                [] ->
+                    name ++ "(" ++ (List.map printExpr args |> String.join ", ") ++ ") "
+
+        SFuncCall _ name args ->
+            name ++ "(" ++ (List.map printExpr args |> String.join ", ") ++ ") "
+
         SError info ->
             info
 
@@ -160,6 +188,29 @@ printListTail commas es =
 
         (_, e :: rest) ->
             ", " ++ printExpr e ++ printListTail [] rest
+
+        _ ->
+            ""
+
+
+printIdents : List String -> List String -> String
+printIdents commas names =
+    case names of
+        [] ->
+            ""
+
+        n :: rest ->
+            n ++ printIdentTail commas rest
+
+
+printIdentTail : List String -> List String -> String
+printIdentTail commas names =
+    case ( commas, names ) of
+        ( c :: cs, n :: rest ) ->
+            "," ++ c ++ n ++ printIdentTail cs rest
+
+        ( _, n :: rest ) ->
+            ", " ++ n ++ printIdentTail [] rest
 
         _ ->
             ""

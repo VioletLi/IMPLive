@@ -1,7 +1,7 @@
 module IMP.Uneval exposing (..)
 
 import IMP.Syntax exposing (..)
-import IMP.Eval exposing (eval, exec, findIndex)
+import IMP.Eval exposing (eval, exec, findIndex, ParamBind, bindParamsParallel)
 import IMP.Utils exposing (..)
 import Set exposing (Set)
 
@@ -11,6 +11,7 @@ type alias UnexecRes =
     , riStmts : RiStmts
     , stmt : Stmt
     , hcount : HCount
+    , funcEnv : FuncEnv
     }
 
 defaultUnexecRes : UnexecRes
@@ -20,6 +21,7 @@ defaultUnexecRes =
     , riStmts = []
     , stmt = SSkip []
     , hcount = 0
+    , funcEnv = []
     }
 
 uneval : Store -> HoleBindings -> Expr -> Set String -> Value -> HCount -> (Store, HoleBindings, (Expr, HCount))
@@ -183,8 +185,109 @@ unevalList store holeBindings readOnly es vs hcount =
         _ ->
             (store, holeBindings, ([], hcount))
 
-unexec : Store -> HoleBindings -> RiStmts -> Set String -> Stmt -> HCount -> SCount -> (Store, RiStmts) -> UnexecRes
-unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriStmts) =
+unexecArgBinds : FuncEnv -> Store -> HoleBindings -> RiStmts -> Set String -> List ParamBind -> UnexecRes -> Result String ( UnexecRes, List Expr )
+unexecArgBinds funcEnv origStore origHB origRi callRO steps acc =
+    case steps of
+        [] ->
+            Ok ( acc, [] )
+
+        _ ->
+            unexecArgBindsMerge funcEnv origStore origHB origRi callRO steps acc
+
+
+unexecArgBindsMerge : FuncEnv -> Store -> HoleBindings -> RiStmts -> Set String -> List ParamBind -> UnexecRes -> Result String ( UnexecRes, List Expr )
+unexecArgBindsMerge funcEnv origStore origHB origRi callRO steps acc =
+    case steps of
+        [] ->
+            Ok ( { acc | store = origStore, holeBindings = origHB }, [] )
+
+        step :: rest ->
+            case unexecArgBindsMerge funcEnv origStore origHB origRi callRO rest acc of
+                Err info ->
+                    Err info
+
+                Ok ( later, es ) ->
+                    let
+                        target =
+                            overlayParams [ step.param ] acc.store origStore
+
+                        r =
+                            unexec funcEnv
+                                origStore
+                                origHB
+                                origRi
+                                callRO
+                                (SAssign [] (EVar [] step.param) step.arg)
+                                later.hcount
+                                step.scount
+                                ( target, later.riStmts )
+                    in
+                    case r.stmt of
+                        SAssign _ _ e ->
+                            Ok
+                                ( { r
+                                    | store = mergeStore r.store later.store origStore
+                                    , holeBindings = mergeHoleBindings r.holeBindings later.holeBindings origHB
+                                    , funcEnv = later.funcEnv
+                                  }
+                                , e :: es
+                                )
+
+                        SError info ->
+                            Err info
+
+                        _ ->
+                            Err "Error: unexecStmt: SFuncCall: unexpected statement"
+
+
+unexecFuncCall : FuncEnv -> Store -> HoleBindings -> RiStmts -> Set String -> HCount -> SCount -> ( Store, RiStmts ) -> WS -> String -> List Expr -> UnexecRes
+unexecFuncCall funcEnv store holeBindings riStmts readOnly hcount scount ( newstore, newriStmts ) ws name args =
+    case lookupFunc name funcEnv of
+        Nothing ->
+            { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Function not found" }
+
+        Just ( params, body ) ->
+            if List.length params /= List.length args then
+                { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Argument count mismatch" }
+
+            else
+                let
+                    callRO =
+                        List.foldl Set.remove readOnly params
+
+                    ( bound, steps ) =
+                        bindParamsParallel funcEnv store holeBindings riStmts callRO scount params args
+                in
+                if isErrorStore bound.store then
+                    { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error in function call" }
+
+                else
+                    let
+                        target =
+                            overlayParams params bound.store newstore
+
+                        bresBody =
+                            unexec funcEnv bound.store holeBindings bound.riStmts callRO body hcount bound.scount ( target, newriStmts )
+                    in
+                    case bresBody.stmt of
+                        SError _ ->
+                            bresBody
+
+                        _ ->
+                            case unexecArgBinds funcEnv store holeBindings riStmts callRO steps bresBody of
+                                Err info ->
+                                    { defaultUnexecRes | funcEnv = bresBody.funcEnv, stmt = SError info }
+
+                                Ok ( bresBinds, newArgs ) ->
+                                    { bresBinds
+                                        | store = restoreParams (snapshotParams params newstore) bresBinds.store
+                                        , stmt = SFuncCall ws name newArgs
+                                        , funcEnv = updateFuncEnv name bresBody.stmt bresBinds.funcEnv
+                                    }
+
+
+unexec : FuncEnv -> Store -> HoleBindings -> RiStmts -> Set String -> Stmt -> HCount -> SCount -> (Store, RiStmts) -> UnexecRes
+unexec funcEnv store holeBindings riStmts readOnly stmt hcount scount (newstore, newriStmts) =
     case stmt of
         SAssign ws e1 e2 -> 
             -- 如果这个生成了新的ristmt，那我就把更新之后的最后一条的store传回给上一条，删掉原来那条，不然就不动
@@ -207,6 +310,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                             riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                             stmt = stmt,
                                             hcount = hcount
+                                            , funcEnv = funcEnv
                                         }
                                         else 
                                         -- 不是这轮的final store，是某个修改后传回来的结果，应该更新当前轮expression
@@ -218,6 +322,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                                 riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                                 stmt = SAssign ws (EVar ws1 x) newexpr,
                                                 hcount = hcount_
+                                                , funcEnv = funcEnv
                                             }
                                 _ ->
                                     -- 不是hole，是某个修改后传回来的结果，应该更新当前轮expression
@@ -229,6 +334,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                         stmt = SAssign ws (EVar ws1 x) newexpr,
                                         hcount = hcount_
+                                        , funcEnv = funcEnv
                                     }
                         (VList vs, Just nv, Just ov) ->
                             if hasHole vs then
@@ -240,6 +346,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                     stmt = SAssign ws (EVar ws1 x) newexpr,
                                     hcount = hcount_
+                                    , funcEnv = funcEnv
                                 }
                                 else
                                 let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e2 readOnly nv hcount in
@@ -249,6 +356,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     riStmts = newriStmts,
                                     stmt = SAssign ws (EVar ws1 x) newexpr,
                                     hcount = hcount_
+                                    , funcEnv = funcEnv
                                 }
                         (_, Just nv, Just ov) ->
                             let (finalstore, newhb, (newexpr, hcount_)) = uneval (updateStore x ov newstore) holeBindings e2 readOnly nv hcount in
@@ -258,6 +366,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                 riStmts = newriStmts,
                                 stmt = SAssign ws (EVar ws1 x) newexpr,
                                 hcount = hcount_
+                                , funcEnv = funcEnv
                             }
                         (VHole _ _, Just nv, Nothing) ->
                             case nv of
@@ -270,6 +379,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                             riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                             stmt = stmt,
                                             hcount = hcount
+                                            , funcEnv = funcEnv
                                         }
                                         else 
                                             let userstore = getFinalRiStmtStore newriStmts in
@@ -280,6 +390,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                                 riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                                 stmt = SAssign ws (EVar ws1 x) newexpr,
                                                 hcount = hcount_
+                                                , funcEnv = funcEnv
                                             }
                                 _ ->
                                     let userstore = getFinalRiStmtStore newriStmts in
@@ -290,6 +401,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                         stmt = SAssign ws (EVar ws1 x) newexpr,
                                         hcount = hcount_
+                                        , funcEnv = funcEnv
                                     }
                         (VList vs, Just nv, Nothing) ->
                             if hasHole vs then
@@ -301,6 +413,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                     stmt = SAssign ws (EVar ws1 x) newexpr,
                                     hcount = hcount_
+                                    , funcEnv = funcEnv
                                 }
                             else
                                 let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e2 readOnly nv hcount in
@@ -310,6 +423,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     riStmts = newriStmts,
                                     stmt = SAssign ws (EVar ws1 x) newexpr,
                                     hcount = hcount_
+                                    , funcEnv = funcEnv
                                 }
                         (_, Just nv, Nothing) ->
                             let (finalstore, newhb, (newexpr, hcount_)) = uneval (delStore x newstore) holeBindings e2 readOnly nv hcount in
@@ -319,8 +433,9 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                 riStmts = newriStmts,
                                 stmt = SAssign ws (EVar ws1 x) newexpr,
                                 hcount = hcount_
+                                , funcEnv = funcEnv
                             }
-                        _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SAssign: newval not found"}
+                        _ -> { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SAssign: newval not found"}
                 EIndex _ _ _ ->
                     let (x, path) = findIndex store holeBindings e1 in
                     let oldv = lookup x store in
@@ -335,6 +450,17 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                             , riStmts = List.take (List.length newriStmts - 1) newriStmts
                             , stmt = stmt
                             , hcount = hcount
+                            , funcEnv = funcEnv
+                            }
+                        -- 基值已是 hole，construct 无法按下标写，同样按 IndetLoc 整棵还原
+                        (VList _, Just ((VHole _ _) as ov), Just _) ->
+                            let userstore = getFinalRiStmtStore newriStmts in
+                            { store = mergeStore userstore (updateStore x ov newstore) store
+                            , holeBindings = holeBindings
+                            , riStmts = List.take (List.length newriStmts - 1) newriStmts
+                            , stmt = stmt
+                            , hcount = hcount
+                            , funcEnv = funcEnv
                             }
                         -- path 确定
                         (VList p, Just ov, Just nv) ->
@@ -355,6 +481,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         , riStmts = pop
                                         , stmt = stmt
                                         , hcount = hcount
+                                        , funcEnv = funcEnv
                                         }
                                     else
                                         let (finalstore, newhb, (newexpr, hcount_)) =
@@ -365,6 +492,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         , riStmts = pop
                                         , stmt = SAssign ws e1 newexpr
                                         , hcount = hcount_
+                                        , funcEnv = funcEnv
                                         }
                                 -- RHS 不确定（标量洞或带洞 list），用户改了或 list residual
                                 (VHole _ _, _) ->
@@ -376,6 +504,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     , riStmts = pop
                                     , stmt = SAssign ws e1 newexpr
                                     , hcount = hcount_
+                                    , funcEnv = funcEnv
                                     }
                                 (VList vs, _) ->
                                     if hasHole vs then
@@ -387,6 +516,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         , riStmts = pop
                                         , stmt = SAssign ws e1 newexpr
                                         , hcount = hcount_
+                                        , funcEnv = funcEnv
                                         }
                                     else
                                         let (finalstore, newhb, (newexpr, hcount_)) =
@@ -397,6 +527,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         , riStmts = newriStmts
                                         , stmt = SAssign ws e1 newexpr
                                         , hcount = hcount_
+                                        , funcEnv = funcEnv
                                         }
                                 -- 确定赋值
                                 _ ->
@@ -408,11 +539,27 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     , riStmts = newriStmts
                                     , stmt = SAssign ws e1 newexpr
                                     , hcount = hcount_
+                                    , funcEnv = funcEnv
                                     }
+                        (_, Just ov, Just _) ->
+                            let userstore = getFinalRiStmtStore newriStmts in
+                            { store = mergeStore userstore (updateStore x ov newstore) store
+                            , holeBindings = holeBindings
+                            , riStmts = List.take (List.length newriStmts - 1) newriStmts
+                            , stmt = stmt
+                            , hcount = hcount
+                            , funcEnv = funcEnv
+                            }
                         _ ->
-                            { defaultUnexecRes | stmt = SError "Error: unexecStmt: SAssign: index not found" }
+                            { store = newstore
+                            , holeBindings = holeBindings
+                            , riStmts = newriStmts
+                            , stmt = stmt
+                            , hcount = hcount
+                            , funcEnv = funcEnv
+                            }
                 _ ->
-                    { defaultUnexecRes | stmt = SError "Error: unexecStmt: SAssign: unsupported lhs" }
+                    { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SAssign: unsupported lhs" }
                             
         SSkip _ -> 
             { store = newstore
@@ -420,17 +567,19 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
             , riStmts = newriStmts
             , stmt = stmt
             , hcount = hcount
+            , funcEnv = funcEnv
             }
         SSeq ws s1 s2 -> 
-            let fres1 = exec store holeBindings riStmts s1 readOnly scount in
-            let bres2 = unexec fres1.store holeBindings fres1.riStmts fres1.readOnly s2 hcount fres1.scount (newstore, newriStmts) in
-            let bres1 = unexec store bres2.holeBindings bres2.riStmts readOnly s1 bres2.hcount scount (bres2.store, bres2.riStmts) in
+            let fres1 = exec funcEnv store holeBindings riStmts s1 readOnly scount in
+            let bres2 = unexec funcEnv fres1.store holeBindings fres1.riStmts fres1.readOnly s2 hcount fres1.scount (newstore, newriStmts) in
+            let bres1 = unexec funcEnv store bres2.holeBindings bres2.riStmts readOnly s1 bres2.hcount scount (bres2.store, bres2.riStmts) in
             {
                 store = bres1.store,
                 holeBindings = bres1.holeBindings,
                 riStmts = bres1.riStmts,
                 stmt = SSeq ws bres1.stmt bres2.stmt,
                 hcount = bres1.hcount
+                , funcEnv = mergeFuncEnv bres1.funcEnv bres2.funcEnv funcEnv
             }
         SRead ws x -> 
             let newinput = lookup "input" newstore in
@@ -453,6 +602,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                             riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                             stmt = stmt,
                                             hcount = hcount
+                                            , funcEnv = funcEnv
                                         }
                                     Nothing -> 
                                         let userstore = getFinalRiStmtStore newriStmts in
@@ -463,11 +613,12 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                             riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                                             stmt = stmt,
                                             hcount = hcount
+                                            , funcEnv = funcEnv
                                         }
                             else 
-                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SRead: input updated"}
+                                { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SRead: input updated"}
                         Nothing ->
-                            { defaultUnexecRes | stmt = SError "Error: unexecStmt: SRead: input variable not found"}
+                            { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SRead: input variable not found"}
                 (Just (VList vs), Just (VList os)) ->
                     case (newx, oldx) of
                         (Just v, Just ov) ->
@@ -479,9 +630,10 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     riStmts = newriStmts,
                                     stmt = stmt,
                                     hcount = hcount
+                                    , funcEnv = funcEnv
                                 }
                             else
-                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SRead: input length mismatch"}
+                                { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SRead: input length mismatch"}
                         (Just v, Nothing) ->
                             if (v :: vs) == os then
                                 let store_ = delStore x newstore in
@@ -491,11 +643,12 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     riStmts = newriStmts,
                                     stmt = stmt,
                                     hcount = hcount
+                                    , funcEnv = funcEnv
                                 }
                             else
-                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SRead: input length mismatch"}
-                        _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SRead: input not found"}
-                _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SRead: input not found"}
+                                { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SRead: input length mismatch"}
+                        _ -> { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SRead: input not found"}
+                _ -> { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SRead: input not found"}
             
         SPrint ws e ->
             let
@@ -532,6 +685,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         , riStmts = pop_
                                         , stmt = SPrint ws newexpr
                                         , hcount = hcount_
+                                        , funcEnv = funcEnv
                                         }
                                 in
                                 case (val, vprime) of
@@ -543,6 +697,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                             , riStmts = pop
                                             , stmt = stmt
                                             , hcount = hcount
+                                            , funcEnv = funcEnv
                                             }
                                         else
                                             goUneval True pop
@@ -562,17 +717,17 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                         goUneval False newriStmts
 
                             Nothing ->
-                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: newval not found" }
+                                { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SPrint: newval not found" }
                     else
-                        { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output length mismatch" }
+                        { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SPrint: output length mismatch" }
 
                 _ ->
-                    { defaultUnexecRes | stmt = SError "Error: unexecStmt: SPrint: output not found" }        
+                    { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SPrint: output not found" }        
         SIf ws e s1 s2 -> 
             let guard = eval store holeBindings e in
             case guard of
                 VHole _ _ -> 
-                    let oldres = exec store holeBindings riStmts stmt readOnly scount in
+                    let oldres = exec funcEnv store holeBindings riStmts stmt readOnly scount in
                     let userstore = getFinalRiStmtStore newriStmts in
                     if isSameStore oldres.store newstore then
                         {
@@ -581,6 +736,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                             riStmts = List.take ((List.length newriStmts) - 1) newriStmts,
                             stmt = SIf ws e s1 s2,
                             hcount = hcount
+                            , funcEnv = funcEnv
                         }
                     else
                         case (s1, s2) of
@@ -589,10 +745,10 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                     VBool False ->
                                         let
                                             fres =
-                                                exec store holeBindings riStmts s_ readOnly (scount + 1)
+                                                exec funcEnv store holeBindings riStmts s_ readOnly (scount + 1)
 
                                             bres =
-                                                unexec store holeBindings riStmts readOnly s_ hcount (scount + 1) ( newstore, fres.riStmts )
+                                                unexec funcEnv store holeBindings riStmts readOnly s_ hcount (scount + 1) ( newstore, fres.riStmts )
                                         in
                                         case eval bres.store bres.holeBindings e of
                                             VBool True ->
@@ -605,21 +761,22 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                                 , riStmts = List.take (List.length newriStmts - 1) newriStmts
                                                 , stmt = SIf ws e (SSeq ws1 bres.stmt (SWhile ws2 e_ sw)) (SSkip [])
                                                 , hcount = bres.hcount
+                                                , funcEnv = bres.funcEnv
                                                 }
 
                                             _ ->
-                                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SWhile: guard is not true before the last iteration" }
+                                                { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SWhile: guard is not true before the last iteration" }
 
                                     _ ->
-                                        { defaultUnexecRes | stmt = SError "Error: unexecStmt: SWhile: guard is not false after the loop" }
+                                        { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SWhile: guard is not false after the loop" }
                             _ ->
-                                let bres = unexec store holeBindings riStmts readOnly s1 hcount scount (newstore, newriStmts) in
+                                let bres = unexec funcEnv store holeBindings riStmts readOnly s1 hcount scount (newstore, newriStmts) in
                                 case bres.stmt of
                                     SError _ ->
-                                        let bres2 = unexec store holeBindings riStmts readOnly s2 hcount scount (newstore, newriStmts) in
+                                        let bres2 = unexec funcEnv store holeBindings riStmts readOnly s2 hcount scount (newstore, newriStmts) in
                                         case bres2.stmt of
                                             SError _ ->
-                                                { defaultUnexecRes | stmt = SError "Error: unexecStmt: SIf: both branches error"}
+                                                { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SIf: both branches error"}
                                             _ ->
                                                 let (finalstore, newhb, (newexpr, hcount_)) = uneval bres2.store bres2.holeBindings e readOnly (VBool False) bres2.hcount in
                                                 let unpollutedstore = unpollute finalstore store scount in
@@ -629,6 +786,7 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                                     riStmts = bres2.riStmts,
                                                     stmt = SIf ws newexpr bres2.stmt s2,
                                                     hcount = hcount_
+                                                    , funcEnv = bres2.funcEnv
                                                 }
                                     _ ->
                                         let (finalstore, newhb, (newexpr, hcount_)) = uneval bres.store bres.holeBindings e readOnly (VBool True) bres.hcount in
@@ -639,9 +797,10 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                                             riStmts = bres.riStmts,
                                             stmt = SIf ws newexpr bres.stmt s2,
                                             hcount = hcount_
+                                            , funcEnv = bres.funcEnv
                                         }
                 VBool True ->
-                    let res = unexec store holeBindings riStmts readOnly s1 hcount scount (newstore, newriStmts) in
+                    let res = unexec funcEnv store holeBindings riStmts readOnly s1 hcount scount (newstore, newriStmts) in
                     let (finalstore, newhb, (newexpr, hcount_)) = uneval res.store res.holeBindings e readOnly guard res.hcount in
                     {
                         store = finalstore,
@@ -649,9 +808,10 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                         riStmts = res.riStmts,
                         stmt = SIf ws newexpr res.stmt s2,
                         hcount = hcount_
+                        , funcEnv = res.funcEnv
                     }
                 VBool False ->
-                    let res = unexec store holeBindings riStmts readOnly s2 hcount scount (newstore, newriStmts) in
+                    let res = unexec funcEnv store holeBindings riStmts readOnly s2 hcount scount (newstore, newriStmts) in
                     let (finalstore, newhb, (newexpr, hcount_)) = uneval res.store res.holeBindings e readOnly guard res.hcount in
                     {
                         store = finalstore,
@@ -659,10 +819,11 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                         riStmts = res.riStmts,
                         stmt = SIf ws newexpr s1 res.stmt,
                         hcount = hcount_
+                        , funcEnv = res.funcEnv
                     }
-                _ -> {defaultUnexecRes | stmt = SError "Error: unexecStmt: SIf: guard type error"}
+                _ -> { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SIf: guard type error"}
         SWhile ws e s -> 
-            let res = unexec store holeBindings riStmts readOnly (SIf [] e (SSeq [] s (SWhile ws e s)) (SSkip [])) hcount scount (newstore, newriStmts) in
+            let res = unexec funcEnv store holeBindings riStmts readOnly (SIf [] e (SSeq [] s (SWhile ws e s)) (SSkip [])) hcount scount (newstore, newriStmts) in
             case res.stmt of
                 SIf _ e_ (SSeq _ s1_ (SWhile _ e2_ s2_)) (SSkip _) ->
                     let 
@@ -675,9 +836,14 @@ unexec store holeBindings riStmts readOnly stmt hcount scount (newstore, newriSt
                             riStmts = res.riStmts,
                             stmt = SWhile ws newe news,
                             hcount = res.hcount
+                            , funcEnv = res.funcEnv
                         }
-                _ -> { defaultUnexecRes | stmt = SError "Error: unexecStmt: SWhile: unexpected statement"}
-        SError s -> { defaultUnexecRes | stmt = SError s}
+                _ -> { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "Error: unexecStmt: SWhile: unexpected statement"}
+        SFuncDef _ _ _ _ ->
+            { defaultUnexecRes | funcEnv = funcEnv, stmt = SError "function definition is not allowed during execution" }
+        SFuncCall ws name args ->
+            unexecFuncCall funcEnv store holeBindings riStmts readOnly hcount scount (newstore, newriStmts) ws name args
+        SError s -> { defaultUnexecRes | funcEnv = funcEnv, stmt = SError s}
 
 tryupde2logic : WS -> Store -> HoleBindings -> Set String -> Expr -> Expr -> Value -> Value -> Value -> Value -> HCount -> String -> (Store, HoleBindings, (Expr, HCount))
 tryupde2logic ws store holeBindings readOnly e1 e2 v1 v2 v val hcount op = 

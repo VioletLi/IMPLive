@@ -44,6 +44,12 @@ preprocessStmt s hcount =
             (SSkip ws, hcount)
         SError info -> 
             (SError info, hcount)
+        SFuncDef ws name params body ->
+            let (body_, hcount_) = preprocessStmt body hcount in
+            (SFuncDef ws name params body_, hcount_)
+        SFuncCall ws name args ->
+            let (args_, hcount_) = preprocessList args hcount in
+            (SFuncCall ws name args_, hcount_)
 
 preprocessExpr : Expr -> HCount -> (Expr, HCount)
 preprocessExpr e hcount =
@@ -128,19 +134,35 @@ updateStore x v store =
 --         (n_, vs_) :: rest -> if n == n_ then (n, vs) :: rest else (n_, vs_) :: updateIO rest n vs
 --         [] -> []
 
-modVars : Stmt -> List String
-modVars s =
+modVars : FuncEnv -> Stmt -> List String
+modVars env s =
+    modVarsSeen [] env s
+
+
+modVarsSeen : List String -> FuncEnv -> Stmt -> List String
+modVarsSeen seen env s =
     case s of
         SAssign _ e _ -> 
             case e of
                 EVar _ x -> [x]
                 EIndex _ e1 e2 -> [findVar e1]
                 _ -> []
-        SIf _ _ s1 s2 -> modVars s1 ++ modVars s2
-        SWhile _ _ s_ -> modVars s_
+        SIf _ _ s1 s2 -> modVarsSeen seen env s1 ++ modVarsSeen seen env s2
+        SWhile _ _ s_ -> modVarsSeen seen env s_
         SRead _ x -> [x, "input"]
         SPrint _ _ -> ["output"]
-        SSeq _ s1 s2 -> modVars s1 ++ modVars s2
+        SSeq _ s1 s2 -> modVarsSeen seen env s1 ++ modVarsSeen seen env s2
+        SFuncCall _ name args ->
+            if List.member name seen then
+                []
+            else
+                case lookupFunc name env of
+                    Just ( params, body ) ->
+                        List.filter (\x -> not (List.member x params))
+                            (modVarsSeen (name :: seen) env body)
+
+                    Nothing ->
+                        []
         _ -> []
 
 findVar : Expr -> String
@@ -196,6 +218,10 @@ substHoleinStmt id s holes =
         SSeq ws s1 s2 -> SSeq ws (substHoleinStmt id s1 holes) (substHoleinStmt id s2 holes)
         SSkip ws -> SSkip ws
         SError info -> SError info
+        SFuncDef ws name params body ->
+            SFuncDef ws name params (substHoleinStmt id body holes)
+        SFuncCall ws name args ->
+            SFuncCall ws name (List.map (\e -> substHoleinExpr id e holes) args)
 
 substHoleinExpr : StmtID -> Expr -> HoleMap -> Expr
 substHoleinExpr id e holes =
@@ -278,6 +304,8 @@ updateValue path vs v =
                             VList (List.take i vs_ ++ [newv] ++ List.drop (i + 1) vs_)
                         _ -> VError "Index out of range"
                 _ -> VError "Unsupported expression"
+        VHole _ _ ->
+            vs
         _ -> VError "Unsupported expression"
 
 findVal : Value -> Value -> Value
@@ -291,11 +319,19 @@ findVal path vs =
                 VList nvs ->
                     findVal (VList rest) (nthValue nvs i)
 
+                VHole _ _ ->
+                    vs
+
                 _ ->
-                    VError "Index not found"
+                    VHole HTmp -1
 
         _ ->
-            VError "Index not found"
+            case vs of
+                VHole _ _ ->
+                    vs
+
+                _ ->
+                    VHole HTmp -1
 
 holeBaseVar : HoleName -> Maybe String
 holeBaseVar h =
@@ -364,3 +400,335 @@ pathToName prefix path =
 
         _ ->
             prefix
+
+
+prepareStmt : Stmt -> ( Stmt, HCount, FuncEnv )
+prepareStmt s =
+    let
+        ( s_, hcount ) =
+            preprocessStmt s 0
+
+        ( env, rest ) =
+            splitTopFuncs s_
+    in
+    if hasFuncDef rest then
+        ( SError "function definition must be at the top of the program", hcount, env )
+
+    else
+        ( rest, hcount, env )
+
+
+splitTopFuncs : Stmt -> ( FuncEnv, Stmt )
+splitTopFuncs s =
+    case s of
+        SSeq ws (SFuncDef defWs name params body) rest ->
+            let
+                ( env, bodyStmt ) =
+                    splitTopFuncs rest
+
+                entry =
+                    { seqWs = ws
+                    , ws = defWs
+                    , name = name
+                    , params = params
+                    , body = body
+                    }
+            in
+            ( entry :: env, bodyStmt )
+
+        SFuncDef defWs name params body ->
+            ( [ { seqWs = []
+                , ws = defWs
+                , name = name
+                , params = params
+                , body = body
+                }
+              ]
+            , SSkip []
+            )
+
+        _ ->
+            ( [], s )
+
+
+hasFuncDef : Stmt -> Bool
+hasFuncDef s =
+    case s of
+        SFuncDef _ _ _ _ ->
+            True
+
+        SSeq _ s1 s2 ->
+            hasFuncDef s1 || hasFuncDef s2
+
+        SIf _ _ s1 s2 ->
+            hasFuncDef s1 || hasFuncDef s2
+
+        SWhile _ _ body ->
+            hasFuncDef body
+
+        _ ->
+            False
+
+
+attachFuncs : FuncEnv -> Stmt -> Stmt
+attachFuncs env body =
+    case env of
+        [] ->
+            body
+
+        f :: [] ->
+            let
+                def =
+                    SFuncDef f.ws f.name f.params f.body
+            in
+            if isSkip body && List.isEmpty f.seqWs then
+                def
+
+            else
+                SSeq f.seqWs def body
+
+        f :: rest ->
+            SSeq f.seqWs (SFuncDef f.ws f.name f.params f.body) (attachFuncs rest body)
+
+
+isSkip : Stmt -> Bool
+isSkip s =
+    case s of
+        SSkip _ ->
+            True
+
+        _ ->
+            False
+
+
+substHoleinFuncEnv : StmtID -> FuncEnv -> HoleMap -> FuncEnv
+substHoleinFuncEnv id env holes =
+    List.map
+        (\f -> { f | body = substHoleinStmt id f.body holes })
+        env
+
+
+lookupFunc : String -> FuncEnv -> Maybe ( List String, Stmt )
+lookupFunc name env =
+    case env of
+        f :: rest ->
+            if f.name == name then
+                Just ( f.params, f.body )
+
+            else
+                lookupFunc name rest
+
+        [] ->
+            Nothing
+
+
+isErrorValue : Value -> Bool
+isErrorValue v =
+    case v of
+        VError _ ->
+            True
+
+        _ ->
+            False
+
+
+isErrorStore : Store -> Bool
+isErrorStore store =
+    case lookup "error" store of
+        Just (VError _) ->
+            True
+
+        _ ->
+            False
+
+
+snapshotParams : List String -> Store -> List ( String, Maybe Value )
+snapshotParams params store =
+    List.map (\x -> ( x, lookup x store )) params
+
+
+restoreParams : List ( String, Maybe Value ) -> Store -> Store
+restoreParams saved store =
+    case saved of
+        [] ->
+            store
+
+        ( x, Just v ) :: rest ->
+            restoreParams rest (updateStore x v store)
+
+        ( x, Nothing ) :: rest ->
+            restoreParams rest (delStore x store)
+
+
+overlayParams : List String -> Store -> Store -> Store
+overlayParams params from to =
+    case params of
+        [] ->
+            to
+
+        p :: rest ->
+            let
+                to_ =
+                    case lookup p from of
+                        Just v ->
+                            updateStore p v to
+
+                        Nothing ->
+                            delStore p to
+            in
+            overlayParams rest from to_
+
+
+prependArgBinds : List String -> List Expr -> Stmt -> Stmt
+prependArgBinds params args body =
+    case ( params, args ) of
+        ( [], [] ) ->
+            body
+
+        ( p :: ps, e :: es ) ->
+            SSeq [] (SAssign [] (EVar [] p) e) (prependArgBinds ps es body)
+
+        _ ->
+            body
+
+
+splitArgBinds : Int -> Stmt -> Maybe ( List Expr, Stmt )
+splitArgBinds n s =
+    if n <= 0 then
+        Just ( [], s )
+
+    else
+        case s of
+            SSeq _ (SAssign _ _ e) rest ->
+                case splitArgBinds (n - 1) rest of
+                    Just ( es, body ) ->
+                        Just ( e :: es, body )
+
+                    Nothing ->
+                        Nothing
+
+            _ ->
+                Nothing
+
+
+updateFuncEnv : String -> Stmt -> FuncEnv -> FuncEnv
+updateFuncEnv name body env =
+    List.map
+        (\f ->
+            if f.name == name then
+                { f | body = body }
+
+            else
+                f
+        )
+        env
+
+
+lookupFuncBody : String -> FuncEnv -> Stmt -> Stmt
+lookupFuncBody name env defaultBody =
+    case lookupFunc name env of
+        Just ( _, body ) ->
+            body
+
+        Nothing ->
+            defaultBody
+
+
+mergeFuncEnv : FuncEnv -> FuncEnv -> FuncEnv -> FuncEnv
+mergeFuncEnv env1 env2 orig =
+    List.map
+        (\f ->
+            let
+                body1 =
+                    lookupFuncBody f.name env1 f.body
+
+                body2 =
+                    lookupFuncBody f.name env2 f.body
+            in
+            if body1 /= f.body then
+                { f | body = body1 }
+
+            else
+                { f | body = body2 }
+        )
+        orig
+
+
+substParams : List String -> List Expr -> Stmt -> Stmt
+substParams params args s =
+    substParamStmt (List.map2 Tuple.pair params args) s
+
+
+lookupParam : String -> List ( String, Expr ) -> Maybe Expr
+lookupParam x env =
+    case env of
+        ( p, e ) :: rest ->
+            if p == x then
+                Just e
+
+            else
+                lookupParam x rest
+
+        [] ->
+            Nothing
+
+
+substParamStmt : List ( String, Expr ) -> Stmt -> Stmt
+substParamStmt env s =
+    case s of
+        SAssign ws e1 e2 ->
+            SAssign ws (substParamExpr env e1) (substParamExpr env e2)
+
+        SIf ws e s1 s2 ->
+            SIf ws (substParamExpr env e) (substParamStmt env s1) (substParamStmt env s2)
+
+        SWhile ws e body ->
+            SWhile ws (substParamExpr env e) (substParamStmt env body)
+
+        SPrint ws e ->
+            SPrint ws (substParamExpr env e)
+
+        SSeq ws s1 s2 ->
+            SSeq ws (substParamStmt env s1) (substParamStmt env s2)
+
+        SFuncCall ws name args ->
+            SFuncCall ws name (List.map (substParamExpr env) args)
+
+        SFuncDef ws name params body ->
+            SFuncDef ws name params (substParamStmt env body)
+
+        _ ->
+            s
+
+
+substParamExpr : List ( String, Expr ) -> Expr -> Expr
+substParamExpr env e =
+    case e of
+        EVar ws x ->
+            case lookupParam x env of
+                Just arg ->
+                    arg
+
+                Nothing ->
+                    EVar ws x
+
+        Eop ws op e1 e2 ->
+            Eop ws op (substParamExpr env e1) (substParamExpr env e2)
+
+        ENot ws e1 ->
+            ENot ws (substParamExpr env e1)
+
+        EParens ws e1 ->
+            EParens ws (substParamExpr env e1)
+
+        EList ws es ->
+            EList ws (List.map (substParamExpr env) es)
+
+        EIndex ws e1 e2 ->
+            EIndex ws (substParamExpr env e1) (substParamExpr env e2)
+
+        ELength ws e1 ->
+            ELength ws (substParamExpr env e1)
+
+        _ ->
+            e
