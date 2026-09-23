@@ -136,11 +136,8 @@ lookupHB h store holeBindings =
 
 isSameStore : Store -> Store -> Bool
 isSameStore store1 store2 =
-    case (store1, store2) of
-        ((x1, v1) :: rest1, (x2, v2) :: rest2) -> 
-            if x1 == x2 && v1 == v2 then isSameStore rest1 rest2 else False
-        ([], []) -> True
-        _ -> False
+    sameVars (List.map Tuple.first store1) store1 store2
+        && sameVars (List.map Tuple.first store2) store1 store2
 
 
 sameVars : List String -> Store -> Store -> Bool

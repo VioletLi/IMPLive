@@ -3,7 +3,66 @@ module IMP.Uneval exposing (..)
 import IMP.Syntax exposing (..)
 import IMP.Eval exposing (eval, exec, findIndex, ParamBind, bindParamsParallel)
 import IMP.Utils exposing (..)
+import IMP.Printer exposing (printValue, printExpr)
 import Set exposing (Set)
+
+
+traceOn : Bool
+traceOn =
+    False
+
+
+storeKeys : Store -> String
+storeKeys s =
+    String.join "," (List.map Tuple.first s)
+
+
+fmtStore : Store -> String
+fmtStore s =
+    String.join " || " (List.map (\( x, v ) -> x ++ "=" ++ printValue v) s)
+
+
+stmtTag : Stmt -> String
+stmtTag stmt =
+    case stmt of
+        SAssign _ e1 _ ->
+            "SAssign " ++ printExpr e1
+
+        SPrint _ e ->
+            "SPrint " ++ printExpr e
+
+        SWhile _ e _ ->
+            "SWhile " ++ printExpr e
+
+        SIf _ e _ _ ->
+            "SIf " ++ printExpr e
+
+        SSeq _ _ _ ->
+            "SSeq"
+
+        SFuncCall _ name _ ->
+            "SFuncCall " ++ name
+
+        SSkip _ ->
+            "SSkip"
+
+        SRead _ x ->
+            "SRead " ++ x
+
+        SFuncDef _ name _ _ ->
+            "SFuncDef " ++ name
+
+        SError s ->
+            "SError " ++ s
+
+
+traceLog : String -> a -> a
+traceLog msg val =
+    if traceOn then
+        Debug.log msg val
+
+    else
+        val
 
 type alias UnexecRes = 
     { store : Store
@@ -199,7 +258,7 @@ unexecArgBindsMerge : FuncEnv -> Store -> HoleBindings -> RiStmts -> Set String 
 unexecArgBindsMerge funcEnv origStore origHB origRi callRO steps acc =
     case steps of
         [] ->
-            Ok ( { acc | store = origStore, holeBindings = origHB }, [] )
+            Ok ( acc, [] )
 
         step :: rest ->
             case unexecArgBindsMerge funcEnv origStore origHB origRi callRO rest acc of
@@ -288,6 +347,22 @@ unexecFuncCall funcEnv store holeBindings riStmts readOnly hcount scount ( newst
 
 unexec : FuncEnv -> Store -> HoleBindings -> RiStmts -> Set String -> Stmt -> HCount -> SCount -> (Store, RiStmts) -> UnexecRes
 unexec funcEnv store holeBindings riStmts readOnly stmt hcount scount (newstore, newriStmts) =
+    let
+        _ =
+            traceLog "UNEXEC"
+                (stmtTag stmt
+                    ++ " scount="
+                    ++ String.fromInt scount
+                    ++ "\n  old.keys "
+                    ++ storeKeys store
+                    ++ "\n  new.keys "
+                    ++ storeKeys newstore
+                    ++ "\n  old "
+                    ++ fmtStore store
+                    ++ "\n  new "
+                    ++ fmtStore newstore
+                )
+    in
     case stmt of
         SAssign ws e1 e2 -> 
             -- 如果这个生成了新的ristmt，那我就把更新之后的最后一条的store传回给上一条，删掉原来那条，不然就不动
@@ -1690,23 +1765,57 @@ mergeList os vs1 vs2 =
                 vs2
 
 
+storeKeyOrder : Store -> Store -> Store -> List String
+storeKeyOrder store1 store2 store3 =
+    let
+        addKeys store ( acc, seen ) =
+            List.foldl
+                (\( k, _ ) ( acc2, s ) ->
+                    if Set.member k s then
+                        ( acc2, s )
+
+                    else
+                        ( k :: acc2, Set.insert k s )
+                )
+                ( acc, seen )
+                store
+    in
+    List.foldl addKeys ( [], Set.empty ) [ store3, store1, store2 ]
+        |> Tuple.first
+        |> List.reverse
+
+
+mergeStoreEntry : Store -> Store -> Store -> String -> Maybe ( String, Value )
+mergeStoreEntry store1 store2 store3 x =
+    case lookup x store3 of
+        Just v3 ->
+            let
+                v1 =
+                    Maybe.withDefault v3 (lookup x store1)
+
+                v2 =
+                    Maybe.withDefault v3 (lookup x store2)
+            in
+            Just ( x, mergeValue v3 v1 v2 )
+
+        Nothing ->
+            case ( lookup x store1, lookup x store2 ) of
+                ( Just v1, Just _ ) ->
+                    Just ( x, v1 )
+
+                ( Just v1, Nothing ) ->
+                    Just ( x, v1 )
+
+                ( Nothing, Just v2 ) ->
+                    Just ( x, v2 )
+
+                ( Nothing, Nothing ) ->
+                    Nothing
+
+
 mergeStore : Store -> Store -> Store -> Store
 mergeStore store1 store2 store3 =
-    case (store1, store2, store3) of
-        ([], [], _) ->
-            []
-
-        ([], _, _) ->
-            store2
-
-        (_, [], _) ->
-            store1
-
-        ((x1, v1) :: store1_, (_, v2) :: store2_, (_, v3) :: store3_) ->
-            (x1, mergeValue v3 v1 v2) :: mergeStore store1_ store2_ store3_
-
-        _ ->
-            []
+    List.filterMap (mergeStoreEntry store1 store2 store3) (storeKeyOrder store1 store2 store3)
 
 mergeHoleBindings : HoleBindings -> HoleBindings -> HoleBindings -> HoleBindings
 mergeHoleBindings hb1 hb2 hb =
