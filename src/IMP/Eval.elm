@@ -738,65 +738,74 @@ mergeResume a b =
 
 fill : FuncEnv -> HoleMap -> HoleBindings -> FwdRes -> FwdRes
 fill funcEnv holes hb fwdRes =
-    fillLoop funcEnv holes hb Set.empty fwdRes
+-- 第一步替换原来的stmt
+    let (ris0, substed) = substHole holes fwdRes.riStmts in
+    let newRes = patchedExec funcEnv hb ris0 in
 
 
-fillLoop : FuncEnv -> HoleMap -> HoleBindings -> Set Int -> FwdRes -> FwdRes
-fillLoop funcEnv holes hb dirty fwdRes =
-    let
-        ris0 =
-            fwdRes.riStmts
+    fwdRes
 
--- 这里应该改成，先逐条检查ristmt，替换hole
-        ris0_ = substHole holes ris0
--- 然后逐条执行，返回值是(id, [ristmt], store)
--- 
 
-        ris1 =
-            foldRiStmts hb (substHole holes ris0)
+patchedExec : FuncEnv -> HoleBindings -> RiStmts -> List (StmtID, FwdRes)
+patchedExec funcEnv hb ris0 =
+    List.map (\(id, s, store) -> (id, exec funcEnv store hb [] s Set.empty 0)) ris0
 
-        resumed =
-            resumeAll funcEnv hb (nextScount fwdRes.scount ris1) dirty ris0 ris1
-    in
-    if List.isEmpty resumed.completed && List.isEmpty resumed.advanced then
-        reindexResiduals { fwdRes | riStmts = resumed.remaining }
+-- fillLoop : FuncEnv -> HoleMap -> HoleBindings -> Set Int -> FwdRes -> FwdRes
+-- fillLoop funcEnv holes hb dirty fwdRes =
+--     let
+--         ris0 =
+--             fwdRes.riStmts
 
-    else
-        let
-            results =
-                resumed.completed
-                    ++ List.map (\a -> ( a.id, publishStore a.snapshot a.result )) resumed.advanced
+-- -- 这里应该改成，先逐条检查ristmt，替换hole
+--         ris0_ = substHole holes ris0
+-- -- 然后逐条执行，返回值是(id, [ristmt], store)
+-- -- 
 
-            keep =
-                resumed.remaining
-                    ++ List.map (\a -> ( a.id, a.stmt, a.snapshot )) resumed.advanced
+--         ris1 =
+--             foldRiStmts hb (substHole holes ris0)
 
-            ctx =
-                { done = results
-                , snaps =
-                    keep
-                        |> List.map (\( id, _, st ) -> ( id, st ))
-                        |> Dict.fromList
-                }
+--         resumed =
+--             resumeAll funcEnv hb (nextScount fwdRes.scount ris1) dirty ris0 ris1
+--     in
+--     if List.isEmpty resumed.completed && List.isEmpty resumed.advanced then
+--         reindexResiduals { fwdRes | riStmts = resumed.remaining }
 
-            ( store2, h2eMap1 ) =
-                substHoleInStore fwdRes.store ctx Dict.empty
+--     else
+--         let
+--             results =
+--                 resumed.completed
+--                     ++ List.map (\a -> ( a.id, publishStore a.snapshot a.result )) resumed.advanced
 
-            ( keep2, h2eMap2 ) =
-                substHoleInStmtStore keep ctx h2eMap1
+--             keep =
+--                 resumed.remaining
+--                     ++ List.map (\a -> ( a.id, a.stmt, a.snapshot )) resumed.advanced
 
-            keep3 =
-                foldRiStmts hb (substHole h2eMap2 keep2)
-        in
-        fillLoop funcEnv
-            h2eMap2
-            hb
-            (changedStoreIds keep keep2)
-            { fwdRes
-                | store = writePrintOutput hb keep3 store2
-                , riStmts = keep3
-                , scount = resumed.scount
-            }
+--             ctx =
+--                 { done = results
+--                 , snaps =
+--                     keep
+--                         |> List.map (\( id, _, st ) -> ( id, st ))
+--                         |> Dict.fromList
+--                 }
+
+--             ( store2, h2eMap1 ) =
+--                 substHoleInStore fwdRes.store ctx Dict.empty
+
+--             ( keep2, h2eMap2 ) =
+--                 substHoleInStmtStore keep ctx h2eMap1
+
+--             keep3 =
+--                 foldRiStmts hb (substHole h2eMap2 keep2)
+--         in
+--         fillLoop funcEnv
+--             h2eMap2
+--             hb
+--             (changedStoreIds keep keep2)
+--             { fwdRes
+--                 | store = writePrintOutput hb keep3 store2
+--                 , riStmts = keep3
+--                 , scount = resumed.scount
+--             }
 
 
 isHoleOutput : Value -> Bool
@@ -1125,40 +1134,40 @@ exprListEq a b =
             False
 
 
-substHoleInStmtStore : RiStmts -> CollectCtx -> HoleMap -> (RiStmts, HoleMap)
-substHoleInStmtStore ris ctx h2eMap =
-    case ris of
-        [] -> ([], h2eMap)
-        (id, s, store) :: rest ->
-            let (newstore, newh2eMap) = substHoleInStore store ctx h2eMap in
-            let (resstmt, newh2eMap_) = substHoleInStmtStore rest ctx newh2eMap in
-            -- let newio = substHoleInIO io execList in
-            ((id, s, newstore)::resstmt, newh2eMap_)
+-- substHoleInStmtStore : RiStmts -> CollectCtx -> HoleMap -> (RiStmts, HoleMap)
+-- substHoleInStmtStore ris ctx h2eMap =
+--     case ris of
+--         [] -> ([], h2eMap)
+--         (id, s, store) :: rest ->
+--             let (newstore, newh2eMap) = substHoleInStore store ctx h2eMap in
+--             let (resstmt, newh2eMap_) = substHoleInStmtStore rest ctx newh2eMap in
+--             -- let newio = substHoleInIO io execList in
+--             ((id, s, newstore)::resstmt, newh2eMap_)
 
-holeDiff : Value -> Value -> HoleMap -> HoleMap
-holeDiff old new acc =
-    case (old, new) of
-        (VHole h id, _) ->
-            if old == new then
-                acc
-            else
-                Dict.insert (valHoleKey h id) (value2Expr new) acc
+-- holeDiff : Value -> Value -> HoleMap -> HoleMap
+-- holeDiff old new acc =
+--     case (old, new) of
+--         (VHole h id, _) ->
+--             if old == new then
+--                 acc
+--             else
+--                 Dict.insert (valHoleKey h id) (value2Expr new) acc
 
-        (VList os, VList ns) ->
-            holeDiffList os ns acc
+--         (VList os, VList ns) ->
+--             holeDiffList os ns acc
 
-        _ ->
-            acc
+--         _ ->
+--             acc
 
 
-holeDiffList : List Value -> List Value -> HoleMap -> HoleMap
-holeDiffList os ns acc =
-    case (os, ns) of
-        (o :: os_, n :: ns_) ->
-            holeDiffList os_ ns_ (holeDiff o n acc)
+-- holeDiffList : List Value -> List Value -> HoleMap -> HoleMap
+-- holeDiffList os ns acc =
+--     case (os, ns) of
+--         (o :: os_, n :: ns_) ->
+--             holeDiffList os_ ns_ (holeDiff o n acc)
 
-        _ ->
-            acc
+--         _ ->
+--             acc
 
 
 exprToValue : Expr -> Value
@@ -1183,27 +1192,27 @@ exprToValue e =
             eval [] [] e
 
 
-substValByMap : HoleMap -> Value -> Value
-substValByMap holes v =
-    case v of
-        VHole h id ->
-            case Dict.get (valHoleKey h id) holes of
-                Just e ->
-                    exprToValue e
+-- substValByMap : HoleMap -> Value -> Value
+-- substValByMap holes v =
+--     case v of
+--         VHole h id ->
+--             case Dict.get (valHoleKey h id) holes of
+--                 Just e ->
+--                     exprToValue e
 
-                Nothing ->
-                    v
+--                 Nothing ->
+--                     v
 
-        VList vs ->
-            VList (List.map (substValByMap holes) vs)
+--         VList vs ->
+--             VList (List.map (substValByMap holes) vs)
 
-        _ ->
-            v
+--         _ ->
+--             v
 
 
-substStoreByMap : HoleMap -> Store -> Store
-substStoreByMap holes store =
-    List.map (\(x, v) -> (x, substValByMap holes v)) store
+-- substStoreByMap : HoleMap -> Store -> Store
+-- substStoreByMap holes store =
+--     List.map (\(x, v) -> (x, substValByMap holes v)) store
 
 
 patchRiVar : String -> Value -> RiStmts -> RiStmts
@@ -1211,19 +1220,19 @@ patchRiVar x v ris =
     List.map (\(id, s, store) -> (id, s, updateStore x v store)) ris
 
 
-replaceOutputRow : Int -> Value -> Store -> Store
-replaceOutputRow i row store =
-    case lookup "output" store of
-        Just (VList vs) ->
-            if i >= 0 && i < List.length vs then
-                updateStore "output" (VList (List.take i vs ++ [ row ] ++ List.drop (i + 1) vs)) store
-            else if i == List.length vs then
-                updateStore "output" (VList (vs ++ [ row ])) store
-            else
-                store
+-- replaceOutputRow : Int -> Value -> Store -> Store
+-- replaceOutputRow i row store =
+--     case lookup "output" store of
+--         Just (VList vs) ->
+--             if i >= 0 && i < List.length vs then
+--                 updateStore "output" (VList (List.take i vs ++ [ row ] ++ List.drop (i + 1) vs)) store
+--             else if i == List.length vs then
+--                 updateStore "output" (VList (vs ++ [ row ])) store
+--             else
+--                 store
 
-        _ ->
-            store
+--         _ ->
+--             store
 
 
 processHoleinList : List Value -> String -> SCount -> Value -> List Value
@@ -1290,97 +1299,97 @@ snapList ctx id h =
             Nothing
 
 
-resolveHole : CollectCtx -> HoleName -> StmtID -> HoleMap -> (Value, HoleMap)
-resolveHole ctx h id h2eMap =
-    resolveHoleSeen ctx h id h2eMap []
+-- resolveHole : CollectCtx -> HoleName -> StmtID -> HoleMap -> (Value, HoleMap)
+-- resolveHole ctx h id h2eMap =
+--     resolveHoleSeen ctx h id h2eMap []
 
 
-resolveHoleSeen : CollectCtx -> HoleName -> StmtID -> HoleMap -> List StmtID -> (Value, HoleMap)
-resolveHoleSeen ctx h id h2eMap seen =
-    if List.member id seen then
-        (VHole h id, h2eMap)
+-- resolveHoleSeen : CollectCtx -> HoleName -> StmtID -> HoleMap -> List StmtID -> (Value, HoleMap)
+-- resolveHoleSeen ctx h id h2eMap seen =
+--     if List.member id seen then
+--         (VHole h id, h2eMap)
 
-    else
-        let
-            finish v nd =
-                ( v, Dict.insert (valHoleKey h id) (value2Expr v) nd )
+--     else
+--         let
+--             finish v nd =
+--                 ( v, Dict.insert (valHoleKey h id) (value2Expr v) nd )
 
-            fromSnap chaseHole chaseId =
-                case snapList ctx id h of
-                    Just vs ->
-                        finish vs h2eMap
+--             fromSnap chaseHole chaseId =
+--                 case snapList ctx id h of
+--                     Just vs ->
+--                         finish vs h2eMap
 
-                    Nothing ->
-                        if chaseId /= id then
-                            let
-                                ( vFinal, nd ) =
-                                    resolveHoleSeen ctx chaseHole chaseId h2eMap (id :: seen)
-                            in
-                            finish vFinal nd
+--                     Nothing ->
+--                         if chaseId /= id then
+--                             let
+--                                 ( vFinal, nd ) =
+--                                     resolveHoleSeen ctx chaseHole chaseId h2eMap (id :: seen)
+--                             in
+--                             finish vFinal nd
 
-                        else
-                            ( VHole h id, h2eMap )
-        in
-        if isCompleted id ctx.done then
-            case lookupHoleVal h (findStore id ctx.done) of
-                Just (VHole h2 id2) ->
-                    fromSnap h2 id2
+--                         else
+--                             ( VHole h id, h2eMap )
+--         in
+--         if isCompleted id ctx.done then
+--             case lookupHoleVal h (findStore id ctx.done) of
+--                 Just (VHole h2 id2) ->
+--                     fromSnap h2 id2
 
-                Just v ->
-                    finish v h2eMap
+--                 Just v ->
+--                     finish v h2eMap
 
-                Nothing ->
-                    fromSnap h id
+--                 Nothing ->
+--                     fromSnap h id
 
-        else
-            case Dict.get id ctx.snaps of
-                Just st ->
-                    case lookupHoleVal h st of
-                        Just (VHole h2 id2) ->
-                            if isWholeVar h then
-                                fromSnap h2 id2
+--         else
+--             case Dict.get id ctx.snaps of
+--                 Just st ->
+--                     case lookupHoleVal h st of
+--                         Just (VHole h2 id2) ->
+--                             if isWholeVar h then
+--                                 fromSnap h2 id2
 
-                            else
-                                ( VHole h id, h2eMap )
+--                             else
+--                                 ( VHole h id, h2eMap )
 
-                        Just (VList vs) ->
-                            if isWholeVar h then
-                                finish (VList vs) h2eMap
+--                         Just (VList vs) ->
+--                             if isWholeVar h then
+--                                 finish (VList vs) h2eMap
 
-                            else
-                                ( VHole h id, h2eMap )
+--                             else
+--                                 ( VHole h id, h2eMap )
 
-                        _ ->
-                            ( VHole h id, h2eMap )
+--                         _ ->
+--                             ( VHole h id, h2eMap )
 
-                Nothing ->
-                    ( VHole h id, h2eMap )
+--                 Nothing ->
+--                     ( VHole h id, h2eMap )
 
 
-substHoleInStore : Store -> CollectCtx -> HoleMap -> (Store, HoleMap)
-substHoleInStore store ctx h2eMap =
-    case store of
-        [] ->
-            ([], h2eMap)
+-- substHoleInStore : Store -> CollectCtx -> HoleMap -> (Store, HoleMap)
+-- substHoleInStore store ctx h2eMap =
+--     case store of
+--         [] ->
+--             ([], h2eMap)
 
-        (x, VHole h id) :: rest ->
-            let
-                (v_, nd) =
-                    resolveHole ctx h id h2eMap
+--         (x, VHole h id) :: rest ->
+--             let
+--                 (v_, nd) =
+--                     resolveHole ctx h id h2eMap
 
-                (newstore, newh2eMap) =
-                    substHoleInStore rest ctx nd
-            in
-            ((x, v_) :: newstore, newh2eMap)
+--                 (newstore, newh2eMap) =
+--                     substHoleInStore rest ctx nd
+--             in
+--             ((x, v_) :: newstore, newh2eMap)
 
-        (x, VList vs) :: rest ->
-            let (newvs, newh2eMap) = substHoleInList ctx x vs (VList []) h2eMap in
-            let (newstore, newh2eMap_) = substHoleInStore rest ctx newh2eMap in
-            ((x, VList newvs) :: newstore, newh2eMap_)
+--         (x, VList vs) :: rest ->
+--             let (newvs, newh2eMap) = substHoleInList ctx x vs (VList []) h2eMap in
+--             let (newstore, newh2eMap_) = substHoleInStore rest ctx newh2eMap in
+--             ((x, VList newvs) :: newstore, newh2eMap_)
 
-        (x, v) :: rest ->
-            let (newstore, newh2eMap) = substHoleInStore rest ctx h2eMap in
-            ((x, v) :: newstore, newh2eMap)
+--         (x, v) :: rest ->
+--             let (newstore, newh2eMap) = substHoleInStore rest ctx h2eMap in
+--             ((x, v) :: newstore, newh2eMap)
 
 findStore : Int -> List (Int, Store) -> Store
 findStore id execList =
