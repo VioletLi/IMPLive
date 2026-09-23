@@ -16,12 +16,26 @@ type alias FwdRes =
 defaultFwdRes : FwdRes
 defaultFwdRes = {store = [], riStmts = [], scount = 0, readOnly = Set.empty}
 
+eraseHoleName : Value -> Value
+eraseHoleName v =
+    case v of
+        VHole _ _ ->
+            VHole HTmp -1
+
+        _ ->
+            v
+
+
 eval : Store -> HoleBindings -> Expr -> Value
 eval store holeBindings expr =
+    eraseHoleName (evalCore store holeBindings expr)
+
+
+evalCore : Store -> HoleBindings -> Expr -> Value
+evalCore store holeBindings expr =
     case expr of
         EVar _ x -> 
             case lookup x store of
-                Just (VHole h id) -> VHole HTmp -1
                 Just v -> v
                 Nothing -> VError "Variable not found"
         EInt ws i -> VInt i
@@ -42,7 +56,7 @@ eval store holeBindings expr =
             let v = eval store holeBindings e in
             case v of
                 VBool b -> VBool (not b)
-                VHole HTmp _ -> VHole HTmp -1
+                VHole _ _ -> VHole HTmp -1
                 _ -> VError "Unsupported expression"
         EList ws es ->
             VList (List.map (eval store holeBindings) es)

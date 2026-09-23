@@ -1,12 +1,12 @@
-a := [3, 1, 4, 2];
+a := [1,3,2,5];
 max := a[0];
 i := 1;
 while i < a.length do
-    if a[i] > max then
+    if _ then
         max := a[i]
-    else
-        skip
+    else skip
     end;
+    print max;
     i := i + 1
 end;
 print max

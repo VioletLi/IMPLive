@@ -751,17 +751,22 @@ unexec funcEnv store holeBindings riStmts readOnly stmt hcount scount (newstore,
                                             (finalstore, newhb, (newexpr, hcount_)) =
                                                 uneval store1 holeBindings e readOnly vprime hcount
                                         in
-                                        { store =
-                                            if merge then
-                                                mergeStore userstore finalstore store
-                                            else
-                                                finalstore
-                                        , holeBindings = newhb
-                                        , riStmts = pop_
-                                        , stmt = SPrint ws newexpr
-                                        , hcount = hcount_
-                                        , funcEnv = funcEnv
-                                        }
+                                        case newexpr of
+                                            EError info ->
+                                                { defaultUnexecRes | funcEnv = funcEnv, stmt = SError info }
+
+                                            _ ->
+                                                { store =
+                                                    if merge then
+                                                        mergeStore userstore finalstore store
+                                                    else
+                                                        finalstore
+                                                , holeBindings = newhb
+                                                , riStmts = pop_
+                                                , stmt = SPrint ws newexpr
+                                                , hcount = hcount_
+                                                , funcEnv = funcEnv
+                                                }
                                 in
                                 case (val, vprime) of
                                     -- 本轮标量洞，用户没改

@@ -2,6 +2,6 @@ i := 3;
 while i>0 do
     read x;
     read y;
-    if x>=y then print true else print false end;
+    if _ then print x else print y end;
     i := i-1
 end

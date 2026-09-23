@@ -1,8 +1,0 @@
-i := 0;
-sum := 0;
-while i < 4 do
-    read x;
-    sum := sum + x;
-    i := i + 1
-end;
-print sum

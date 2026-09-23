@@ -2,7 +2,7 @@ n := 3;
 x := 4;
 res := [];
 while n > 0 do
-    res := res ++ [x];
+    res := res ++ [_];
     n := n - 1
 end;
 print res
