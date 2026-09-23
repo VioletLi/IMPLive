@@ -5,9 +5,3 @@ y2:=4;
 if x1>y1 then mx:=x1 else mx:=y1 end;
 if x2<y2 then mn:=_ else mn:=_ end
 
-newstore = [("x1",VInt 1),("y1",VInt 2),("x2",VInt 4),("y2",VInt 5),("mx",VInt 2),("mn",VInt 4)]
-newristmts = [(0,SAssign [] "mn" (EHole [] (HOri 0)),[("x1",VInt 2),("y1",VInt 3),("x2",VInt 3),("y2",VInt 4),("mx",VInt 3)])]
-
-这个场景下的hole binding应该是哪个store？
-holeBindings = [(HOri 0,[("x1",VInt 1),("y1",VInt 2),("x2",VInt 4),("y2",VInt 5),("mx",VInt 2)],VInt 4)]
-
