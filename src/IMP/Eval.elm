@@ -186,74 +186,69 @@ simplifyExpr store e holeBindings =
     case e of
         EVar _ x ->
             case lookup x store of
-                Just v -> value2Expr v
-                Nothing -> EError "Variable not found"
-        EInt _ i -> EInt [] i
-        EBool _ b -> EBool [] b
-        EString _ s -> EString [] s
-        EHole _ h -> 
-            case lookupHB h store holeBindings of
-                Just v -> value2Expr v
-                Nothing -> EHole [] h
-        Eop _ op e1 e2 -> 
-            let e1_ = simplifyExpr store e1 holeBindings in
-            let e2_ = simplifyExpr store e2 holeBindings in
-            let v = eval store holeBindings (Eop [] op e1_ e2_) in
-            case v of
-                VHole _ _ ->
-                    Eop [] op e1_ e2_
+                Just (VHole _ _) ->
+                    EVar [] x
 
-                VList vs ->
-                    if hasHole vs then
-                        Eop [] op e1_ e2_
-                    else
-                        value2Expr v
-
-                _ ->
+                Just v ->
                     value2Expr v
-        EList _ es ->
-            EList [] (List.map (\e_ -> simplifyExpr store e_ holeBindings) es)
+
+                Nothing ->
+                    EError "Variable not found"
+
         EIndex _ e1 e2 ->
-            let (x, p) = findIndex store holeBindings (EIndex [] e1 e2) in
-            case p of
-                VHole _ _ -> 
-                    let e1_ = simplifyExpr store e1 holeBindings in
-                    let e2_ = simplifyExpr store e2 holeBindings in
-                    EIndex [] e1_ e2_
-                VList _ ->
-                    let v1 = eval store holeBindings e1 in
-                    let v2 = eval store holeBindings e2 in
-                    case v1 of
-                        VList vs ->
-                            case v2 of
-                                VInt i ->
-                                    if i >= 0 && i < List.length vs then
-                                        (value2Expr (nthValue vs i))
-                                    else 
-                                        EError "Index out of range"
-                                _ -> EError "Unsupported expression"
-                        VString s ->
-                            case v2 of
-                                VInt i ->
-                                    if i >= 0 && i < String.length s then
-                                        (value2Expr (VString (String.slice i (i+1) s)))
-                                    else 
-                                        EError "Index out of range"
-                                _ -> EError "Unsupported expression"
-                        VHole _ _ ->
-                            EIndex [] (simplifyExpr store e1 holeBindings) (simplifyExpr store e2 holeBindings)
-                        _ -> EIndex [] (simplifyExpr store e1 holeBindings) (simplifyExpr store e2 holeBindings)
+            let
+                e1_ =
+                    simplifyLhs store e1 holeBindings
+
+                e2_ =
+                    simplifyExpr store e2 holeBindings
+
+                v1 =
+                    eval store holeBindings e1_
+
+                v2 =
+                    eval store holeBindings e2_
+            in
+            case ( v1, v2 ) of
+                ( VList vs, VInt i ) ->
+                    if i >= 0 && i < List.length vs then
+                        case nthValue vs i of
+                            VHole _ _ ->
+                                EIndex [] e1_ e2_
+
+                            v ->
+                                value2Expr v
+
+                    else
+                        EError "Index out of range"
+
+                ( VString s, VInt i ) ->
+                    if i >= 0 && i < String.length s then
+                        value2Expr (VString (String.slice i (i + 1) s))
+
+                    else
+                        EError "Index out of range"
+
                 _ ->
-                    EIndex [] (simplifyExpr store e1 holeBindings) (simplifyExpr store e2 holeBindings)
-        ELength _ e_ ->
-            let e__ = simplifyExpr store e_ holeBindings in
-            case e__ of
-                EList _ es -> EInt [] (List.length es)
-                _ -> ELength [] e__
-        EParens _ e_ ->
-            let e__ = simplifyExpr store e_ holeBindings in
-            EParens [] e__
-        _ -> e
+                    EIndex [] e1_ e2_
+
+        Eop ws op e1 e2 ->
+            Eop ws op (simplifyExpr store e1 holeBindings) (simplifyExpr store e2 holeBindings)
+
+        ENot ws e1 ->
+            ENot ws (simplifyExpr store e1 holeBindings)
+
+        EParens _ e1 ->
+            simplifyExpr store e1 holeBindings
+
+        EList ws es ->
+            EList ws (List.map (\e_ -> simplifyExpr store e_ holeBindings) es)
+
+        ELength ws e1 ->
+            ELength ws (simplifyExpr store e1 holeBindings)
+
+        _ ->
+            e
 
 simplifyLhs : Store -> Expr -> HoleBindings -> Expr
 simplifyLhs store e holeBindings =
@@ -266,6 +261,114 @@ simplifyLhs store e holeBindings =
 
         _ ->
             e
+
+
+foldRiStmts : HoleBindings -> RiStmts -> RiStmts
+foldRiStmts hb ris =
+    List.map
+        (\( id, s, store ) -> ( id, foldResidualStmt store hb s, store ))
+        ris
+
+
+foldResidualStmt : Store -> HoleBindings -> Stmt -> Stmt
+foldResidualStmt store hb s =
+    case s of
+        SAssign ws e1 e2 ->
+            SAssign ws (foldResidualLhs store hb e1) (foldResidualExpr store hb e2)
+
+        SIf ws e s1 s2 ->
+            SIf ws (foldResidualExpr store hb e) s1 s2
+
+        SWhile ws e body ->
+            SWhile ws (foldResidualExpr store hb e) body
+
+        SPrint ws e ->
+            SPrint ws (foldResidualExpr store hb e)
+
+        SSeq ws s1 s2 ->
+            SSeq ws (foldResidualStmt store hb s1) (foldResidualStmt store hb s2)
+
+        SFuncCall ws name args ->
+            SFuncCall ws name (List.map (foldResidualExpr store hb) args)
+
+        _ ->
+            s
+
+
+foldResidualLhs : Store -> HoleBindings -> Expr -> Expr
+foldResidualLhs store hb e =
+    case e of
+        EVar _ _ ->
+            e
+
+        EIndex ws e1 e2 ->
+            EIndex ws (foldResidualLhs store hb e1) (foldResidualExpr store hb e2)
+
+        _ ->
+            foldResidualExpr store hb e
+
+
+foldResidualExpr : Store -> HoleBindings -> Expr -> Expr
+foldResidualExpr store hb e =
+    case e of
+        EVar _ _ ->
+            e
+
+        EInt _ _ ->
+            e
+
+        EBool _ _ ->
+            e
+
+        EString _ _ ->
+            e
+
+        EHole _ h ->
+            case lookupHB h store hb of
+                Just v ->
+                    if isFullyDet v then
+                        value2Expr v
+
+                    else
+                        e
+
+                Nothing ->
+                    e
+
+        Eop ws op e1 e2 ->
+            foldIfDet store hb (Eop ws op (foldResidualExpr store hb e1) (foldResidualExpr store hb e2))
+
+        EIndex ws e1 e2 ->
+            foldIfDet store hb (EIndex ws (foldResidualExpr store hb e1) (foldResidualExpr store hb e2))
+
+        ELength ws e1 ->
+            foldIfDet store hb (ELength ws (foldResidualExpr store hb e1))
+
+        ENot ws e1 ->
+            foldIfDet store hb (ENot ws (foldResidualExpr store hb e1))
+
+        EParens _ e1 ->
+            foldResidualExpr store hb e1
+
+        EList ws es ->
+            EList ws (List.map (foldResidualExpr store hb) es)
+
+        _ ->
+            e
+
+
+foldIfDet : Store -> HoleBindings -> Expr -> Expr
+foldIfDet store hb e =
+    let
+        v =
+            eval store hb e
+    in
+    if isFullyDet v then
+        value2Expr v
+
+    else
+        e
+
 
 restoreReadOnly : List String -> Set String -> Set String -> Set String
 restoreReadOnly params before after =
@@ -599,31 +702,436 @@ exec funcEnv store holeBindings riStmts stmt readOnly scount =
             execFuncCall funcEnv store holeBindings riStmts readOnly scount name args
         SError s -> {defaultFwdRes | store = [("error", VError s)]}
 
+type alias AdvancedRes =
+    { id : StmtID
+    , stmt : Stmt
+    , snapshot : Store
+    , result : Store
+    }
+
+
+type alias ResumeOut =
+    { completed : List ( StmtID, Store )
+    , advanced : List AdvancedRes
+    , remaining : RiStmts
+    , scount : SCount
+    }
+
+
+emptyResume : SCount -> ResumeOut
+emptyResume scount =
+    { completed = []
+    , advanced = []
+    , remaining = []
+    , scount = scount
+    }
+
+
+mergeResume : ResumeOut -> ResumeOut -> ResumeOut
+mergeResume a b =
+    { completed = a.completed ++ b.completed
+    , advanced = a.advanced ++ b.advanced
+    , remaining = a.remaining ++ b.remaining
+    , scount = b.scount
+    }
+
+
 fill : FuncEnv -> HoleMap -> HoleBindings -> FwdRes -> FwdRes
 fill funcEnv holes hb fwdRes =
-    let
-        newris = substHole holes fwdRes.riStmts
-        (execList, newris_, partial) = tryExec funcEnv hb newris fwdRes.scount fwdRes.store
-        store1 = substStoreByMap partial fwdRes.store
-    in
-        if List.isEmpty execList then
-            if Dict.isEmpty partial then
-                reindexResiduals { fwdRes | riStmts = newris_, store = store1 }
-            else
-                fill funcEnv Dict.empty hb { fwdRes | store = store1, riStmts = newris_ }
-        else
-            let (store_, h2eMap) = substHoleInStore store1 execList Dict.empty in
-            let (newris__, h2eMap_) = substHoleInStmtStore newris_ execList h2eMap in
-            fill funcEnv (Dict.union h2eMap_ partial) hb {fwdRes | store = store_, riStmts = newris__}
-        -- let (io_, iomap) = substHoleInIO fwdRes.io execList Dict.empty in
+    fillLoop funcEnv holes hb Set.empty fwdRes
 
-substHoleInStmtStore : RiStmts -> List (StmtID, Store) -> HoleMap -> (RiStmts, HoleMap)
-substHoleInStmtStore ris execList h2eMap =
+
+fillLoop : FuncEnv -> HoleMap -> HoleBindings -> Set Int -> FwdRes -> FwdRes
+fillLoop funcEnv holes hb dirty fwdRes =
+    let
+        ris0 =
+            fwdRes.riStmts
+
+-- 这里应该改成，先逐条检查ristmt，替换hole
+        ris0_ = substHole holes ris0
+-- 然后逐条执行，返回值是(id, [ristmt], store)
+-- 
+
+        ris1 =
+            foldRiStmts hb (substHole holes ris0)
+
+        resumed =
+            resumeAll funcEnv hb (nextScount fwdRes.scount ris1) dirty ris0 ris1
+    in
+    if List.isEmpty resumed.completed && List.isEmpty resumed.advanced then
+        reindexResiduals { fwdRes | riStmts = resumed.remaining }
+
+    else
+        let
+            results =
+                resumed.completed
+                    ++ List.map (\a -> ( a.id, publishStore a.snapshot a.result )) resumed.advanced
+
+            keep =
+                resumed.remaining
+                    ++ List.map (\a -> ( a.id, a.stmt, a.snapshot )) resumed.advanced
+
+            ctx =
+                { done = results
+                , snaps =
+                    keep
+                        |> List.map (\( id, _, st ) -> ( id, st ))
+                        |> Dict.fromList
+                }
+
+            ( store2, h2eMap1 ) =
+                substHoleInStore fwdRes.store ctx Dict.empty
+
+            ( keep2, h2eMap2 ) =
+                substHoleInStmtStore keep ctx h2eMap1
+
+            keep3 =
+                foldRiStmts hb (substHole h2eMap2 keep2)
+        in
+        fillLoop funcEnv
+            h2eMap2
+            hb
+            (changedStoreIds keep keep2)
+            { fwdRes
+                | store = writePrintOutput hb keep3 store2
+                , riStmts = keep3
+                , scount = resumed.scount
+            }
+
+
+isHoleOutput : Value -> Bool
+isHoleOutput v =
+    case v of
+        VHole _ _ ->
+            True
+
+        VList [ VHole _ _ ] ->
+            True
+
+        _ ->
+            False
+
+
+writePrintOutput : HoleBindings -> RiStmts -> Store -> Store
+writePrintOutput hb ris store =
+    List.foldl
+        (\( _, s, st ) acc ->
+            case s of
+                SPrint _ e ->
+                    case eval st hb e of
+                        VError _ ->
+                            acc
+
+                        VHole _ _ ->
+                            acc
+
+                        v ->
+                            case lookup "output" acc of
+                                Just ov ->
+                                    if isHoleOutput ov then
+                                        updateStore "output" (VList [ printRow v st ]) acc
+
+                                    else
+                                        acc
+
+                                _ ->
+                                    acc
+
+                _ ->
+                    acc
+        )
+        store
+        ris
+
+
+printRow : Value -> Store -> Value
+printRow v st =
+    case v of
+        VList evs ->
+            case namedHoleList evs st of
+                Just vs ->
+                    VList vs
+
+                Nothing ->
+                    v
+
+        _ ->
+            v
+
+
+namedHoleList : List Value -> Store -> Maybe (List Value)
+namedHoleList evs st =
+    case st of
+        ( x, VList bvs ) :: rest ->
+            if x /= "output" && List.length bvs == List.length evs && hasHole bvs then
+                Just bvs
+
+            else
+                namedHoleList evs rest
+
+        _ :: rest ->
+            namedHoleList evs rest
+
+        [] ->
+            Nothing
+
+
+changedStoreIds : RiStmts -> RiStmts -> Set Int
+changedStoreIds olds news =
+    case ( olds, news ) of
+        ( ( id, _, st0 ) :: os, ( _, _, st1 ) :: ns ) ->
+            if st0 == st1 then
+                changedStoreIds os ns
+
+            else
+                Set.insert id (changedStoreIds os ns)
+
+        _ ->
+            Set.empty
+
+
+type alias CollectCtx =
+    { done : List ( StmtID, Store )
+    , snaps : Dict Int Store
+    }
+
+
+publishStore : Store -> Store -> Store
+publishStore snapshot result =
+    List.map
+        (\( x, v ) ->
+            case v of
+                VHole _ _ ->
+                    case lookup x snapshot of
+                        Just sv ->
+                            ( x, sv )
+
+                        Nothing ->
+                            ( x, v )
+
+                _ ->
+                    ( x, v )
+        )
+        result
+
+
+isFullyDet : Value -> Bool
+isFullyDet v =
+    case v of
+        VError _ ->
+            False
+
+        _ ->
+            not (isIndet v)
+
+
+nextScount : SCount -> RiStmts -> SCount
+nextScount scount ris =
+    List.foldl
+        (\( id, _, _ ) acc ->
+            if id + 1 > acc then
+                id + 1
+
+            else
+                acc
+        )
+        scount
+        ris
+
+
+resumeAll : FuncEnv -> HoleBindings -> SCount -> Set Int -> RiStmts -> RiStmts -> ResumeOut
+resumeAll funcEnv hb scount dirty oldRis newRis =
+    case ( oldRis, newRis ) of
+        ( [], [] ) ->
+            emptyResume scount
+
+        ( ( id, s0, store ) :: os, ( _, s1, _ ) :: ns ) ->
+            let
+                one =
+                    resumeOne funcEnv hb scount dirty id s0 s1 store
+
+                acc =
+                    resumeAll funcEnv hb one.scount dirty os ns
+            in
+            mergeResume one acc
+
+        _ ->
+            emptyResume scount
+
+
+resumeOne : FuncEnv -> HoleBindings -> SCount -> Set Int -> StmtID -> Stmt -> Stmt -> Store -> ResumeOut
+resumeOne funcEnv hb scount dirty id s0 s1 store =
+    let
+        remain s_ =
+            { completed = []
+            , advanced = []
+            , remaining = [ ( id, s_, store ) ]
+            , scount = scount
+            }
+
+        fail =
+            { completed = [ ( -2, [] ) ]
+            , advanced = []
+            , remaining = []
+            , scount = scount
+            }
+    in
+    if stmtEq s0 s1 && not (Set.member id dirty) then
+        remain s1
+
+    else
+        let
+            res =
+                exec funcEnv store hb [] s1 Set.empty scount
+        in
+        if isErrorStore res.store then
+            fail
+
+        else if List.isEmpty res.riStmts then
+            { completed = [ ( id, res.store ) ]
+            , advanced = []
+            , remaining = []
+            , scount = res.scount
+            }
+
+        else
+            case res.riStmts of
+                [ ( newId, sNew, _ ) ] ->
+                    let
+                        mapId i =
+                            if i == newId then
+                                id
+
+                            else
+                                i
+
+                        s2 =
+                            reindexStmt mapId sNew
+
+                        post =
+                            reindexStore mapId res.store
+                    in
+                    if stmtEq s2 s1 then
+                        remain s1
+
+                    else
+                        { completed = []
+                        , advanced =
+                            [ { id = id
+                              , stmt = s2
+                              , snapshot = store
+                              , result = post
+                              }
+                            ]
+                        , remaining = []
+                        , scount = res.scount
+                        }
+
+                spawned ->
+                    { completed = [ ( id, res.store ) ]
+                    , advanced = []
+                    , remaining = spawned
+                    , scount = res.scount
+                    }
+
+
+stmtEq : Stmt -> Stmt -> Bool
+stmtEq a b =
+    case ( a, b ) of
+        ( SAssign _ e1 e2, SAssign _ f1 f2 ) ->
+            exprEq e1 f1 && exprEq e2 f2
+
+        ( SIf _ e s1 s2, SIf _ f t1 t2 ) ->
+            exprEq e f && stmtEq s1 t1 && stmtEq s2 t2
+
+        ( SWhile _ e s1, SWhile _ f t1 ) ->
+            exprEq e f && stmtEq s1 t1
+
+        ( SRead _ x, SRead _ y ) ->
+            x == y
+
+        ( SPrint _ e, SPrint _ f ) ->
+            exprEq e f
+
+        ( SSeq _ s1 s2, SSeq _ t1 t2 ) ->
+            stmtEq s1 t1 && stmtEq s2 t2
+
+        ( SSkip _, SSkip _ ) ->
+            True
+
+        ( SFuncCall _ n1 a1, SFuncCall _ n2 a2 ) ->
+            n1 == n2 && exprListEq a1 a2
+
+        ( SError x, SError y ) ->
+            x == y
+
+        _ ->
+            False
+
+
+exprEq : Expr -> Expr -> Bool
+exprEq a b =
+    case ( a, b ) of
+        ( EVar _ x, EVar _ y ) ->
+            x == y
+
+        ( EInt _ i, EInt _ j ) ->
+            i == j
+
+        ( EBool _ p, EBool _ q ) ->
+            p == q
+
+        ( EString _ s, EString _ t ) ->
+            s == t
+
+        ( EHole _ h1, EHole _ h2 ) ->
+            h1 == h2
+
+        ( Eop _ op1 e1 e2, Eop _ op2 f1 f2 ) ->
+            op1 == op2 && exprEq e1 f1 && exprEq e2 f2
+
+        ( ENot _ e1, ENot _ e2 ) ->
+            exprEq e1 e2
+
+        ( EParens _ e1, EParens _ e2 ) ->
+            exprEq e1 e2
+
+        ( EList _ es1, EList _ es2 ) ->
+            exprListEq es1 es2
+
+        ( EIndex _ e1 e2, EIndex _ f1 f2 ) ->
+            exprEq e1 f1 && exprEq e2 f2
+
+        ( ELength _ e1, ELength _ e2 ) ->
+            exprEq e1 e2
+
+        ( EError x, EError y ) ->
+            x == y
+
+        _ ->
+            False
+
+
+exprListEq : List Expr -> List Expr -> Bool
+exprListEq a b =
+    case ( a, b ) of
+        ( [], [] ) ->
+            True
+
+        ( e1 :: r1, e2 :: r2 ) ->
+            exprEq e1 e2 && exprListEq r1 r2
+
+        _ ->
+            False
+
+
+substHoleInStmtStore : RiStmts -> CollectCtx -> HoleMap -> (RiStmts, HoleMap)
+substHoleInStmtStore ris ctx h2eMap =
     case ris of
         [] -> ([], h2eMap)
         (id, s, store) :: rest ->
-            let (newstore, newh2eMap) = substHoleInStore store execList h2eMap in
-            let (resstmt, newh2eMap_) = substHoleInStmtStore rest execList newh2eMap in
+            let (newstore, newh2eMap) = substHoleInStore store ctx h2eMap in
+            let (resstmt, newh2eMap_) = substHoleInStmtStore rest ctx newh2eMap in
             -- let newio = substHoleInIO io execList in
             ((id, s, newstore)::resstmt, newh2eMap_)
 
@@ -752,296 +1260,105 @@ processHoleAt v x scount path =
 
         _ ->
             v
-keepResidual : FuncEnv -> HoleBindings -> RiStmts -> SCount -> Store -> StmtID -> Stmt -> Store -> (List (StmtID, Store), RiStmts, HoleMap)
-keepResidual funcEnv hb rest scount env id s store =
-    let
-        (exec_, stmt_, partial) =
-            tryExec funcEnv hb rest scount env
-    in
-    (exec_, (id, s, store) :: stmt_, partial)
-
-
-partialAssign : FuncEnv -> HoleBindings -> RiStmts -> SCount -> Store -> StmtID -> Stmt -> Store -> String -> Value -> Value -> (List (StmtID, Store), RiStmts, HoleMap)
-partialAssign funcEnv hb rest scount env id s store x oldv newv =
-    let
-        partial =
-            holeDiff oldv newv Dict.empty
-
-        rest_ =
-            substHole partial (patchRiVar x newv rest)
-
-        env_ =
-            substStoreByMap partial (updateStore x newv env)
-
-        (exec_, stmt_, partial_) =
-            tryExec funcEnv hb rest_ scount env_
-    in
-    (exec_, (id, s, store) :: stmt_, Dict.union partial partial_)
-
-
-tryExec : FuncEnv -> HoleBindings -> RiStmts -> SCount -> Store -> (List (StmtID, Store), RiStmts, HoleMap)
-tryExec funcEnv hb ris scount env =
-    case ris of
-        [] ->
-            ([], [], Dict.empty)
-
-        (id, s, store) :: rest ->
-            case s of
-                SAssign _ e1 e2 ->
-                    case e1 of
-                        EVar _ x ->
-                            let v = eval store hb e2 in 
-                            case v of
-                                VHole HTmp _ ->
-                                    keepResidual funcEnv hb rest scount env id s store
-
-                                VList vs ->
-                                    if hasHole vs then
-                                        let
-                                            newv =
-                                                VList (processHoleinList vs x id (VList []))
-
-                                            oldv =
-                                                case lookup x env of
-                                                    Just ov ->
-                                                        ov
-
-                                                    Nothing ->
-                                                        case lookup x store of
-                                                            Just ov ->
-                                                                ov
-
-                                                            Nothing ->
-                                                                VList []
-                                        in
-                                        partialAssign funcEnv hb rest scount env id s store x oldv newv
-                                    else
-                                        let (exec_, stmt_, partial) = tryExec funcEnv hb rest scount (updateStore x v env) in
-                                        ((id, updateStore x v store)::exec_, stmt_, partial)
-
-                                _ ->
-                                    let (exec_, stmt_, partial) = tryExec funcEnv hb rest scount (updateStore x v env) in
-                                    ((id, updateStore x v store)::exec_, stmt_, partial)
-
-                        EIndex _ _ _ ->
-                            let (x, path) = findIndex store hb e1 in
-                            let v = eval store hb e2 in
-                            case path of
-                                VHole _ _ ->
-                                    keepResidual funcEnv hb rest scount env id s store
-
-                                VList p ->
-                                    case lookup x store of
-                                        Just (VList vs) ->
-                                            case v of
-                                                VHole _ _ ->
-                                                    keepResidual funcEnv hb rest scount env id s store
-
-                                                VList vs_ ->
-                                                    if hasHole vs_ then
-                                                        let
-                                                            resv =
-                                                                processHoleinList vs_ x id (VList p)
-
-                                                            newv =
-                                                                updateValue (VList p) (VList vs) (VList resv)
-
-                                                            oldv =
-                                                                case lookup x env of
-                                                                    Just ov ->
-                                                                        ov
-
-                                                                    Nothing ->
-                                                                        VList vs
-                                                        in
-                                                        partialAssign funcEnv hb rest scount env id s store x oldv newv
-                                                    else
-                                                        let
-                                                            store1 =
-                                                                updateStore x (updateValue (VList p) (VList vs) v) store
-                                                            (exec_, stmt_, partial) =
-                                                                tryExec funcEnv hb rest scount (updateStore x (updateValue (VList p) (VList vs) v) env)
-                                                        in
-                                                        ((id, store1)::exec_, stmt_, partial)
-
-                                                _ ->
-                                                    let
-                                                        store1 =
-                                                            updateStore x (updateValue (VList p) (VList vs) v) store
-                                                        (exec_, stmt_, partial) =
-                                                            tryExec funcEnv hb rest scount (updateStore x (updateValue (VList p) (VList vs) v) env)
-                                                    in
-                                                    ((id, store1)::exec_, stmt_, partial)
-
-                                        _ ->
-                                            keepResidual funcEnv hb rest scount env id s store
-
-                                _ ->
-                                    keepResidual funcEnv hb rest scount env id s store
-
-                        _ ->
-                            ([], [], Dict.empty)
-                        
-                SIf _ e s1 s2 ->
-                    let v = eval store hb e in 
-                    case v of
-                        VHole HTmp _ ->
-                            keepResidual funcEnv hb rest scount env id s store
-
-                        VBool True ->
-                            let res = exec funcEnv store hb [] s1 Set.empty scount in
-                            let (exec_, stmt_, partial) = tryExec funcEnv hb rest res.scount res.store in
-                            ((id, res.store)::exec_, res.riStmts++stmt_, partial)
-
-                        VBool False ->
-                            let res = exec funcEnv store hb [] s2 Set.empty scount in
-                            let (exec_, stmt_, partial) = tryExec funcEnv hb rest res.scount res.store in
-                            ((id, res.store)::exec_, res.riStmts++stmt_, partial)
-
-                        _ ->
-                            ([], [], Dict.empty)
-
-                SWhile ws e s_ ->
-                    let v = eval store hb e in 
-                    case v of
-                        VHole HTmp _ ->
-                            keepResidual funcEnv hb rest scount env id (SIf [] e (SSeq [] s_ (SWhile ws e s_)) (SSkip [])) store
-
-                        VBool True ->
-                            let res = exec funcEnv store hb [] (SSeq [] s_ (SWhile ws e s_)) Set.empty scount in
-                            let (exec_, stmt_, partial) = tryExec funcEnv hb rest res.scount res.store in
-                            ((id, res.store)::exec_, res.riStmts++stmt_, partial)
-
-                        VBool False ->
-                            let (exec_, stmt_, partial) = tryExec funcEnv hb rest scount env in
-                            ((id, store)::exec_, stmt_, partial)
-
-                        _ ->
-                            ([], [], Dict.empty)
-
-                SRead _ x ->
-                    let vs = lookup "input" store in
-                    case vs of
-                        Just (VHole _ _) ->
-                            keepResidual funcEnv hb rest scount env id (SRead [] x) store
-
-                        Just _ ->
-                            let res = exec funcEnv store hb [] (SRead [] x) Set.empty scount in
-                            let (exec_, stmt_, partial) = tryExec funcEnv hb rest res.scount res.store in
-                            ((id, res.store)::exec_, res.riStmts++stmt_, partial)
-
-                        _ ->
-                            ([(-2, [])], [], Dict.empty)
-                        
-                SPrint _ e ->
-                    let
-                        v =
-                            eval store hb e
-
-                        rowIdx =
-                            case lookup "output" store of
-                                Just (VList os) ->
-                                    List.length os
-
-                                _ ->
-                                    0
-
-                        slot =
-                            outputRowAt env rowIdx
-
-                        complete env_ store_ =
-                            let
-                                ( exec_, stmt_, partial ) =
-                                    tryExec funcEnv hb rest scount env_
-                            in
-                            ( ( id, store_ ) :: exec_, stmt_, partial )
-
-                        ready x =
-                            case x of
-                                VError _ ->
-                                    False
-
-                                _ ->
-                                    not (isIndet x)
-                    in
-                    case slot of
-                        Just slotv ->
-                            if ready slotv then
-                                complete env env
-
-                            else if ready v then
-                                complete (replaceOutputRow rowIdx v env) (replaceOutputRow rowIdx v store)
-
-                            else
-                                keepResidual funcEnv hb rest scount env id s store
-
-                        Nothing ->
-                            if ready v then
-                                complete (replaceOutputRow rowIdx v env) (replaceOutputRow rowIdx v store)
-
-                            else
-                                keepResidual funcEnv hb rest scount env id s store
-
-                SFuncDef _ _ _ _ ->
-                    ([(-2, [])], [], Dict.empty)
-
-                SSkip _ ->
-                    tryExec funcEnv hb rest scount env
-
-                SFuncCall _ name args ->
-                    let res = exec funcEnv store hb [] (SFuncCall [] name args) Set.empty scount in
-                    if isErrorStore res.store then
-                        ([(-2, [])], [], Dict.empty)
-                    else
-                        let (exec_, stmt_, partial) = tryExec funcEnv hb rest res.scount res.store in
-                        ((id, res.store)::exec_, res.riStmts++stmt_, partial)
-
-                _ ->
-                    ([(-2, [])], [], Dict.empty)
--- 如果能运行就把语句直接从residual删掉，记录被删掉的id，io/store,不然就更新，被删掉的id需要对应着去找到剩余的所有残余语句中的store，更新store的值
 
 isCompleted : StmtID -> List (StmtID, Store) -> Bool
 isCompleted id execList =
     List.any (\(id_, _) -> id_ == id) execList
 
 
-resolveHole : List (StmtID, Store) -> HoleName -> StmtID -> HoleMap -> (Value, HoleMap)
-resolveHole execList h id h2eMap =
-    resolveHoleSeen execList h id h2eMap []
+isWholeVar : HoleName -> Bool
+isWholeVar h =
+    nameToPath h == VList []
 
 
-resolveHoleSeen : List (StmtID, Store) -> HoleName -> StmtID -> HoleMap -> List StmtID -> (Value, HoleMap)
-resolveHoleSeen execList h id h2eMap seen =
-    if not (isCompleted id execList) then
-        (VHole h id, h2eMap)
+snapList : CollectCtx -> StmtID -> HoleName -> Maybe Value
+snapList ctx id h =
+    case Dict.get id ctx.snaps of
+        Just st ->
+            case lookupHoleVal h st of
+                Just (VList vs) ->
+                    if isWholeVar h then
+                        Just (VList vs)
 
-    else if List.member id seen then
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+
+        Nothing ->
+            Nothing
+
+
+resolveHole : CollectCtx -> HoleName -> StmtID -> HoleMap -> (Value, HoleMap)
+resolveHole ctx h id h2eMap =
+    resolveHoleSeen ctx h id h2eMap []
+
+
+resolveHoleSeen : CollectCtx -> HoleName -> StmtID -> HoleMap -> List StmtID -> (Value, HoleMap)
+resolveHoleSeen ctx h id h2eMap seen =
+    if List.member id seen then
         (VHole h id, h2eMap)
 
     else
-        case lookupHoleVal h (findStore id execList) of
-            Just (VHole h2 id2) ->
-                if isCompleted id2 execList && id2 /= id then
-                    let
-                        (vFinal, nd) =
-                            resolveHoleSeen execList h2 id2 h2eMap (id :: seen)
-                    in
-                    (vFinal, Dict.insert (valHoleKey h id) (value2Expr vFinal) nd)
+        let
+            finish v nd =
+                ( v, Dict.insert (valHoleKey h id) (value2Expr v) nd )
 
-                else
-                    ( VHole h2 id2
-                    , Dict.insert (valHoleKey h id) (value2Expr (VHole h2 id2)) h2eMap
-                    )
+            fromSnap chaseHole chaseId =
+                case snapList ctx id h of
+                    Just vs ->
+                        finish vs h2eMap
 
-            Just v ->
-                (v, Dict.insert (valHoleKey h id) (value2Expr v) h2eMap)
+                    Nothing ->
+                        if chaseId /= id then
+                            let
+                                ( vFinal, nd ) =
+                                    resolveHoleSeen ctx chaseHole chaseId h2eMap (id :: seen)
+                            in
+                            finish vFinal nd
 
-            Nothing ->
-                (VHole h id, h2eMap)
+                        else
+                            ( VHole h id, h2eMap )
+        in
+        if isCompleted id ctx.done then
+            case lookupHoleVal h (findStore id ctx.done) of
+                Just (VHole h2 id2) ->
+                    fromSnap h2 id2
+
+                Just v ->
+                    finish v h2eMap
+
+                Nothing ->
+                    fromSnap h id
+
+        else
+            case Dict.get id ctx.snaps of
+                Just st ->
+                    case lookupHoleVal h st of
+                        Just (VHole h2 id2) ->
+                            if isWholeVar h then
+                                fromSnap h2 id2
+
+                            else
+                                ( VHole h id, h2eMap )
+
+                        Just (VList vs) ->
+                            if isWholeVar h then
+                                finish (VList vs) h2eMap
+
+                            else
+                                ( VHole h id, h2eMap )
+
+                        _ ->
+                            ( VHole h id, h2eMap )
+
+                Nothing ->
+                    ( VHole h id, h2eMap )
 
 
-substHoleInStore : Store -> List (StmtID, Store) -> HoleMap -> (Store, HoleMap)
-substHoleInStore store execList h2eMap =
+substHoleInStore : Store -> CollectCtx -> HoleMap -> (Store, HoleMap)
+substHoleInStore store ctx h2eMap =
     case store of
         [] ->
             ([], h2eMap)
@@ -1049,20 +1366,20 @@ substHoleInStore store execList h2eMap =
         (x, VHole h id) :: rest ->
             let
                 (v_, nd) =
-                    resolveHole execList h id h2eMap
+                    resolveHole ctx h id h2eMap
 
                 (newstore, newh2eMap) =
-                    substHoleInStore rest execList nd
+                    substHoleInStore rest ctx nd
             in
             ((x, v_) :: newstore, newh2eMap)
 
         (x, VList vs) :: rest ->
-            let (newvs, newh2eMap) = substHoleInList execList x vs (VList []) h2eMap in
-            let (newstore, newh2eMap_) = substHoleInStore rest execList newh2eMap in
+            let (newvs, newh2eMap) = substHoleInList ctx x vs (VList []) h2eMap in
+            let (newstore, newh2eMap_) = substHoleInStore rest ctx newh2eMap in
             ((x, VList newvs) :: newstore, newh2eMap_)
 
         (x, v) :: rest ->
-            let (newstore, newh2eMap) = substHoleInStore rest execList h2eMap in
+            let (newstore, newh2eMap) = substHoleInStore rest ctx h2eMap in
             ((x, v) :: newstore, newh2eMap)
 
 findStore : Int -> List (Int, Store) -> Store
@@ -1124,12 +1441,12 @@ findIndex store holeBindings e =
 
 
 
-substHoleInList : List (StmtID, Store) -> String -> List Value -> Value -> HoleMap -> (List Value, HoleMap)
-substHoleInList execList x vs path h2eMap =
-    substHoleInListWalk execList x vs path 0 h2eMap
+substHoleInList : CollectCtx -> String -> List Value -> Value -> HoleMap -> (List Value, HoleMap)
+substHoleInList ctx x vs path h2eMap =
+    substHoleInListWalk ctx x vs path 0 h2eMap
 
-substHoleInListWalk : List (StmtID, Store) -> String -> List Value -> Value -> Int -> HoleMap -> (List Value, HoleMap)
-substHoleInListWalk execList x vs path i h2eMap =
+substHoleInListWalk : CollectCtx -> String -> List Value -> Value -> Int -> HoleMap -> (List Value, HoleMap)
+substHoleInListWalk ctx x vs path i h2eMap =
     case vs of
         [] ->
             ([], h2eMap)
@@ -1147,9 +1464,9 @@ substHoleInListWalk execList x vs path i h2eMap =
             case (x, v, path_) of
                 -- if/while 污染：#output 代表从这里起整段未知 output
                 ("output", VHole (HVar "output") id, VList [ VInt vid ]) ->
-                    if List.any (\(id_, _) -> id_ == id) execList then
-                        case lookup "output" (findStore id execList) of
-                            Just (VList nvs) ->
+                    case lookup "output" (findStore id ctx.done) of
+                        Just (VList nvs) ->
+                            if List.length nvs > vid then
                                 let
                                     suffix =
                                         List.drop vid nvs
@@ -1166,36 +1483,37 @@ substHoleInListWalk execList x vs path i h2eMap =
                                         Dict.insert (valHoleKey (HVar "output") id) holeExpr h2eMap
 
                                     (rest_, nd_) =
-                                        substHoleInListWalk execList x rest path (i + 1) nd
+                                        substHoleInListWalk ctx x rest path (i + 1) nd
                                 in
                                 (suffix ++ rest_, nd_)
 
-                            _ ->
-                                let (rest_, nd_) = substHoleInListWalk execList x rest path (i + 1) h2eMap in
+                            else
+                                let (rest_, nd_) = substHoleInListWalk ctx x rest path (i + 1) h2eMap in
                                 (v :: rest_, nd_)
-                    else
-                        let (rest_, nd_) = substHoleInListWalk execList x rest path (i + 1) h2eMap in
-                        (v :: rest_, nd_)
+
+                        _ ->
+                            let (rest_, nd_) = substHoleInListWalk ctx x rest path (i + 1) h2eMap in
+                            (v :: rest_, nd_)
 
                 _ ->
                     let
                         (v_, nd) =
-                            substHoleAt execList x v path_ h2eMap
+                            substHoleAt ctx x v path_ h2eMap
 
                         (rest_, nd_) =
-                            substHoleInListWalk execList x rest path (i + 1) nd
+                            substHoleInListWalk ctx x rest path (i + 1) nd
                     in
                     (v_ :: rest_, nd_)
 
-substHoleAt : List (StmtID, Store) -> String -> Value -> Value -> HoleMap -> (Value, HoleMap)
-substHoleAt execList x v path h2eMap =
+substHoleAt : CollectCtx -> String -> Value -> Value -> HoleMap -> (Value, HoleMap)
+substHoleAt ctx x v path h2eMap =
     case v of
         VHole h id ->
-            resolveHole execList h id h2eMap
+            resolveHole ctx h id h2eMap
 
         VList inner ->
             let
-                (inner_, nd) = substHoleInList execList x inner path h2eMap
+                (inner_, nd) = substHoleInList ctx x inner path h2eMap
             in
             (VList inner_, nd)
 

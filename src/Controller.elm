@@ -7,7 +7,7 @@ import Dict
 import IMP.Parser_ exposing (parse, parseExpr, parseValue)
 import IMP.Eval exposing (exec, fill)
 import IMP.Uneval exposing (unexec)
-import IMP.Utils exposing (prepareStmt, attachFuncs, substHoleinFuncEnv, exprHoleKey, lookup, updateStore, substHoleinStmt)
+import IMP.Utils exposing (prepareStmt, attachFuncs, substHoleinFuncEnv, exprHoleKey, lookup, updateStore, substHoleinStmt, oriCompactMap, remapOriRiStmts)
 import IMP.Printer exposing (printOutput, printOutputList, printStmt, printValue)
 import IMP.Syntax exposing (..)
 
@@ -135,7 +135,6 @@ openFillWith model =
                     uniqueOri
                         (collectOriInStmt stmt_
                             ++ collectOriInFuncEnv funcEnv
-                            ++ collectOriInRiStmts model.riStmts
                         )
             in
             { model
@@ -208,24 +207,34 @@ saveAndFillWith model =
                     , readOnly = Set.empty
                     }
 
-            newCode =
+            ( newCode, newRi ) =
                 case parse model.code of
                     Ok stmt ->
                         let
                             ( stmt_, _, funcEnv ) =
                                 prepareStmt stmt
+
+                            substEnv =
+                                substHoleinFuncEnv 0 funcEnv holeDict
+
+                            substStmt =
+                                substHoleinStmt 0 stmt_ holeDict
+
+                            holeMap =
+                                oriCompactMap
+                                    (collectOriInStmt substStmt
+                                        ++ collectOriInFuncEnv substEnv
+                                    )
                         in
-                        printStmt
-                            (attachFuncs
-                                (substHoleinFuncEnv 0 funcEnv holeDict)
-                                (substHoleinStmt 0 stmt_ holeDict)
-                            )
+                        ( printStmt (attachFuncs substEnv substStmt)
+                        , remapOriRiStmts holeMap res.riStmts
+                        )
 
                     Err _ ->
-                        model.code
+                        ( model.code, res.riStmts )
 
             keepId =
-                keepContextId model.currentContext res.riStmts
+                keepContextId model.currentContext newRi
         in
         { model
             | filling = False
@@ -235,10 +244,10 @@ saveAndFillWith model =
             , code = newCode
             , codeBackup = newCode
             , store = res.store
-            , riStmts = res.riStmts
+            , riStmts = newRi
             , output = printOutput res.store
             , currentContext = keepId
-            , contextDrafts = contextDraftsOf keepId res.riStmts
+            , contextDrafts = contextDraftsOf keepId newRi
             , oriHoles = []
             , fillDraft = Dict.empty
             , fillSelected = Set.empty

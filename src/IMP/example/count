@@ -1,9 +1,11 @@
 count := 0;
 i := 0;
-a := [1,2,3,4,5]
+a := [1,2,3,4,5];
 while i < a.length do
-    if a[i] > _ then
+    if _ then
         count := count + 1
+    else 
+        skip
     end;
     print count;
     i := i + 1

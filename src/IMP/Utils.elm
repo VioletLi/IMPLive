@@ -53,7 +53,7 @@ preprocessStmt s hcount =
         SWhile ws e s_ -> 
             let (e_, hcount_) = preprocessExpr e hcount in
             let (s__, hcount__) = preprocessStmt s_ hcount_ in
-            (SWhile ws e_ s__, hcount_)
+            (SWhile ws e_ s__, hcount__)
         SAssign ws e1 e2 -> 
             let (e1_, hcount_) = preprocessExpr e1 hcount in
             let (e2_, hcount__) = preprocessExpr e2 hcount_ in
@@ -260,6 +260,99 @@ substHoleinStmt id s holes =
             SFuncDef ws name params (substHoleinStmt id body holes)
         SFuncCall ws name args ->
             SFuncCall ws name (List.map (\e -> substHoleinExpr id e holes) args)
+
+oriCompactMap : List HoleName -> Dict Int Int
+oriCompactMap hs =
+    hs
+        |> List.filterMap
+            (\h ->
+                case h of
+                    HOri n ->
+                        Just n
+
+                    _ ->
+                        Nothing
+            )
+        |> List.foldl
+            (\n acc ->
+                if List.member n acc then
+                    acc
+
+                else
+                    acc ++ [ n ]
+            )
+            []
+        |> List.indexedMap (\i n -> ( n, i ))
+        |> Dict.fromList
+
+
+remapOriRiStmts : Dict Int Int -> RiStmts -> RiStmts
+remapOriRiStmts mp ris =
+    List.map
+        (\( id, s, store ) -> ( id, remapOriStmt mp s, store ))
+        ris
+
+
+remapOriStmt : Dict Int Int -> Stmt -> Stmt
+remapOriStmt mp s =
+    case s of
+        SAssign ws e1 e2 ->
+            SAssign ws (remapOriExpr mp e1) (remapOriExpr mp e2)
+
+        SIf ws e s1 s2 ->
+            SIf ws (remapOriExpr mp e) (remapOriStmt mp s1) (remapOriStmt mp s2)
+
+        SWhile ws e body ->
+            SWhile ws (remapOriExpr mp e) (remapOriStmt mp body)
+
+        SPrint ws e ->
+            SPrint ws (remapOriExpr mp e)
+
+        SSeq ws s1 s2 ->
+            SSeq ws (remapOriStmt mp s1) (remapOriStmt mp s2)
+
+        SFuncDef ws name params body ->
+            SFuncDef ws name params (remapOriStmt mp body)
+
+        SFuncCall ws name args ->
+            SFuncCall ws name (List.map (remapOriExpr mp) args)
+
+        _ ->
+            s
+
+
+remapOriExpr : Dict Int Int -> Expr -> Expr
+remapOriExpr mp e =
+    case e of
+        EHole ws (HOri n) ->
+            case Dict.get n mp of
+                Just n_ ->
+                    EHole ws (HOri n_)
+
+                Nothing ->
+                    EHole ws (HOri n)
+
+        Eop ws op e1 e2 ->
+            Eop ws op (remapOriExpr mp e1) (remapOriExpr mp e2)
+
+        ENot ws e1 ->
+            ENot ws (remapOriExpr mp e1)
+
+        EParens ws e1 ->
+            EParens ws (remapOriExpr mp e1)
+
+        EList ws es ->
+            EList ws (List.map (remapOriExpr mp) es)
+
+        EIndex ws e1 e2 ->
+            EIndex ws (remapOriExpr mp e1) (remapOriExpr mp e2)
+
+        ELength ws e1 ->
+            ELength ws (remapOriExpr mp e1)
+
+        _ ->
+            e
+
 
 substHoleinExpr : StmtID -> Expr -> HoleMap -> Expr
 substHoleinExpr id e holes =
