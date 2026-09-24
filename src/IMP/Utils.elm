@@ -375,6 +375,8 @@ substHoleinExpr id e holes =
             case Dict.get n holes of
                 Just expr_ -> expr_
                 Nothing -> EHole ws (HOri n)
+        EHole ws h ->
+            EHole ws h
         EBool ws b -> EBool ws b
         EString ws s -> EString ws s
         EError s -> EError s
@@ -383,7 +385,6 @@ substHoleinExpr id e holes =
         EList ws es -> EList ws (List.map (\e_ -> substHoleinExpr id e_ holes) es)
         EIndex ws e1 e2 -> EIndex ws (substHoleinExpr id e1 holes) (substHoleinExpr id e2 holes)
         ELength ws e_ -> ELength ws (substHoleinExpr id e_ holes)
-        _ -> EError "Unsupported expression"
 
 encodeHoleId h id =
     case h of

@@ -186,11 +186,12 @@ simplifyExpr store e holeBindings =
     case e of
         EVar _ x ->
             case lookup x store of
-                Just (VHole _ _) ->
-                    EVar [] x
-
                 Just v ->
-                    value2Expr v
+                    if isFullyDet v then
+                        value2Expr v
+
+                    else
+                        EVar [] x
 
                 Nothing ->
                     EError "Variable not found"
@@ -217,7 +218,11 @@ simplifyExpr store e holeBindings =
                                 EIndex [] e1_ e2_
 
                             v ->
-                                value2Expr v
+                                if isFullyDet v then
+                                    value2Expr v
+
+                                else
+                                    EIndex [] e1_ e2_
 
                     else
                         EError "Index out of range"
@@ -779,8 +784,14 @@ exec funcEnv store holeBindings riStmts stmt readOnly scount =
 fill : FuncEnv -> HoleMap -> HoleBindings -> FwdRes -> FwdRes
 fill funcEnv holes hb fwdRes =
     let
-        ( filled, unaffected ) =
+        ( filled0, unaffected0 ) =
             substHole holes fwdRes.riStmts
+
+        filled =
+            recoverRiStmts filled0
+
+        unaffected =
+            recoverRiStmts unaffected0
 
         ( toExec, remaining ) =
             divideAfterFilled filled
@@ -797,7 +808,7 @@ fill funcEnv holes hb fwdRes =
                 patchedExec funcEnv hb toExec fwdRes.scount
 
             ( store1, newlyKnown, newlyUnknown ) =
-                substValinVal finished fwdRes.store (remained ++ newlyResidual)
+                substValinVal finished fwdRes.store (remained ++ recoverRiStmts newlyResidual)
         in
         resume funcEnv hb scount1 store1 newlyKnown newlyUnknown
 
@@ -1038,7 +1049,7 @@ resume funcEnv hb scount store known unknown =
                     patchedExec funcEnv hb known scount
 
                 ( store1, known1, unknown1 ) =
-                    substValinVal finished store (unknown ++ newlyResidual)
+                    substValinVal finished store (unknown ++ recoverRiStmts newlyResidual)
             in
             resume funcEnv hb scount1 store1 known1 unknown1
 
@@ -1058,6 +1069,143 @@ patchedExec funcEnv hb ris0 scount0 =
                     patchedExec funcEnv hb rest res.scount
             in
             ( ( id, res.store ) :: stores, res.riStmts ++ newris, scount )
+
+
+recoverRiStmts : RiStmts -> RiStmts
+recoverRiStmts ris =
+    List.map (\( id, s, st ) -> ( id, recoverStmt st s, st )) ris
+
+
+recoverStmt : Store -> Stmt -> Stmt
+recoverStmt store s =
+    case s of
+        SAssign ws e1 e2 ->
+            SAssign ws (recoverExpr store e1) (recoverExpr store e2)
+
+        SIf ws e s1 s2 ->
+            SIf ws (recoverExpr store e) (recoverStmt store s1) (recoverStmt store s2)
+
+        SWhile ws e body ->
+            SWhile ws (recoverExpr store e) (recoverStmt store body)
+
+        SPrint ws e ->
+            SPrint ws (recoverExpr store e)
+
+        SSeq ws s1 s2 ->
+            SSeq ws (recoverStmt store s1) (recoverStmt store s2)
+
+        SFuncCall ws name args ->
+            SFuncCall ws name (List.map (recoverExpr store) args)
+
+        SFuncDef ws name params body ->
+            SFuncDef ws name params (recoverStmt store body)
+
+        _ ->
+            s
+
+
+recoverExpr : Store -> Expr -> Expr
+recoverExpr store e =
+    let
+        e_ =
+            case e of
+                Eop ws op e1 e2 ->
+                    Eop ws op (recoverExpr store e1) (recoverExpr store e2)
+
+                ENot ws e1 ->
+                    ENot ws (recoverExpr store e1)
+
+                EParens ws e1 ->
+                    EParens ws (recoverExpr store e1)
+
+                EList ws es ->
+                    EList ws (List.map (recoverExpr store) es)
+
+                EIndex ws e1 e2 ->
+                    EIndex ws (recoverExpr store e1) (recoverExpr store e2)
+
+                ELength ws e1 ->
+                    ELength ws (recoverExpr store e1)
+
+                _ ->
+                    e
+    in
+    case recoverAsVar store e_ of
+        Just x ->
+            EVar [] x
+
+        Nothing ->
+            e_
+
+
+recoverAsVar : Store -> Expr -> Maybe String
+recoverAsVar store e =
+    case store of
+        [] ->
+            Nothing
+
+        ( x, v ) :: rest ->
+            if x /= "input" && x /= "output" && not (isFullyDet v) && exprEq (value2Expr v) e then
+                Just x
+
+            else
+                recoverAsVar rest e
+
+
+exprEq : Expr -> Expr -> Bool
+exprEq a b =
+    case ( a, b ) of
+        ( EVar _ x, EVar _ y ) ->
+            x == y
+
+        ( EInt _ i, EInt _ j ) ->
+            i == j
+
+        ( EBool _ p, EBool _ q ) ->
+            p == q
+
+        ( EString _ s, EString _ t ) ->
+            s == t
+
+        ( EHole _ h1, EHole _ h2 ) ->
+            h1 == h2
+
+        ( Eop _ op1 e1 e2, Eop _ op2 f1 f2 ) ->
+            op1 == op2 && exprEq e1 f1 && exprEq e2 f2
+
+        ( ENot _ e1, ENot _ e2 ) ->
+            exprEq e1 e2
+
+        ( EParens _ e1, EParens _ e2 ) ->
+            exprEq e1 e2
+
+        ( EList _ xs, EList _ ys ) ->
+            exprEqList xs ys
+
+        ( EIndex _ e1 e2, EIndex _ f1 f2 ) ->
+            exprEq e1 f1 && exprEq e2 f2
+
+        ( ELength _ e1, ELength _ e2 ) ->
+            exprEq e1 e2
+
+        ( EError s1, EError s2 ) ->
+            s1 == s2
+
+        _ ->
+            False
+
+
+exprEqList : List Expr -> List Expr -> Bool
+exprEqList xs ys =
+    case ( xs, ys ) of
+        ( [], [] ) ->
+            True
+
+        ( x :: xt, y :: yt ) ->
+            exprEq x y && exprEqList xt yt
+
+        _ ->
+            False
 
 
 substValinVal : List ( StmtID, Store ) -> Store -> RiStmts -> ( Store, RiStmts, RiStmts )
