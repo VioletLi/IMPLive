@@ -233,19 +233,90 @@ simplifyExpr store e holeBindings =
                     EIndex [] e1_ e2_
 
         Eop ws op e1 e2 ->
-            Eop ws op (simplifyExpr store e1 holeBindings) (simplifyExpr store e2 holeBindings)
+            let
+                e1_ =
+                    simplifyExpr store e1 holeBindings
+
+                e2_ =
+                    simplifyExpr store e2 holeBindings
+
+                v1 =
+                    eval store holeBindings e1_
+
+                v2 =
+                    eval store holeBindings e2_
+            in
+            if isFullyDet v1 && isFullyDet v2 then
+                let
+                    v =
+                        bop op v1 v2
+                in
+                if isFullyDet v then
+                    value2Expr v
+
+                else
+                    Eop ws op e1_ e2_
+
+            else
+                Eop ws op e1_ e2_
 
         ENot ws e1 ->
-            ENot ws (simplifyExpr store e1 holeBindings)
+            let
+                e1_ =
+                    simplifyExpr store e1 holeBindings
 
-        EParens _ e1 ->
-            simplifyExpr store e1 holeBindings
+                v1 =
+                    eval store holeBindings e1_
+            in
+            if isFullyDet v1 then
+                case v1 of
+                    VBool b ->
+                        EBool [] (not b)
+
+                    _ ->
+                        ENot ws e1_
+
+            else
+                ENot ws e1_
+
+        EParens ws e1 ->
+            let
+                e1_ =
+                    simplifyExpr store e1 holeBindings
+
+                v =
+                    eval store holeBindings e1_
+            in
+            if isFullyDet v then
+                value2Expr v
+
+            else
+                EParens ws e1_
 
         EList ws es ->
             EList ws (List.map (\e_ -> simplifyExpr store e_ holeBindings) es)
 
         ELength ws e1 ->
-            ELength ws (simplifyExpr store e1 holeBindings)
+            let
+                e1_ =
+                    simplifyExpr store e1 holeBindings
+
+                v1 =
+                    eval store holeBindings e1_
+            in
+            if isFullyDet v1 then
+                case v1 of
+                    VString s ->
+                        EInt [] (String.length s)
+
+                    VList vs ->
+                        EInt [] (List.length vs)
+
+                    _ ->
+                        ELength ws e1_
+
+            else
+                ELength ws e1_
 
         _ ->
             e
@@ -263,111 +334,111 @@ simplifyLhs store e holeBindings =
             e
 
 
-foldRiStmts : HoleBindings -> RiStmts -> RiStmts
-foldRiStmts hb ris =
-    List.map
-        (\( id, s, store ) -> ( id, foldResidualStmt store hb s, store ))
-        ris
+-- foldRiStmts : HoleBindings -> RiStmts -> RiStmts
+-- foldRiStmts hb ris =
+--     List.map
+--         (\( id, s, store ) -> ( id, foldResidualStmt store hb s, store ))
+--         ris
 
 
-foldResidualStmt : Store -> HoleBindings -> Stmt -> Stmt
-foldResidualStmt store hb s =
-    case s of
-        SAssign ws e1 e2 ->
-            SAssign ws (foldResidualLhs store hb e1) (foldResidualExpr store hb e2)
+-- foldResidualStmt : Store -> HoleBindings -> Stmt -> Stmt
+-- foldResidualStmt store hb s =
+--     case s of
+--         SAssign ws e1 e2 ->
+--             SAssign ws (foldResidualLhs store hb e1) (foldResidualExpr store hb e2)
 
-        SIf ws e s1 s2 ->
-            SIf ws (foldResidualExpr store hb e) s1 s2
+--         SIf ws e s1 s2 ->
+--             SIf ws (foldResidualExpr store hb e) s1 s2
 
-        SWhile ws e body ->
-            SWhile ws (foldResidualExpr store hb e) body
+--         SWhile ws e body ->
+--             SWhile ws (foldResidualExpr store hb e) body
 
-        SPrint ws e ->
-            SPrint ws (foldResidualExpr store hb e)
+--         SPrint ws e ->
+--             SPrint ws (foldResidualExpr store hb e)
 
-        SSeq ws s1 s2 ->
-            SSeq ws (foldResidualStmt store hb s1) (foldResidualStmt store hb s2)
+--         SSeq ws s1 s2 ->
+--             SSeq ws (foldResidualStmt store hb s1) (foldResidualStmt store hb s2)
 
-        SFuncCall ws name args ->
-            SFuncCall ws name (List.map (foldResidualExpr store hb) args)
+--         SFuncCall ws name args ->
+--             SFuncCall ws name (List.map (foldResidualExpr store hb) args)
 
-        _ ->
-            s
-
-
-foldResidualLhs : Store -> HoleBindings -> Expr -> Expr
-foldResidualLhs store hb e =
-    case e of
-        EVar _ _ ->
-            e
-
-        EIndex ws e1 e2 ->
-            EIndex ws (foldResidualLhs store hb e1) (foldResidualExpr store hb e2)
-
-        _ ->
-            foldResidualExpr store hb e
+--         _ ->
+--             s
 
 
-foldResidualExpr : Store -> HoleBindings -> Expr -> Expr
-foldResidualExpr store hb e =
-    case e of
-        EVar _ _ ->
-            e
+-- foldResidualLhs : Store -> HoleBindings -> Expr -> Expr
+-- foldResidualLhs store hb e =
+--     case e of
+--         EVar _ _ ->
+--             e
 
-        EInt _ _ ->
-            e
+--         EIndex ws e1 e2 ->
+--             EIndex ws (foldResidualLhs store hb e1) (foldResidualExpr store hb e2)
 
-        EBool _ _ ->
-            e
-
-        EString _ _ ->
-            e
-
-        EHole _ h ->
-            case lookupHB h store hb of
-                Just v ->
-                    if isFullyDet v then
-                        value2Expr v
-
-                    else
-                        e
-
-                Nothing ->
-                    e
-
-        Eop ws op e1 e2 ->
-            foldIfDet store hb (Eop ws op (foldResidualExpr store hb e1) (foldResidualExpr store hb e2))
-
-        EIndex ws e1 e2 ->
-            foldIfDet store hb (EIndex ws (foldResidualExpr store hb e1) (foldResidualExpr store hb e2))
-
-        ELength ws e1 ->
-            foldIfDet store hb (ELength ws (foldResidualExpr store hb e1))
-
-        ENot ws e1 ->
-            foldIfDet store hb (ENot ws (foldResidualExpr store hb e1))
-
-        EParens _ e1 ->
-            foldResidualExpr store hb e1
-
-        EList ws es ->
-            EList ws (List.map (foldResidualExpr store hb) es)
-
-        _ ->
-            e
+--         _ ->
+--             foldResidualExpr store hb e
 
 
-foldIfDet : Store -> HoleBindings -> Expr -> Expr
-foldIfDet store hb e =
-    let
-        v =
-            eval store hb e
-    in
-    if isFullyDet v then
-        value2Expr v
+-- foldResidualExpr : Store -> HoleBindings -> Expr -> Expr
+-- foldResidualExpr store hb e =
+--     case e of
+--         EVar _ _ ->
+--             e
 
-    else
-        e
+--         EInt _ _ ->
+--             e
+
+--         EBool _ _ ->
+--             e
+
+--         EString _ _ ->
+--             e
+
+--         EHole _ h ->
+--             case lookupHB h store hb of
+--                 Just v ->
+--                     if isFullyDet v then
+--                         value2Expr v
+
+--                     else
+--                         e
+
+--                 Nothing ->
+--                     e
+
+--         Eop ws op e1 e2 ->
+--             foldIfDet store hb (Eop ws op (foldResidualExpr store hb e1) (foldResidualExpr store hb e2))
+
+--         EIndex ws e1 e2 ->
+--             foldIfDet store hb (EIndex ws (foldResidualExpr store hb e1) (foldResidualExpr store hb e2))
+
+--         ELength ws e1 ->
+--             foldIfDet store hb (ELength ws (foldResidualExpr store hb e1))
+
+--         ENot ws e1 ->
+--             foldIfDet store hb (ENot ws (foldResidualExpr store hb e1))
+
+--         EParens _ e1 ->
+--             foldResidualExpr store hb e1
+
+--         EList ws es ->
+--             EList ws (List.map (foldResidualExpr store hb) es)
+
+--         _ ->
+--             e
+
+
+-- foldIfDet : Store -> HoleBindings -> Expr -> Expr
+-- foldIfDet store hb e =
+--     let
+--         v =
+--             eval store hb e
+--     in
+--     if isFullyDet v then
+--         value2Expr v
+
+--     else
+--         e
 
 
 restoreReadOnly : List String -> Set String -> Set String -> Set String
@@ -702,53 +773,485 @@ exec funcEnv store holeBindings riStmts stmt readOnly scount =
             execFuncCall funcEnv store holeBindings riStmts readOnly scount name args
         SError s -> {defaultFwdRes | store = [("error", VError s)]}
 
-type alias AdvancedRes =
-    { id : StmtID
-    , stmt : Stmt
-    , snapshot : Store
-    , result : Store
-    }
 
-
-type alias ResumeOut =
-    { completed : List ( StmtID, Store )
-    , advanced : List AdvancedRes
-    , remaining : RiStmts
-    , scount : SCount
-    }
-
-
-emptyResume : SCount -> ResumeOut
-emptyResume scount =
-    { completed = []
-    , advanced = []
-    , remaining = []
-    , scount = scount
-    }
-
-
-mergeResume : ResumeOut -> ResumeOut -> ResumeOut
-mergeResume a b =
-    { completed = a.completed ++ b.completed
-    , advanced = a.advanced ++ b.advanced
-    , remaining = a.remaining ++ b.remaining
-    , scount = b.scount
-    }
 
 
 fill : FuncEnv -> HoleMap -> HoleBindings -> FwdRes -> FwdRes
 fill funcEnv holes hb fwdRes =
--- 第一步替换原来的stmt
-    let (ris0, substed) = substHole holes fwdRes.riStmts in
-    let newRes = patchedExec funcEnv hb ris0 in
+    let
+        ( filled, unaffected ) =
+            substHole holes fwdRes.riStmts
+
+        ( toExec, remaining ) =
+            divideAfterFilled filled
+
+        remained =
+            remaining ++ unaffected
+    in
+    if List.isEmpty toExec then
+        { fwdRes | riStmts = remained }
+
+    else
+        let
+            ( finished, newlyResidual, scount1 ) =
+                patchedExec funcEnv hb toExec fwdRes.scount
+
+            ( store1, newlyKnown, newlyUnknown ) =
+                substValinVal finished fwdRes.store (remained ++ newlyResidual)
+        in
+        resume funcEnv hb scount1 store1 newlyKnown newlyUnknown
+
+-- True: 有未知信息变已知，要执行；False: 没有，不执行
+classifyStmt : Store -> Stmt -> Bool
+classifyStmt store s =
+    case scanStmt store s ( False, False ) of
+        ( False, True ) ->
+            False
+
+        _ ->
+            True
 
 
-    fwdRes
+scanStmt : Store -> Stmt -> ( Bool, Bool ) -> ( Bool, Bool )
+scanStmt store s flags =
+    case s of
+        SAssign _ e1 e2 ->
+            scanAssign store e1 e2 flags
+
+        SIf _ e _ _ ->
+            scanExpr store e flags
+
+        SWhile _ e _ ->
+            scanExpr store e flags
+
+        SPrint _ e ->
+            scanExpr store e flags
+
+        SRead _ _ ->
+            markDet (varDet store "input") flags
+
+        SSeq _ s1 s2 ->
+            scanStmt store s2 (scanStmt store s1 flags)
+
+        SFuncCall _ _ args ->
+            List.foldl (scanExpr store) flags args
+
+        SFuncDef _ _ _ body ->
+            scanStmt store body flags
+
+        _ ->
+            flags
 
 
-patchedExec : FuncEnv -> HoleBindings -> RiStmts -> List (StmtID, FwdRes)
-patchedExec funcEnv hb ris0 =
-    List.map (\(id, s, store) -> (id, exec funcEnv store hb [] s Set.empty 0)) ris0
+scanAssign : Store -> Expr -> Expr -> ( Bool, Bool ) -> ( Bool, Bool )
+scanAssign store e1 e2 flags =
+    let
+        rhsFlags =
+            scanExpr store e2 ( False, False )
+
+        lhsFlags =
+            scanLhs store e1 ( False, False )
+
+        merged =
+            mergeFlags flags (mergeFlags rhsFlags lhsFlags)
+
+        rhsDet =
+            not (Tuple.second rhsFlags)
+    in
+    if lhsCanOverwrite store e1 then
+        merged
+
+    else if rhsDet then
+        mergeFlags merged ( True, True )
+
+    else
+        markDet False merged
+
+
+mergeFlags : ( Bool, Bool ) -> ( Bool, Bool ) -> ( Bool, Bool )
+mergeFlags ( d1, i1 ) ( d2, i2 ) =
+    ( d1 || d2, i1 || i2 )
+
+
+scanLhs : Store -> Expr -> ( Bool, Bool ) -> ( Bool, Bool )
+scanLhs store e flags =
+    case e of
+        EVar _ _ ->
+            flags
+
+        EIndex _ e1 e2 ->
+            scanLhs store e1 (scanExpr store e2 flags)
+
+        _ ->
+            scanExpr store e flags
+
+
+lhsCanOverwrite : Store -> Expr -> Bool
+lhsCanOverwrite store e =
+    case e of
+        EVar _ _ ->
+            True
+
+        EIndex _ _ _ ->
+            let
+                ( x, path ) =
+                    findIndex store [] e
+            in
+            case path of
+                VList p ->
+                    case lookup x store of
+                        Just v ->
+                            canUpdatePath v p
+
+                        Nothing ->
+                            False
+
+                _ ->
+                    False
+
+        _ ->
+            False
+
+
+canUpdatePath : Value -> List Value -> Bool
+canUpdatePath vs path =
+    case vs of
+        VHole _ _ ->
+            False
+
+        VList vs_ ->
+            case path of
+                [] ->
+                    True
+
+                VInt i :: [] ->
+                    i >= 0 && i < List.length vs_
+
+                VInt i :: rest ->
+                    if i >= 0 && i < List.length vs_ then
+                        canUpdatePath (nthValue vs_ i) rest
+
+                    else
+                        False
+
+                _ ->
+                    False
+
+        _ ->
+            False
+
+
+scanExpr : Store -> Expr -> ( Bool, Bool ) -> ( Bool, Bool )
+scanExpr store e flags =
+    case e of
+        EVar _ x ->
+            markDet (varDet store x) flags
+
+        EIndex _ e1 e2 ->
+            markDet (isFullyDet (eval store [] e)) (scanIndexVars store e flags)
+
+        Eop _ _ e1 e2 ->
+            scanExpr store e2 (scanExpr store e1 flags)
+
+        ENot _ e1 ->
+            scanExpr store e1 flags
+
+        EParens _ e1 ->
+            scanExpr store e1 flags
+
+        EList _ es ->
+            List.foldl (scanExpr store) flags es
+        ELength _ e1 ->
+            scanExpr store e1 flags
+
+        EHole _ _ ->
+            markDet False flags
+
+        _ ->
+            flags
+
+
+scanIndexVars : Store -> Expr -> ( Bool, Bool ) -> ( Bool, Bool )
+scanIndexVars store e flags =
+    case e of
+        EIndex _ e1 e2 ->
+            scanIndexVars store e1 (scanExpr store e2 flags)
+
+        EVar _ _ ->
+            flags
+
+        _ ->
+            scanExpr store e flags
+
+
+varDet : Store -> String -> Bool
+varDet store x =
+    case lookup x store of
+        Just v ->
+            isFullyDet v
+
+        Nothing ->
+            False
+
+
+markDet : Bool -> ( Bool, Bool ) -> ( Bool, Bool )
+markDet isDet ( hasDet, hasIndet ) =
+    if isDet then
+        ( True, hasIndet )
+
+    else
+        ( hasDet, True )
+
+
+divideAfterFilled : RiStmts -> ( RiStmts, RiStmts )
+divideAfterFilled filled =
+    case filled of
+        [] ->
+            ( [], [] )
+
+        (id, s, store) :: rest ->
+            let
+                ( toExec, remaining ) =
+                    divideAfterFilled rest
+
+                item =
+                    ( id, s, store )
+            in
+            if classifyStmt store s then
+                ( item :: toExec, remaining )
+
+            else
+                ( toExec, item :: remaining )
+
+
+-- 第一轮之后不再走 classifyStmt：只执行 newlyKnown，
+-- 再用本轮 finished 去替换 unknown ++ 新 residual。
+resume : FuncEnv -> HoleBindings -> SCount -> Store -> RiStmts -> RiStmts -> FwdRes
+resume funcEnv hb scount store known unknown =
+    case known of
+        [] ->
+            { store = store, riStmts = unknown, readOnly = Set.empty, scount = scount }
+
+        _ ->
+            let
+                ( finished, newlyResidual, scount1 ) =
+                    patchedExec funcEnv hb known scount
+
+                ( store1, known1, unknown1 ) =
+                    substValinVal finished store (unknown ++ newlyResidual)
+            in
+            resume funcEnv hb scount1 store1 known1 unknown1
+
+
+patchedExec : FuncEnv -> HoleBindings -> RiStmts -> SCount -> ( List (StmtID, Store), RiStmts, SCount )
+patchedExec funcEnv hb ris0 scount0 =
+    case ris0 of
+        [] ->
+            ( [], [], scount0 )
+
+        (id, s, store) :: rest ->
+            let
+                res =
+                    exec funcEnv store hb [] s Set.empty scount0
+
+                ( stores, newris, scount ) =
+                    patchedExec funcEnv hb rest res.scount
+            in
+            ( ( id, res.store ) :: stores, res.riStmts ++ newris, scount )
+
+
+substValinVal : List ( StmtID, Store ) -> Store -> RiStmts -> ( Store, RiStmts, RiStmts )
+substValinVal finished store ris =
+    let
+        ( known, unknown ) =
+            substRiStmts finished ris
+    in
+    ( substStoreByFinished finished store, known, unknown )
+
+
+substRiStmts : List ( StmtID, Store ) -> RiStmts -> ( RiStmts, RiStmts )
+substRiStmts finished ris =
+    case ris of
+        [] ->
+            ( [], [] )
+
+        ( id, s, st ) :: rest ->
+            let
+                needs =
+                    neededVarsOf s
+
+                newst =
+                    substStoreByFinished finished st
+
+                ( known, unknown ) =
+                    substRiStmts finished rest
+            in
+            if needsImproved st newst needs then
+                ( ( id, s, newst ) :: known, unknown )
+
+            else
+                ( known, ( id, s, newst ) :: unknown )
+
+
+substStoreByFinished : List ( StmtID, Store ) -> Store -> Store
+substStoreByFinished finished store =
+    List.map (\( x, v ) -> ( x, substValByFinished finished [] v )) store
+
+
+substValByFinished : List ( StmtID, Store ) -> List StmtID -> Value -> Value
+substValByFinished finished seen v =
+    case v of
+        VHole h id ->
+            if List.member id seen then
+                v
+
+            else if isCompleted id finished then
+                case lookupHoleVal h (findStore id finished) of
+                    Just v_ ->
+                        substValByFinished finished (id :: seen) v_
+
+                    Nothing ->
+                        v
+
+            else
+                v
+
+        VList vs ->
+            VList (List.map (substValByFinished finished seen) vs)
+
+        _ ->
+            v
+
+
+neededVarsOf : Stmt -> List String
+neededVarsOf s =
+    unique
+        (case s of
+            SAssign _ e1 e2 ->
+                neededVarsLhs e1 ++ neededVarsExpr e2
+
+            SIf _ e _ _ ->
+                neededVarsExpr e
+
+            SWhile _ e _ ->
+                neededVarsExpr e
+
+            SPrint _ e ->
+                neededVarsExpr e
+
+            SRead _ _ ->
+                [ "input" ]
+
+            SSeq _ s1 s2 ->
+                neededVarsOf s1 ++ neededVarsOf s2
+
+            SFuncCall _ _ args ->
+                List.concatMap neededVarsExpr args
+
+            SFuncDef _ _ _ body ->
+                neededVarsOf body
+
+            _ ->
+                []
+        )
+
+
+neededVarsLhs : Expr -> List String
+neededVarsLhs e =
+    case e of
+        EVar _ _ ->
+            []
+
+        EIndex _ e1 e2 ->
+            neededVarsBase e1 ++ neededVarsExpr e2
+
+        _ ->
+            neededVarsExpr e
+
+
+neededVarsBase : Expr -> List String
+neededVarsBase e =
+    case e of
+        EVar _ x ->
+            [ x ]
+
+        EIndex _ e1 e2 ->
+            neededVarsBase e1 ++ neededVarsExpr e2
+
+        _ ->
+            neededVarsExpr e
+
+
+neededVarsExpr : Expr -> List String
+neededVarsExpr e =
+    case e of
+        EVar _ x ->
+            [ x ]
+
+        EIndex _ e1 e2 ->
+            neededVarsExpr e1 ++ neededVarsExpr e2
+
+        Eop _ _ e1 e2 ->
+            neededVarsExpr e1 ++ neededVarsExpr e2
+
+        ENot _ e1 ->
+            neededVarsExpr e1
+
+        EParens _ e1 ->
+            neededVarsExpr e1
+
+        EList _ es ->
+            List.concatMap neededVarsExpr es
+
+        ELength _ e1 ->
+            neededVarsExpr e1
+
+        _ ->
+            []
+
+
+needsImproved : Store -> Store -> List String -> Bool
+needsImproved oldStore newStore needs =
+    List.any
+        (\x ->
+            case ( lookup x oldStore, lookup x newStore ) of
+                ( Nothing, Just _ ) ->
+                    True
+
+                ( Just ov, Just nv ) ->
+                    isMorePrecise ov nv
+
+                _ ->
+                    False
+        )
+        needs
+
+
+isMorePrecise : Value -> Value -> Bool
+isMorePrecise old new =
+    case ( old, new ) of
+        ( VHole _ _, VHole _ _ ) ->
+            False
+
+        ( VHole _ _, _ ) ->
+            True
+
+        ( VList os, VList ns ) ->
+            isMorePreciseList os ns
+
+        _ ->
+            False
+
+
+isMorePreciseList : List Value -> List Value -> Bool
+isMorePreciseList os ns =
+    case ( os, ns ) of
+        ( o :: ot, n :: nt ) ->
+            isMorePrecise o n || isMorePreciseList ot nt
+
+        _ ->
+            False
+
 
 -- fillLoop : FuncEnv -> HoleMap -> HoleBindings -> Set Int -> FwdRes -> FwdRes
 -- fillLoop funcEnv holes hb dirty fwdRes =
@@ -948,190 +1451,7 @@ nextScount scount ris =
         ris
 
 
-resumeAll : FuncEnv -> HoleBindings -> SCount -> Set Int -> RiStmts -> RiStmts -> ResumeOut
-resumeAll funcEnv hb scount dirty oldRis newRis =
-    case ( oldRis, newRis ) of
-        ( [], [] ) ->
-            emptyResume scount
 
-        ( ( id, s0, store ) :: os, ( _, s1, _ ) :: ns ) ->
-            let
-                one =
-                    resumeOne funcEnv hb scount dirty id s0 s1 store
-
-                acc =
-                    resumeAll funcEnv hb one.scount dirty os ns
-            in
-            mergeResume one acc
-
-        _ ->
-            emptyResume scount
-
-
-resumeOne : FuncEnv -> HoleBindings -> SCount -> Set Int -> StmtID -> Stmt -> Stmt -> Store -> ResumeOut
-resumeOne funcEnv hb scount dirty id s0 s1 store =
-    let
-        remain s_ =
-            { completed = []
-            , advanced = []
-            , remaining = [ ( id, s_, store ) ]
-            , scount = scount
-            }
-
-        fail =
-            { completed = [ ( -2, [] ) ]
-            , advanced = []
-            , remaining = []
-            , scount = scount
-            }
-    in
-    if stmtEq s0 s1 && not (Set.member id dirty) then
-        remain s1
-
-    else
-        let
-            res =
-                exec funcEnv store hb [] s1 Set.empty scount
-        in
-        if isErrorStore res.store then
-            fail
-
-        else if List.isEmpty res.riStmts then
-            { completed = [ ( id, res.store ) ]
-            , advanced = []
-            , remaining = []
-            , scount = res.scount
-            }
-
-        else
-            case res.riStmts of
-                [ ( newId, sNew, _ ) ] ->
-                    let
-                        mapId i =
-                            if i == newId then
-                                id
-
-                            else
-                                i
-
-                        s2 =
-                            reindexStmt mapId sNew
-
-                        post =
-                            reindexStore mapId res.store
-                    in
-                    if stmtEq s2 s1 then
-                        remain s1
-
-                    else
-                        { completed = []
-                        , advanced =
-                            [ { id = id
-                              , stmt = s2
-                              , snapshot = store
-                              , result = post
-                              }
-                            ]
-                        , remaining = []
-                        , scount = res.scount
-                        }
-
-                spawned ->
-                    { completed = [ ( id, res.store ) ]
-                    , advanced = []
-                    , remaining = spawned
-                    , scount = res.scount
-                    }
-
-
-stmtEq : Stmt -> Stmt -> Bool
-stmtEq a b =
-    case ( a, b ) of
-        ( SAssign _ e1 e2, SAssign _ f1 f2 ) ->
-            exprEq e1 f1 && exprEq e2 f2
-
-        ( SIf _ e s1 s2, SIf _ f t1 t2 ) ->
-            exprEq e f && stmtEq s1 t1 && stmtEq s2 t2
-
-        ( SWhile _ e s1, SWhile _ f t1 ) ->
-            exprEq e f && stmtEq s1 t1
-
-        ( SRead _ x, SRead _ y ) ->
-            x == y
-
-        ( SPrint _ e, SPrint _ f ) ->
-            exprEq e f
-
-        ( SSeq _ s1 s2, SSeq _ t1 t2 ) ->
-            stmtEq s1 t1 && stmtEq s2 t2
-
-        ( SSkip _, SSkip _ ) ->
-            True
-
-        ( SFuncCall _ n1 a1, SFuncCall _ n2 a2 ) ->
-            n1 == n2 && exprListEq a1 a2
-
-        ( SError x, SError y ) ->
-            x == y
-
-        _ ->
-            False
-
-
-exprEq : Expr -> Expr -> Bool
-exprEq a b =
-    case ( a, b ) of
-        ( EVar _ x, EVar _ y ) ->
-            x == y
-
-        ( EInt _ i, EInt _ j ) ->
-            i == j
-
-        ( EBool _ p, EBool _ q ) ->
-            p == q
-
-        ( EString _ s, EString _ t ) ->
-            s == t
-
-        ( EHole _ h1, EHole _ h2 ) ->
-            h1 == h2
-
-        ( Eop _ op1 e1 e2, Eop _ op2 f1 f2 ) ->
-            op1 == op2 && exprEq e1 f1 && exprEq e2 f2
-
-        ( ENot _ e1, ENot _ e2 ) ->
-            exprEq e1 e2
-
-        ( EParens _ e1, EParens _ e2 ) ->
-            exprEq e1 e2
-
-        ( EList _ es1, EList _ es2 ) ->
-            exprListEq es1 es2
-
-        ( EIndex _ e1 e2, EIndex _ f1 f2 ) ->
-            exprEq e1 f1 && exprEq e2 f2
-
-        ( ELength _ e1, ELength _ e2 ) ->
-            exprEq e1 e2
-
-        ( EError x, EError y ) ->
-            x == y
-
-        _ ->
-            False
-
-
-exprListEq : List Expr -> List Expr -> Bool
-exprListEq a b =
-    case ( a, b ) of
-        ( [], [] ) ->
-            True
-
-        ( e1 :: r1, e2 :: r2 ) ->
-            exprEq e1 e2 && exprListEq r1 r2
-
-        _ ->
-            False
 
 
 -- substHoleInStmtStore : RiStmts -> CollectCtx -> HoleMap -> (RiStmts, HoleMap)
@@ -1450,84 +1770,84 @@ findIndex store holeBindings e =
 
 
 
-substHoleInList : CollectCtx -> String -> List Value -> Value -> HoleMap -> (List Value, HoleMap)
-substHoleInList ctx x vs path h2eMap =
-    substHoleInListWalk ctx x vs path 0 h2eMap
+-- substHoleInList : CollectCtx -> String -> List Value -> Value -> HoleMap -> (List Value, HoleMap)
+-- substHoleInList ctx x vs path h2eMap =
+--     substHoleInListWalk ctx x vs path 0 h2eMap
 
-substHoleInListWalk : CollectCtx -> String -> List Value -> Value -> Int -> HoleMap -> (List Value, HoleMap)
-substHoleInListWalk ctx x vs path i h2eMap =
-    case vs of
-        [] ->
-            ([], h2eMap)
+-- substHoleInListWalk : CollectCtx -> String -> List Value -> Value -> Int -> HoleMap -> (List Value, HoleMap)
+-- substHoleInListWalk ctx x vs path i h2eMap =
+--     case vs of
+--         [] ->
+--             ([], h2eMap)
 
-        v :: rest ->
-            let
-                path_ =
-                    case path of
-                        VList p ->
-                            VList (p ++ [VInt i])
+--         v :: rest ->
+--             let
+--                 path_ =
+--                     case path of
+--                         VList p ->
+--                             VList (p ++ [VInt i])
 
-                        _ ->
-                            VList [VInt i]
-            in
-            case (x, v, path_) of
-                -- if/while 污染：#output 代表从这里起整段未知 output
-                ("output", VHole (HVar "output") id, VList [ VInt vid ]) ->
-                    case lookup "output" (findStore id ctx.done) of
-                        Just (VList nvs) ->
-                            if List.length nvs > vid then
-                                let
-                                    suffix =
-                                        List.drop vid nvs
+--                         _ ->
+--                             VList [VInt i]
+--             in
+--             case (x, v, path_) of
+--                 -- if/while 污染：#output 代表从这里起整段未知 output
+--                 ("output", VHole (HVar "output") id, VList [ VInt vid ]) ->
+--                     case lookup "output" (findStore id ctx.done) of
+--                         Just (VList nvs) ->
+--                             if List.length nvs > vid then
+--                                 let
+--                                     suffix =
+--                                         List.drop vid nvs
 
-                                    holeExpr =
-                                        case suffix of
-                                            [ one ] ->
-                                                value2Expr one
+--                                     holeExpr =
+--                                         case suffix of
+--                                             [ one ] ->
+--                                                 value2Expr one
 
-                                            _ ->
-                                                value2Expr (VList suffix)
+--                                             _ ->
+--                                                 value2Expr (VList suffix)
 
-                                    nd =
-                                        Dict.insert (valHoleKey (HVar "output") id) holeExpr h2eMap
+--                                     nd =
+--                                         Dict.insert (valHoleKey (HVar "output") id) holeExpr h2eMap
 
-                                    (rest_, nd_) =
-                                        substHoleInListWalk ctx x rest path (i + 1) nd
-                                in
-                                (suffix ++ rest_, nd_)
+--                                     (rest_, nd_) =
+--                                         substHoleInListWalk ctx x rest path (i + 1) nd
+--                                 in
+--                                 (suffix ++ rest_, nd_)
 
-                            else
-                                let (rest_, nd_) = substHoleInListWalk ctx x rest path (i + 1) h2eMap in
-                                (v :: rest_, nd_)
+--                             else
+--                                 let (rest_, nd_) = substHoleInListWalk ctx x rest path (i + 1) h2eMap in
+--                                 (v :: rest_, nd_)
 
-                        _ ->
-                            let (rest_, nd_) = substHoleInListWalk ctx x rest path (i + 1) h2eMap in
-                            (v :: rest_, nd_)
+--                         _ ->
+--                             let (rest_, nd_) = substHoleInListWalk ctx x rest path (i + 1) h2eMap in
+--                             (v :: rest_, nd_)
 
-                _ ->
-                    let
-                        (v_, nd) =
-                            substHoleAt ctx x v path_ h2eMap
+--                 _ ->
+--                     let
+--                         (v_, nd) =
+--                             substHoleAt ctx x v path_ h2eMap
 
-                        (rest_, nd_) =
-                            substHoleInListWalk ctx x rest path (i + 1) nd
-                    in
-                    (v_ :: rest_, nd_)
+--                         (rest_, nd_) =
+--                             substHoleInListWalk ctx x rest path (i + 1) nd
+--                     in
+--                     (v_ :: rest_, nd_)
 
-substHoleAt : CollectCtx -> String -> Value -> Value -> HoleMap -> (Value, HoleMap)
-substHoleAt ctx x v path h2eMap =
-    case v of
-        VHole h id ->
-            resolveHole ctx h id h2eMap
+-- substHoleAt : CollectCtx -> String -> Value -> Value -> HoleMap -> (Value, HoleMap)
+-- substHoleAt ctx x v path h2eMap =
+--     case v of
+--         VHole h id ->
+--             resolveHole ctx h id h2eMap
 
-        VList inner ->
-            let
-                (inner_, nd) = substHoleInList ctx x inner path h2eMap
-            in
-            (VList inner_, nd)
+--         VList inner ->
+--             let
+--                 (inner_, nd) = substHoleInList ctx x inner path h2eMap
+--             in
+--             (VList inner_, nd)
 
-        _ ->
-            (v, h2eMap)
+--         _ ->
+--             (v, h2eMap)
 
 reindexResiduals : FwdRes -> FwdRes
 reindexResiduals fwdRes =

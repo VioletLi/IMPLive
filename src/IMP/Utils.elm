@@ -2,7 +2,7 @@ module IMP.Utils exposing (..)
 
 import IMP.Syntax exposing (..)
 import Dict exposing (Dict)
-type alias HoleMap = Dict String Expr
+type alias HoleMap = Dict Int Expr
 
 hasHole : List Value -> Bool
 hasHole vs =
@@ -235,15 +235,21 @@ polluteState mod store scount =
                 let store_ = updateStore x (VHole (HVar x) scount) store in
                 polluteState rest store_ scount
 
-substHole : HoleMap -> RiStmts -> RiStmts
+substHole : HoleMap -> RiStmts -> (RiStmts, RiStmts)
 substHole holes ris =
     case ris of
-        [] -> []
+        [] -> ([], [])
         (id, s, store) :: rest ->
             let
                 news = substHoleinStmt id s holes
             in
-            (id, news, store) :: (substHole holes rest)
+            if news /= s then
+                let (restl, restr) = substHole holes rest in
+                ((id, news, store) :: restl, restr)
+            else
+                let (restl, restr) = substHole holes rest in
+                (restl, (id, news, store) :: restr)
+
 
 substHoleinStmt : StmtID -> Stmt -> HoleMap -> Stmt
 substHoleinStmt id s holes =
@@ -284,6 +290,11 @@ oriCompactMap hs =
             []
         |> List.indexedMap (\i n -> ( n, i ))
         |> Dict.fromList
+
+
+remapOriFuncEnv : Dict Int Int -> FuncEnv -> FuncEnv
+remapOriFuncEnv mp env =
+    List.map (\f -> { f | body = remapOriStmt mp f.body }) env
 
 
 remapOriRiStmts : Dict Int Int -> RiStmts -> RiStmts
@@ -360,10 +371,10 @@ substHoleinExpr id e holes =
         EVar ws x -> EVar ws x
         Eop ws op e1 e2 -> Eop ws op (substHoleinExpr id e1 holes) (substHoleinExpr id e2 holes)
         EInt ws i -> EInt ws i
-        EHole ws h_ ->
-            case Dict.get (exprHoleKey h_) holes of
+        EHole ws (HOri n) ->
+            case Dict.get n holes of
                 Just expr_ -> expr_
-                Nothing -> EHole ws h_
+                Nothing -> EHole ws (HOri n)
         EBool ws b -> EBool ws b
         EString ws s -> EString ws s
         EError s -> EError s
@@ -372,6 +383,7 @@ substHoleinExpr id e holes =
         EList ws es -> EList ws (List.map (\e_ -> substHoleinExpr id e_ holes) es)
         EIndex ws e1 e2 -> EIndex ws (substHoleinExpr id e1 holes) (substHoleinExpr id e2 holes)
         ELength ws e_ -> ELength ws (substHoleinExpr id e_ holes)
+        _ -> EError "Unsupported expression"
 
 encodeHoleId h id =
     case h of

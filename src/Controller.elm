@@ -5,9 +5,9 @@ import Set
 import Debug exposing (toString)
 import Dict
 import IMP.Parser_ exposing (parse, parseExpr, parseValue)
-import IMP.Eval exposing (exec, fill)
+import IMP.Eval exposing (exec, fill, nextScount)
 import IMP.Uneval exposing (unexec)
-import IMP.Utils exposing (prepareStmt, attachFuncs, substHoleinFuncEnv, exprHoleKey, lookup, updateStore, substHoleinStmt, oriCompactMap, remapOriRiStmts)
+import IMP.Utils exposing (prepareStmt, attachFuncs, substHoleinFuncEnv, exprHoleKey, lookup, updateStore, substHoleinStmt, oriCompactMap, remapOriRiStmts, remapOriStmt, remapOriFuncEnv)
 import IMP.Printer exposing (printOutput, printOutputList, printStmt, printValue)
 import IMP.Syntax exposing (..)
 
@@ -169,13 +169,13 @@ saveAndFillWith model =
                         Dict.get key model.fillDraft
                             |> Maybe.andThen
                                 (\src ->
-                                    case parseExpr src of
-                                        Ok e ->
-                                            Just (key, e)
+                                    case ( oriKeyToInt key, parseExpr src ) of
+                                        ( Just n, Ok e ) ->
+                                            Just ( n, e )
 
-                                        Err _ ->
+                                        _ ->
                                             Nothing
-                                    )
+                                )
                     )
 
         holeDict =
@@ -203,7 +203,7 @@ saveAndFillWith model =
                 fill funcEnv holeDict model.holeBindings
                     { store = model.store
                     , riStmts = model.riStmts
-                    , scount = List.length model.riStmts
+                    , scount = nextScount 0 model.riStmts
                     , readOnly = Set.empty
                     }
 
@@ -224,9 +224,16 @@ saveAndFillWith model =
                                 oriCompactMap
                                     (collectOriInStmt substStmt
                                         ++ collectOriInFuncEnv substEnv
+                                        ++ collectOriInRiStmts res.riStmts
                                     )
+
+                            newEnv =
+                                remapOriFuncEnv holeMap substEnv
+
+                            newStmt =
+                                remapOriStmt holeMap substStmt
                         in
-                        ( printStmt (attachFuncs substEnv substStmt)
+                        ( printStmt (attachFuncs newEnv newStmt)
                         , remapOriRiStmts holeMap res.riStmts
                         )
 
@@ -450,6 +457,15 @@ keepContextId id ris =
 
     else
         -1
+
+
+oriKeyToInt : String -> Maybe Int
+oriKeyToInt key =
+    if String.startsWith "o:" key then
+        String.toInt (String.dropLeft 2 key)
+
+    else
+        Nothing
 
 
 collectOriInRiStmts : RiStmts -> List HoleName
