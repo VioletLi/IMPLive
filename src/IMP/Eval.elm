@@ -784,6 +784,11 @@ exec funcEnv store holeBindings riStmts stmt readOnly scount =
 fill : FuncEnv -> HoleMap -> HoleBindings -> FwdRes -> FwdRes
 fill funcEnv holes hb fwdRes =
     let
+        -- residual 语句里的源程序孔会走 substHole；函数体里的孔也要先换掉，
+        -- 否则 resume 再调用 partition 时仍按 if _ 执行，又会长出未替换的 residual。
+        funcEnv1 =
+            substHoleinFuncEnv 0 funcEnv holes
+
         ( filled0, unaffected0 ) =
             substHole holes fwdRes.riStmts
 
@@ -805,12 +810,12 @@ fill funcEnv holes hb fwdRes =
     else
         let
             ( finished, newlyResidual, scount1 ) =
-                patchedExec funcEnv hb toExec fwdRes.scount
+                patchedExec funcEnv1 hb toExec fwdRes.scount
 
             ( store1, newlyKnown, newlyUnknown ) =
                 substValinVal finished fwdRes.store (remained ++ recoverRiStmts newlyResidual)
         in
-        resume funcEnv hb scount1 store1 newlyKnown newlyUnknown
+        resume funcEnv1 hb scount1 store1 newlyKnown newlyUnknown
 
 -- True: 有未知信息变已知，要执行；False: 没有，不执行
 classifyStmt : Store -> Stmt -> Bool
