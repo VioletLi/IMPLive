@@ -218,6 +218,75 @@ unique ls =
             if List.member x rest then unique rest
             else x :: (unique rest)
 
+-- output-i@id：从 residual id 的 output[i..] 整段替换这一格
+outputSuffixHole : Int -> SCount -> Value
+outputSuffixHole i scount =
+    VHole (HVar ("output-" ++ String.fromInt i)) scount
+
+
+outputIndexOfName : HoleName -> Maybe Int
+outputIndexOfName h =
+    case h of
+        HVar x ->
+            outputDashIndex x
+
+        HSub (HVar "output") n ->
+            Just n
+
+        _ ->
+            Nothing
+
+
+outputDashIndex : String -> Maybe Int
+outputDashIndex x =
+    if String.startsWith "output-" x then
+        String.toInt (String.dropLeft 7 x)
+
+    else
+        Nothing
+
+
+isOutputSuffixHole : HoleName -> Bool
+isOutputSuffixHole h =
+    case h of
+        HVar "output" ->
+            True
+
+        _ ->
+            outputIndexOfName h /= Nothing
+
+
+shiftOutputHoleName : Int -> HoleName -> HoleName
+shiftOutputHoleName delta h =
+    case outputIndexOfName h of
+        Just i ->
+            case h of
+                HVar _ ->
+                    HVar ("output-" ++ String.fromInt (i + delta))
+
+                HSub (HVar "output") _ ->
+                    HSub (HVar "output") (i + delta)
+
+                _ ->
+                    h
+
+        Nothing ->
+            h
+
+
+shiftOutputIndices : Int -> Value -> Value
+shiftOutputIndices delta v =
+    case v of
+        VHole h id ->
+            VHole (shiftOutputHoleName delta h) id
+
+        VList vs ->
+            VList (List.map (shiftOutputIndices delta) vs)
+
+        _ ->
+            v
+
+
 polluteState : List String -> Store -> SCount -> Store
 polluteState mod store scount =
     case mod of
@@ -228,7 +297,7 @@ polluteState mod store scount =
                 case oldval of
                     Nothing -> [("error", VError "Variable not found")]
                     Just (VList vs) ->
-                        let store_ = updateStore x (VList (vs ++ [VHole (HVar x) scount])) store in
+                        let store_ = updateStore x (VList (vs ++ [outputSuffixHole (List.length vs) scount])) store in
                         polluteState rest store_ scount
                     _ -> [("error", VError "Unsupported expression")]
             else

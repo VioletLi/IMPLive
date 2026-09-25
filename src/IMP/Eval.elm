@@ -737,7 +737,7 @@ exec funcEnv store holeBindings riStmts stmt readOnly scount =
                     in
                     case oldval of
                         Just (VList vs) -> 
-                            { store = updateStore "output" (VList (vs ++ [VHole (pathToName (HVar "output") (VList [VInt (List.length vs)])) scount])) store
+                            { store = updateStore "output" (VList (vs ++ [outputSuffixHole (List.length vs) scount])) store
                             , riStmts = riStmts ++ [(scount, SPrint [] e_, store)]
                             , readOnly = readOnly
                             , scount = scount + 1
@@ -1243,7 +1243,80 @@ substRiStmts finished ris =
 
 substStoreByFinished : List ( StmtID, Store ) -> Store -> Store
 substStoreByFinished finished store =
-    List.map (\( x, v ) -> ( x, substValByFinished finished [] v )) store
+    List.map
+        (\( x, v ) ->
+            if x == "output" then
+                ( x, substOutputVal finished v )
+
+            else
+                ( x, substValByFinished finished [] v )
+        )
+        store
+
+
+substOutputVal : List ( StmtID, Store ) -> Value -> Value
+substOutputVal finished v =
+    case v of
+        VList vs ->
+            VList (substOutputList finished [] vs)
+
+        _ ->
+            substValByFinished finished [] v
+
+
+substOutputList : List ( StmtID, Store ) -> List StmtID -> List Value -> List Value
+substOutputList finished seen vs =
+    substOutputListWalk finished seen vs 0
+
+
+substOutputListWalk : List ( StmtID, Store ) -> List StmtID -> List Value -> Int -> List Value
+substOutputListWalk finished seen vs pos =
+    case vs of
+        [] ->
+            []
+
+        v :: rest ->
+            case trySpliceOutputHole finished seen v pos of
+                Just ( suffix, delta ) ->
+                    suffix
+                        ++ substOutputListWalk finished
+                            seen
+                            (List.map (shiftOutputIndices delta) rest)
+                            (pos + List.length suffix)
+
+                Nothing ->
+                    substValByFinished finished seen v
+                        :: substOutputListWalk finished seen rest (pos + 1)
+
+
+trySpliceOutputHole : List ( StmtID, Store ) -> List StmtID -> Value -> Int -> Maybe ( List Value, Int )
+trySpliceOutputHole finished seen v pos =
+    case v of
+        VHole h id ->
+            if List.member id seen || not (isOutputSuffixHole h) || not (isCompleted id finished) then
+                Nothing
+
+            else
+                let
+                    idx =
+                        Maybe.withDefault pos (outputIndexOfName h)
+                in
+                case lookup "output" (findStore id finished) of
+                    Just (VList nvs) ->
+                        let
+                            nvs_ =
+                                substOutputList finished (id :: seen) nvs
+
+                            suffix =
+                                List.drop idx nvs_
+                        in
+                        Just ( suffix, List.length suffix - 1 )
+
+                    _ ->
+                        Nothing
+
+        _ ->
+            Nothing
 
 
 substValByFinished : List ( StmtID, Store ) -> List StmtID -> Value -> Value

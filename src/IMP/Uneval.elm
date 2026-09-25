@@ -1902,8 +1902,8 @@ unpollute store oristore scount =
             let 
                 output_ = 
                     case List.reverse vs of
-                        (VHole (HVar "output") id) :: _ -> 
-                            if id == scount then 
+                        (VHole h id) :: _ -> 
+                            if id == scount && isOutputSuffixHole h then 
                                 let oriv = lookup "output" oristore in
                                 case oriv of
                                     Just v -> v
