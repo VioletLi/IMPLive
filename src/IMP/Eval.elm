@@ -810,7 +810,7 @@ fill funcEnv holes hb fwdRes =
     else
         let
             ( finished, newlyResidual, scount1 ) =
-                patchedExec funcEnv1 hb toExec fwdRes.scount
+                batchExec funcEnv1 hb toExec fwdRes.scount
 
             ( store1, newlyKnown, newlyUnknown ) =
                 substValinVal finished fwdRes.store (remained ++ recoverRiStmts newlyResidual)
@@ -1051,7 +1051,7 @@ resume funcEnv hb scount store known unknown =
         _ ->
             let
                 ( finished, newlyResidual, scount1 ) =
-                    patchedExec funcEnv hb known scount
+                    batchExec funcEnv hb known scount
 
                 ( store1, known1, unknown1 ) =
                     substValinVal finished store (unknown ++ recoverRiStmts newlyResidual)
@@ -1059,8 +1059,8 @@ resume funcEnv hb scount store known unknown =
             resume funcEnv hb scount1 store1 known1 unknown1
 
 
-patchedExec : FuncEnv -> HoleBindings -> RiStmts -> SCount -> ( List (StmtID, Store), RiStmts, SCount )
-patchedExec funcEnv hb ris0 scount0 =
+batchExec : FuncEnv -> HoleBindings -> RiStmts -> SCount -> ( List (StmtID, Store), RiStmts, SCount )
+batchExec funcEnv hb ris0 scount0 =
     case ris0 of
         [] ->
             ( [], [], scount0 )
@@ -1071,7 +1071,7 @@ patchedExec funcEnv hb ris0 scount0 =
                     exec funcEnv store hb [] s Set.empty scount0
 
                 ( stores, newris, scount ) =
-                    patchedExec funcEnv hb rest res.scount
+                    batchExec funcEnv hb rest res.scount
             in
             ( ( id, res.store ) :: stores, res.riStmts ++ newris, scount )
 
