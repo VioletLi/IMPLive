@@ -1,0 +1,45 @@
+x := 1 <- [x->2]
+unexecStmt [] [] [] [] (SAssign [] "x" (EInt [] 1)) 0 0 ([("x", VInt 2)],[])
+
+unexecStmt [] [] [] [] (SSeq [] (SAssign [] "x" (EInt [] 1)) (SAssign [] "x" (Eop [] "+" (EVar [] "x") (EInt [] 2)))) 0 0 ([("x", VInt 2)],[], [])
+
+unexecStmt [] [] [] [] (SSeq [] (SAssign [] "x" (EInt [] 1)) (SAssign [] "x" (Eop [] "+" (EVar [] "x") (EInt [] 2)))) 0 0 ([("x", VHole (HVar 1) 0)],[], [])
+
+unexecStmt [] [] [] [] (SSeq [] (SAssign [] "x" (EInt [] 1)) (SAssign [] "x" (Eop [] "+" (EVar [] "x") (EHole [] (HOri 0))))) 0 0 ([("x", VHole (HVar 0) 0)],[], [])
+
+unexecStmt [] [] [] [] (SSeq [] (SAssign [] "x" (EHole [] (HOri 0))) (SAssign [] "x" (Eop [] "+" (EVar [] "x") (EInt [] 1)))) 0 0 ([("x", VHole (HVar 0) 0)],[], [])
+
+unexecStmt [] [] [] [] (SSeq [] (SAssign [] "x" (EHole [] (HOri 0))) (SAssign [] "x" (Eop [] "+" (EVar [] "x") (EInt [] 1)))) 0 0 ([("x",VInt 2)],[(0,SAssign [] "x" (EHole [] (HOri 0)),([],[])),(1,SAssign [] "x" (Eop [] "+" (EHole [] (HVar 0)) (EInt [] 1)),([("x",VHole (HVar 0) 0)],[]))],[])
+
+unexecStmt [] [] [] [] (SSeq [] (SAssign [] "x" (EHole [] (HOri 0))) (SAssign [] "x" (Eop [] "+" (EVar [] "x") (EInt [] 1)))) 0 0 ([("x",VInt 2)],[(0,SAssign [] "x" (EHole [] (HOri 0)),([],[])),(1,SAssign [] "x" (Eop [] "+" (EHole [] (HVar 0)) (EInt [] 1)),([("x",VInt 2)],[]))],[])
+
+unexecStmt [] [("input",[VInt 1]),("output",[])] [] [] (SRead [] "x") 0 0 ([("x", VInt 2)],[], [("input",[VInt 1]),("output",[])])
+
+unexecStmt [] [("input",[VInt 1]),("output",[])] [] [] (SIf [] (EBool [] True) (SRead [] "x") (SRead [] "y")) 0 0 ([("x", VInt 2)],[], [("input",[VInt 1]),("output",[])])
+
+unexecStmt [] [("input",[VInt 1, VInt 2]),("output",[])] [] [] (SWhile [] (EHole [] (HOri 0)) (SRead [] "x")) 0 0 ([("x", VInt 2)],[(0,SIf [] (EHole [] (HOri 0)) (SSeq [] (SRead [] "x") (SWhile [] (EHole [] (HOri 0)) (SRead [] "x"))) (SSkip []),([],[("input",[VInt 1,VInt 2]),("output",[])]))], [("input",[VHole (HVar 1) 0]),("output",[])])
+
+if x then read x else skip; read y {y -> 2}
+[VInt 1, VInt 3]
+
+read x 
+
+read的对齐问题更新哪一个，如果更新成[VInt 2],那是不是可以推断出前面走了read的分支
+if选哪个分支
+while怎么解决ambiguity
+
+x := 0; if _ then x := x+1 else skip end; x := x+1
+
+riStmt是不是可以作为forward的output不是input
+if和while的更新可能需要猜路径
+全局性的更新？函数式更新是局部的，所以可能combinator就够了，imperative是不是需要更多信息？
+
+
+x:=1; y:=_+x
+[("x", VInt 2), ("y", VInt 3)]
+
+if true then x:=1 else skip end
+
+x:=0;y:=2;while y>0 do x:=x+1;y:=y-1 end
+
+x1:=1;y1:=2;x2:=3;y2:=4;if x1>y1 then mx:=x1 else mx:=y1 end;if x2<y2 then mn:=_ else mn:=_ end

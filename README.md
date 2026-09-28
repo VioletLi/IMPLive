@@ -1,5 +1,5 @@
-# BidirectionalPreview
-This is a direct manipulating programming system for incomplete programs.
+# IMPLive
+This is a bidirectional programming system for incomplete imperative programs.
 
 ## Tool Instructions
 ### Initial Incomplete Programs
@@ -29,19 +29,19 @@ This is a direct manipulating programming system for incomplete programs.
 
 ### Others
 **Clear Hole-Bindings** Button: To clear the bindings of holes in the programs
- 
-## Code Structure
-- **ace** the source code of [ace editor](https://ace.c9.io/)
-- **elm.json** configuration file
-- **examples** some example source programs
-- **index.html** tool entrance
-- **src** main code
-  - *Native* interact with Javascript
-- **style** css of web page
 
 ## Usage
 - git clone
 - click index.html
 
 ## Develop
-- elm make src/Main.elm --output=elm.js
+```bash
+elm make src/Main.elm --output=elm.js
+```
+
+## Evaluation
+The examples are in the folder `examples`. To evaluate the running time, use the command
+```bash
+elm make src/Main.elm --output=elm.js
+node patch_timing.js
+```

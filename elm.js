@@ -1,6 +1,12 @@
 (function(scope){
 'use strict';
 
+function $timeEval(label, fn) {
+	var t0 = performance.now();
+	var result = fn();
+	console.log(label + ": " + (performance.now() - t0).toFixed(3) + " ms");
+	return result;
+}
 function F(arity, fun, wrapper) {
   wrapper.a = arity;
   wrapper.f = fun;
@@ -5290,6 +5296,7 @@ var $elm$core$Basics$negate = function (n) {
 var $author$project$Model$initModel = {
 	code: '',
 	codeBackup: '',
+	contextDrafts: $elm$core$Dict$empty,
 	currentContext: -1,
 	editingInput: false,
 	fillDraft: $elm$core$Dict$empty,
@@ -5338,9 +5345,1316 @@ var $author$project$Main$subscriptions = function (_v0) {
 				$author$project$Main$receiveOutput($author$project$Model$OutputChange)
 			]));
 };
+var $elm$core$Dict$Black = {$: 'Black'};
+var $elm$core$Dict$RBNode_elm_builtin = F5(
+	function (a, b, c, d, e) {
+		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
+	});
+var $elm$core$Dict$Red = {$: 'Red'};
+var $elm$core$Dict$balance = F5(
+	function (color, key, value, left, right) {
+		if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Red')) {
+			var _v1 = right.a;
+			var rK = right.b;
+			var rV = right.c;
+			var rLeft = right.d;
+			var rRight = right.e;
+			if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
+				var _v3 = left.a;
+				var lK = left.b;
+				var lV = left.c;
+				var lLeft = left.d;
+				var lRight = left.e;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Red,
+					key,
+					value,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, lK, lV, lLeft, lRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rLeft, rRight));
+			} else {
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					color,
+					rK,
+					rV,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, left, rLeft),
+					rRight);
+			}
+		} else {
+			if ((((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) && (left.d.$ === 'RBNode_elm_builtin')) && (left.d.a.$ === 'Red')) {
+				var _v5 = left.a;
+				var lK = left.b;
+				var lV = left.c;
+				var _v6 = left.d;
+				var _v7 = _v6.a;
+				var llK = _v6.b;
+				var llV = _v6.c;
+				var llLeft = _v6.d;
+				var llRight = _v6.e;
+				var lRight = left.e;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Red,
+					lK,
+					lV,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, lRight, right));
+			} else {
+				return A5($elm$core$Dict$RBNode_elm_builtin, color, key, value, left, right);
+			}
+		}
+	});
+var $elm$core$Basics$compare = _Utils_compare;
+var $elm$core$Dict$insertHelp = F3(
+	function (key, value, dict) {
+		if (dict.$ === 'RBEmpty_elm_builtin') {
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
+		} else {
+			var nColor = dict.a;
+			var nKey = dict.b;
+			var nValue = dict.c;
+			var nLeft = dict.d;
+			var nRight = dict.e;
+			var _v1 = A2($elm$core$Basics$compare, key, nKey);
+			switch (_v1.$) {
+				case 'LT':
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						A3($elm$core$Dict$insertHelp, key, value, nLeft),
+						nRight);
+				case 'EQ':
+					return A5($elm$core$Dict$RBNode_elm_builtin, nColor, nKey, value, nLeft, nRight);
+				default:
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						nLeft,
+						A3($elm$core$Dict$insertHelp, key, value, nRight));
+			}
+		}
+	});
+var $elm$core$Dict$insert = F3(
+	function (key, value, dict) {
+		var _v0 = A3($elm$core$Dict$insertHelp, key, value, dict);
+		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
+			var _v1 = _v0.a;
+			var k = _v0.b;
+			var v = _v0.c;
+			var l = _v0.d;
+			var r = _v0.e;
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
+		} else {
+			var x = _v0;
+			return x;
+		}
+	});
+var $elm$core$Dict$get = F2(
+	function (targetKey, dict) {
+		get:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
+				switch (_v1.$) {
+					case 'LT':
+						var $temp$targetKey = targetKey,
+							$temp$dict = left;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+					case 'EQ':
+						return $elm$core$Maybe$Just(value);
+					default:
+						var $temp$targetKey = targetKey,
+							$temp$dict = right;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+				}
+			}
+		}
+	});
+var $elm$core$Result$map = F2(
+	function (func, ra) {
+		if (ra.$ === 'Ok') {
+			var a = ra.a;
+			return $elm$core$Result$Ok(
+				func(a));
+		} else {
+			var e = ra.a;
+			return $elm$core$Result$Err(e);
+		}
+	});
+var $elm$parser$Parser$ExpectingEnd = {$: 'ExpectingEnd'};
+var $elm$parser$Parser$Advanced$Bad = F2(
+	function (a, b) {
+		return {$: 'Bad', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$Good = F3(
+	function (a, b, c) {
+		return {$: 'Good', a: a, b: b, c: c};
+	});
+var $elm$parser$Parser$Advanced$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var $elm$parser$Parser$Advanced$AddRight = F2(
+	function (a, b) {
+		return {$: 'AddRight', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$DeadEnd = F4(
+	function (row, col, problem, contextStack) {
+		return {col: col, contextStack: contextStack, problem: problem, row: row};
+	});
+var $elm$parser$Parser$Advanced$Empty = {$: 'Empty'};
+var $elm$parser$Parser$Advanced$fromState = F2(
+	function (s, x) {
+		return A2(
+			$elm$parser$Parser$Advanced$AddRight,
+			$elm$parser$Parser$Advanced$Empty,
+			A4($elm$parser$Parser$Advanced$DeadEnd, s.row, s.col, x, s.context));
+	});
+var $elm$parser$Parser$Advanced$end = function (x) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return _Utils_eq(
+				$elm$core$String$length(s.src),
+				s.offset) ? A3($elm$parser$Parser$Advanced$Good, false, _Utils_Tuple0, s) : A2(
+				$elm$parser$Parser$Advanced$Bad,
+				false,
+				A2($elm$parser$Parser$Advanced$fromState, s, x));
+		});
+};
+var $elm$parser$Parser$end = $elm$parser$Parser$Advanced$end($elm$parser$Parser$ExpectingEnd);
+var $elm$core$Basics$always = F2(
+	function (a, _v0) {
+		return a;
+	});
+var $elm$parser$Parser$Advanced$map2 = F3(
+	function (func, _v0, _v1) {
+		var parseA = _v0.a;
+		var parseB = _v1.a;
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s0) {
+				var _v2 = parseA(s0);
+				if (_v2.$ === 'Bad') {
+					var p = _v2.a;
+					var x = _v2.b;
+					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+				} else {
+					var p1 = _v2.a;
+					var a = _v2.b;
+					var s1 = _v2.c;
+					var _v3 = parseB(s1);
+					if (_v3.$ === 'Bad') {
+						var p2 = _v3.a;
+						var x = _v3.b;
+						return A2($elm$parser$Parser$Advanced$Bad, p1 || p2, x);
+					} else {
+						var p2 = _v3.a;
+						var b = _v3.b;
+						var s2 = _v3.c;
+						return A3(
+							$elm$parser$Parser$Advanced$Good,
+							p1 || p2,
+							A2(func, a, b),
+							s2);
+					}
+				}
+			});
+	});
+var $elm$parser$Parser$Advanced$ignorer = F2(
+	function (keepParser, ignoreParser) {
+		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$always, keepParser, ignoreParser);
+	});
+var $elm$parser$Parser$ignorer = $elm$parser$Parser$Advanced$ignorer;
+var $elm$parser$Parser$Advanced$keeper = F2(
+	function (parseFunc, parseArg) {
+		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$apL, parseFunc, parseArg);
+	});
+var $elm$parser$Parser$keeper = $elm$parser$Parser$Advanced$keeper;
+var $elm$parser$Parser$Advanced$isSubChar = _Parser_isSubChar;
+var $elm$parser$Parser$Advanced$chompWhileHelp = F5(
+	function (isGood, offset, row, col, s0) {
+		chompWhileHelp:
+		while (true) {
+			var newOffset = A3($elm$parser$Parser$Advanced$isSubChar, isGood, offset, s0.src);
+			if (_Utils_eq(newOffset, -1)) {
+				return A3(
+					$elm$parser$Parser$Advanced$Good,
+					_Utils_cmp(s0.offset, offset) < 0,
+					_Utils_Tuple0,
+					{col: col, context: s0.context, indent: s0.indent, offset: offset, row: row, src: s0.src});
+			} else {
+				if (_Utils_eq(newOffset, -2)) {
+					var $temp$isGood = isGood,
+						$temp$offset = offset + 1,
+						$temp$row = row + 1,
+						$temp$col = 1,
+						$temp$s0 = s0;
+					isGood = $temp$isGood;
+					offset = $temp$offset;
+					row = $temp$row;
+					col = $temp$col;
+					s0 = $temp$s0;
+					continue chompWhileHelp;
+				} else {
+					var $temp$isGood = isGood,
+						$temp$offset = newOffset,
+						$temp$row = row,
+						$temp$col = col + 1,
+						$temp$s0 = s0;
+					isGood = $temp$isGood;
+					offset = $temp$offset;
+					row = $temp$row;
+					col = $temp$col;
+					s0 = $temp$s0;
+					continue chompWhileHelp;
+				}
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$chompWhile = function (isGood) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return A5($elm$parser$Parser$Advanced$chompWhileHelp, isGood, s.offset, s.row, s.col, s);
+		});
+};
+var $elm$parser$Parser$chompWhile = $elm$parser$Parser$Advanced$chompWhile;
+var $elm$parser$Parser$Advanced$mapChompedString = F2(
+	function (func, _v0) {
+		var parse = _v0.a;
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s0) {
+				var _v1 = parse(s0);
+				if (_v1.$ === 'Bad') {
+					var p = _v1.a;
+					var x = _v1.b;
+					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+				} else {
+					var p = _v1.a;
+					var a = _v1.b;
+					var s1 = _v1.c;
+					return A3(
+						$elm$parser$Parser$Advanced$Good,
+						p,
+						A2(
+							func,
+							A3($elm$core$String$slice, s0.offset, s1.offset, s0.src),
+							a),
+						s1);
+				}
+			});
+	});
+var $elm$parser$Parser$Advanced$getChompedString = function (parser) {
+	return A2($elm$parser$Parser$Advanced$mapChompedString, $elm$core$Basics$always, parser);
+};
+var $elm$parser$Parser$getChompedString = $elm$parser$Parser$Advanced$getChompedString;
+var $author$project$IMP$Parser_$isWhiteSpace = function (c) {
+	return _Utils_eq(
+		c,
+		_Utils_chr(' ')) || (_Utils_eq(
+		c,
+		_Utils_chr('\n')) || _Utils_eq(
+		c,
+		_Utils_chr('\r')));
+};
+var $author$project$IMP$Parser_$mSpaces = $elm$parser$Parser$getChompedString(
+	$elm$parser$Parser$chompWhile($author$project$IMP$Parser_$isWhiteSpace));
+var $elm$parser$Parser$DeadEnd = F3(
+	function (row, col, problem) {
+		return {col: col, problem: problem, row: row};
+	});
+var $elm$parser$Parser$problemToDeadEnd = function (p) {
+	return A3($elm$parser$Parser$DeadEnd, p.row, p.col, p.problem);
+};
+var $elm$parser$Parser$Advanced$bagToList = F2(
+	function (bag, list) {
+		bagToList:
+		while (true) {
+			switch (bag.$) {
+				case 'Empty':
+					return list;
+				case 'AddRight':
+					var bag1 = bag.a;
+					var x = bag.b;
+					var $temp$bag = bag1,
+						$temp$list = A2($elm$core$List$cons, x, list);
+					bag = $temp$bag;
+					list = $temp$list;
+					continue bagToList;
+				default:
+					var bag1 = bag.a;
+					var bag2 = bag.b;
+					var $temp$bag = bag1,
+						$temp$list = A2($elm$parser$Parser$Advanced$bagToList, bag2, list);
+					bag = $temp$bag;
+					list = $temp$list;
+					continue bagToList;
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$run = F2(
+	function (_v0, src) {
+		var parse = _v0.a;
+		var _v1 = parse(
+			{col: 1, context: _List_Nil, indent: 1, offset: 0, row: 1, src: src});
+		if (_v1.$ === 'Good') {
+			var value = _v1.b;
+			return $elm$core$Result$Ok(value);
+		} else {
+			var bag = _v1.b;
+			return $elm$core$Result$Err(
+				A2($elm$parser$Parser$Advanced$bagToList, bag, _List_Nil));
+		}
+	});
+var $elm$parser$Parser$run = F2(
+	function (parser, source) {
+		var _v0 = A2($elm$parser$Parser$Advanced$run, parser, source);
+		if (_v0.$ === 'Ok') {
+			var a = _v0.a;
+			return $elm$core$Result$Ok(a);
+		} else {
+			var problems = _v0.a;
+			return $elm$core$Result$Err(
+				A2($elm$core$List$map, $elm$parser$Parser$problemToDeadEnd, problems));
+		}
+	});
+var $elm$parser$Parser$Advanced$succeed = function (a) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return A3($elm$parser$Parser$Advanced$Good, false, a, s);
+		});
+};
+var $elm$parser$Parser$succeed = $elm$parser$Parser$Advanced$succeed;
+var $elm$parser$Parser$Done = function (a) {
+	return {$: 'Done', a: a};
+};
+var $elm$parser$Parser$Loop = function (a) {
+	return {$: 'Loop', a: a};
+};
+var $elm$parser$Parser$Advanced$lazy = function (thunk) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var _v0 = thunk(_Utils_Tuple0);
+			var parse = _v0.a;
+			return parse(s);
+		});
+};
+var $elm$parser$Parser$lazy = $elm$parser$Parser$Advanced$lazy;
+var $elm$parser$Parser$Advanced$loopHelp = F4(
+	function (p, state, callback, s0) {
+		loopHelp:
+		while (true) {
+			var _v0 = callback(state);
+			var parse = _v0.a;
+			var _v1 = parse(s0);
+			if (_v1.$ === 'Good') {
+				var p1 = _v1.a;
+				var step = _v1.b;
+				var s1 = _v1.c;
+				if (step.$ === 'Loop') {
+					var newState = step.a;
+					var $temp$p = p || p1,
+						$temp$state = newState,
+						$temp$callback = callback,
+						$temp$s0 = s1;
+					p = $temp$p;
+					state = $temp$state;
+					callback = $temp$callback;
+					s0 = $temp$s0;
+					continue loopHelp;
+				} else {
+					var result = step.a;
+					return A3($elm$parser$Parser$Advanced$Good, p || p1, result, s1);
+				}
+			} else {
+				var p1 = _v1.a;
+				var x = _v1.b;
+				return A2($elm$parser$Parser$Advanced$Bad, p || p1, x);
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$loop = F2(
+	function (state, callback) {
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s) {
+				return A4($elm$parser$Parser$Advanced$loopHelp, false, state, callback, s);
+			});
+	});
+var $elm$parser$Parser$Advanced$map = F2(
+	function (func, _v0) {
+		var parse = _v0.a;
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s0) {
+				var _v1 = parse(s0);
+				if (_v1.$ === 'Good') {
+					var p = _v1.a;
+					var a = _v1.b;
+					var s1 = _v1.c;
+					return A3(
+						$elm$parser$Parser$Advanced$Good,
+						p,
+						func(a),
+						s1);
+				} else {
+					var p = _v1.a;
+					var x = _v1.b;
+					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+				}
+			});
+	});
+var $elm$parser$Parser$map = $elm$parser$Parser$Advanced$map;
+var $elm$parser$Parser$Advanced$Done = function (a) {
+	return {$: 'Done', a: a};
+};
+var $elm$parser$Parser$Advanced$Loop = function (a) {
+	return {$: 'Loop', a: a};
+};
+var $elm$parser$Parser$toAdvancedStep = function (step) {
+	if (step.$ === 'Loop') {
+		var s = step.a;
+		return $elm$parser$Parser$Advanced$Loop(s);
+	} else {
+		var a = step.a;
+		return $elm$parser$Parser$Advanced$Done(a);
+	}
+};
+var $elm$parser$Parser$loop = F2(
+	function (state, callback) {
+		return A2(
+			$elm$parser$Parser$Advanced$loop,
+			state,
+			function (s) {
+				return A2(
+					$elm$parser$Parser$map,
+					$elm$parser$Parser$toAdvancedStep,
+					callback(s));
+			});
+	});
+var $elm$parser$Parser$Advanced$Append = F2(
+	function (a, b) {
+		return {$: 'Append', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$oneOfHelp = F3(
+	function (s0, bag, parsers) {
+		oneOfHelp:
+		while (true) {
+			if (!parsers.b) {
+				return A2($elm$parser$Parser$Advanced$Bad, false, bag);
+			} else {
+				var parse = parsers.a.a;
+				var remainingParsers = parsers.b;
+				var _v1 = parse(s0);
+				if (_v1.$ === 'Good') {
+					var step = _v1;
+					return step;
+				} else {
+					var step = _v1;
+					var p = step.a;
+					var x = step.b;
+					if (p) {
+						return step;
+					} else {
+						var $temp$s0 = s0,
+							$temp$bag = A2($elm$parser$Parser$Advanced$Append, bag, x),
+							$temp$parsers = remainingParsers;
+						s0 = $temp$s0;
+						bag = $temp$bag;
+						parsers = $temp$parsers;
+						continue oneOfHelp;
+					}
+				}
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$oneOf = function (parsers) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return A3($elm$parser$Parser$Advanced$oneOfHelp, s, $elm$parser$Parser$Advanced$Empty, parsers);
+		});
+};
+var $elm$parser$Parser$oneOf = $elm$parser$Parser$Advanced$oneOf;
+var $elm$parser$Parser$ExpectingSymbol = function (a) {
+	return {$: 'ExpectingSymbol', a: a};
+};
+var $elm$parser$Parser$Advanced$Token = F2(
+	function (a, b) {
+		return {$: 'Token', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$isSubString = _Parser_isSubString;
+var $elm$core$Basics$not = _Basics_not;
+var $elm$parser$Parser$Advanced$token = function (_v0) {
+	var str = _v0.a;
+	var expecting = _v0.b;
+	var progress = !$elm$core$String$isEmpty(str);
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var _v1 = A5($elm$parser$Parser$Advanced$isSubString, str, s.offset, s.row, s.col, s.src);
+			var newOffset = _v1.a;
+			var newRow = _v1.b;
+			var newCol = _v1.c;
+			return _Utils_eq(newOffset, -1) ? A2(
+				$elm$parser$Parser$Advanced$Bad,
+				false,
+				A2($elm$parser$Parser$Advanced$fromState, s, expecting)) : A3(
+				$elm$parser$Parser$Advanced$Good,
+				progress,
+				_Utils_Tuple0,
+				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
+		});
+};
+var $elm$parser$Parser$Advanced$symbol = $elm$parser$Parser$Advanced$token;
+var $elm$parser$Parser$symbol = function (str) {
+	return $elm$parser$Parser$Advanced$symbol(
+		A2(
+			$elm$parser$Parser$Advanced$Token,
+			str,
+			$elm$parser$Parser$ExpectingSymbol(str)));
+};
+var $author$project$IMP$Syntax$VBool = function (a) {
+	return {$: 'VBool', a: a};
+};
+var $elm$parser$Parser$ExpectingKeyword = function (a) {
+	return {$: 'ExpectingKeyword', a: a};
+};
+var $elm$parser$Parser$Advanced$keyword = function (_v0) {
+	var kwd = _v0.a;
+	var expecting = _v0.b;
+	var progress = !$elm$core$String$isEmpty(kwd);
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var _v1 = A5($elm$parser$Parser$Advanced$isSubString, kwd, s.offset, s.row, s.col, s.src);
+			var newOffset = _v1.a;
+			var newRow = _v1.b;
+			var newCol = _v1.c;
+			return (_Utils_eq(newOffset, -1) || (0 <= A3(
+				$elm$parser$Parser$Advanced$isSubChar,
+				function (c) {
+					return $elm$core$Char$isAlphaNum(c) || _Utils_eq(
+						c,
+						_Utils_chr('_'));
+				},
+				newOffset,
+				s.src))) ? A2(
+				$elm$parser$Parser$Advanced$Bad,
+				false,
+				A2($elm$parser$Parser$Advanced$fromState, s, expecting)) : A3(
+				$elm$parser$Parser$Advanced$Good,
+				progress,
+				_Utils_Tuple0,
+				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
+		});
+};
+var $elm$parser$Parser$keyword = function (kwd) {
+	return $elm$parser$Parser$Advanced$keyword(
+		A2(
+			$elm$parser$Parser$Advanced$Token,
+			kwd,
+			$elm$parser$Parser$ExpectingKeyword(kwd)));
+};
+var $author$project$IMP$Parser_$vfalse = A2(
+	$elm$parser$Parser$ignorer,
+	A2(
+		$elm$parser$Parser$ignorer,
+		$elm$parser$Parser$succeed(
+			$author$project$IMP$Syntax$VBool(false)),
+		$elm$parser$Parser$keyword('false')),
+	$author$project$IMP$Parser_$mSpaces);
+var $author$project$IMP$Syntax$VHole = F2(
+	function (a, b) {
+		return {$: 'VHole', a: a, b: b};
+	});
+var $elm$parser$Parser$ExpectingInt = {$: 'ExpectingInt'};
+var $elm$parser$Parser$Advanced$consumeBase = _Parser_consumeBase;
+var $elm$parser$Parser$Advanced$consumeBase16 = _Parser_consumeBase16;
+var $elm$parser$Parser$Advanced$bumpOffset = F2(
+	function (newOffset, s) {
+		return {col: s.col + (newOffset - s.offset), context: s.context, indent: s.indent, offset: newOffset, row: s.row, src: s.src};
+	});
+var $elm$parser$Parser$Advanced$chompBase10 = _Parser_chompBase10;
+var $elm$parser$Parser$Advanced$isAsciiCode = _Parser_isAsciiCode;
+var $elm$parser$Parser$Advanced$consumeExp = F2(
+	function (offset, src) {
+		if (A3($elm$parser$Parser$Advanced$isAsciiCode, 101, offset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 69, offset, src)) {
+			var eOffset = offset + 1;
+			var expOffset = (A3($elm$parser$Parser$Advanced$isAsciiCode, 43, eOffset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 45, eOffset, src)) ? (eOffset + 1) : eOffset;
+			var newOffset = A2($elm$parser$Parser$Advanced$chompBase10, expOffset, src);
+			return _Utils_eq(expOffset, newOffset) ? (-newOffset) : newOffset;
+		} else {
+			return offset;
+		}
+	});
+var $elm$parser$Parser$Advanced$consumeDotAndExp = F2(
+	function (offset, src) {
+		return A3($elm$parser$Parser$Advanced$isAsciiCode, 46, offset, src) ? A2(
+			$elm$parser$Parser$Advanced$consumeExp,
+			A2($elm$parser$Parser$Advanced$chompBase10, offset + 1, src),
+			src) : A2($elm$parser$Parser$Advanced$consumeExp, offset, src);
+	});
+var $elm$parser$Parser$Advanced$finalizeInt = F5(
+	function (invalid, handler, startOffset, _v0, s) {
+		var endOffset = _v0.a;
+		var n = _v0.b;
+		if (handler.$ === 'Err') {
+			var x = handler.a;
+			return A2(
+				$elm$parser$Parser$Advanced$Bad,
+				true,
+				A2($elm$parser$Parser$Advanced$fromState, s, x));
+		} else {
+			var toValue = handler.a;
+			return _Utils_eq(startOffset, endOffset) ? A2(
+				$elm$parser$Parser$Advanced$Bad,
+				_Utils_cmp(s.offset, startOffset) < 0,
+				A2($elm$parser$Parser$Advanced$fromState, s, invalid)) : A3(
+				$elm$parser$Parser$Advanced$Good,
+				true,
+				toValue(n),
+				A2($elm$parser$Parser$Advanced$bumpOffset, endOffset, s));
+		}
+	});
+var $elm$parser$Parser$Advanced$fromInfo = F4(
+	function (row, col, x, context) {
+		return A2(
+			$elm$parser$Parser$Advanced$AddRight,
+			$elm$parser$Parser$Advanced$Empty,
+			A4($elm$parser$Parser$Advanced$DeadEnd, row, col, x, context));
+	});
+var $elm$core$String$toFloat = _String_toFloat;
+var $elm$parser$Parser$Advanced$finalizeFloat = F6(
+	function (invalid, expecting, intSettings, floatSettings, intPair, s) {
+		var intOffset = intPair.a;
+		var floatOffset = A2($elm$parser$Parser$Advanced$consumeDotAndExp, intOffset, s.src);
+		if (floatOffset < 0) {
+			return A2(
+				$elm$parser$Parser$Advanced$Bad,
+				true,
+				A4($elm$parser$Parser$Advanced$fromInfo, s.row, s.col - (floatOffset + s.offset), invalid, s.context));
+		} else {
+			if (_Utils_eq(s.offset, floatOffset)) {
+				return A2(
+					$elm$parser$Parser$Advanced$Bad,
+					false,
+					A2($elm$parser$Parser$Advanced$fromState, s, expecting));
+			} else {
+				if (_Utils_eq(intOffset, floatOffset)) {
+					return A5($elm$parser$Parser$Advanced$finalizeInt, invalid, intSettings, s.offset, intPair, s);
+				} else {
+					if (floatSettings.$ === 'Err') {
+						var x = floatSettings.a;
+						return A2(
+							$elm$parser$Parser$Advanced$Bad,
+							true,
+							A2($elm$parser$Parser$Advanced$fromState, s, invalid));
+					} else {
+						var toValue = floatSettings.a;
+						var _v1 = $elm$core$String$toFloat(
+							A3($elm$core$String$slice, s.offset, floatOffset, s.src));
+						if (_v1.$ === 'Nothing') {
+							return A2(
+								$elm$parser$Parser$Advanced$Bad,
+								true,
+								A2($elm$parser$Parser$Advanced$fromState, s, invalid));
+						} else {
+							var n = _v1.a;
+							return A3(
+								$elm$parser$Parser$Advanced$Good,
+								true,
+								toValue(n),
+								A2($elm$parser$Parser$Advanced$bumpOffset, floatOffset, s));
+						}
+					}
+				}
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$number = function (c) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			if (A3($elm$parser$Parser$Advanced$isAsciiCode, 48, s.offset, s.src)) {
+				var zeroOffset = s.offset + 1;
+				var baseOffset = zeroOffset + 1;
+				return A3($elm$parser$Parser$Advanced$isAsciiCode, 120, zeroOffset, s.src) ? A5(
+					$elm$parser$Parser$Advanced$finalizeInt,
+					c.invalid,
+					c.hex,
+					baseOffset,
+					A2($elm$parser$Parser$Advanced$consumeBase16, baseOffset, s.src),
+					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 111, zeroOffset, s.src) ? A5(
+					$elm$parser$Parser$Advanced$finalizeInt,
+					c.invalid,
+					c.octal,
+					baseOffset,
+					A3($elm$parser$Parser$Advanced$consumeBase, 8, baseOffset, s.src),
+					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 98, zeroOffset, s.src) ? A5(
+					$elm$parser$Parser$Advanced$finalizeInt,
+					c.invalid,
+					c.binary,
+					baseOffset,
+					A3($elm$parser$Parser$Advanced$consumeBase, 2, baseOffset, s.src),
+					s) : A6(
+					$elm$parser$Parser$Advanced$finalizeFloat,
+					c.invalid,
+					c.expecting,
+					c._int,
+					c._float,
+					_Utils_Tuple2(zeroOffset, 0),
+					s)));
+			} else {
+				return A6(
+					$elm$parser$Parser$Advanced$finalizeFloat,
+					c.invalid,
+					c.expecting,
+					c._int,
+					c._float,
+					A3($elm$parser$Parser$Advanced$consumeBase, 10, s.offset, s.src),
+					s);
+			}
+		});
+};
+var $elm$parser$Parser$Advanced$int = F2(
+	function (expecting, invalid) {
+		return $elm$parser$Parser$Advanced$number(
+			{
+				binary: $elm$core$Result$Err(invalid),
+				expecting: expecting,
+				_float: $elm$core$Result$Err(invalid),
+				hex: $elm$core$Result$Err(invalid),
+				_int: $elm$core$Result$Ok($elm$core$Basics$identity),
+				invalid: invalid,
+				octal: $elm$core$Result$Err(invalid)
+			});
+	});
+var $elm$parser$Parser$int = A2($elm$parser$Parser$Advanced$int, $elm$parser$Parser$ExpectingInt, $elm$parser$Parser$ExpectingInt);
+var $author$project$IMP$Parser_$holeId = $elm$parser$Parser$oneOf(
+	_List_fromArray(
+		[
+			A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$succeed($elm$core$Basics$negate),
+				$elm$parser$Parser$symbol('-')),
+			$elm$parser$Parser$int),
+			$elm$parser$Parser$int
+		]));
+var $author$project$IMP$Syntax$HTmp = {$: 'HTmp'};
+var $elm$parser$Parser$Advanced$andThen = F2(
+	function (callback, _v0) {
+		var parseA = _v0.a;
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s0) {
+				var _v1 = parseA(s0);
+				if (_v1.$ === 'Bad') {
+					var p = _v1.a;
+					var x = _v1.b;
+					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+				} else {
+					var p1 = _v1.a;
+					var a = _v1.b;
+					var s1 = _v1.c;
+					var _v2 = callback(a);
+					var parseB = _v2.a;
+					var _v3 = parseB(s1);
+					if (_v3.$ === 'Bad') {
+						var p2 = _v3.a;
+						var x = _v3.b;
+						return A2($elm$parser$Parser$Advanced$Bad, p1 || p2, x);
+					} else {
+						var p2 = _v3.a;
+						var b = _v3.b;
+						var s2 = _v3.c;
+						return A3($elm$parser$Parser$Advanced$Good, p1 || p2, b, s2);
+					}
+				}
+			});
+	});
+var $elm$parser$Parser$andThen = $elm$parser$Parser$Advanced$andThen;
+var $author$project$IMP$Syntax$HOri = function (a) {
+	return {$: 'HOri', a: a};
+};
 var $author$project$IMP$Syntax$HVar = function (a) {
 	return {$: 'HVar', a: a};
 };
+var $elm$parser$Parser$ExpectingVariable = {$: 'ExpectingVariable'};
+var $elm$core$Dict$member = F2(
+	function (key, dict) {
+		var _v0 = A2($elm$core$Dict$get, key, dict);
+		if (_v0.$ === 'Just') {
+			return true;
+		} else {
+			return false;
+		}
+	});
+var $elm$core$Set$member = F2(
+	function (key, _v0) {
+		var dict = _v0.a;
+		return A2($elm$core$Dict$member, key, dict);
+	});
+var $elm$parser$Parser$Advanced$varHelp = F7(
+	function (isGood, offset, row, col, src, indent, context) {
+		varHelp:
+		while (true) {
+			var newOffset = A3($elm$parser$Parser$Advanced$isSubChar, isGood, offset, src);
+			if (_Utils_eq(newOffset, -1)) {
+				return {col: col, context: context, indent: indent, offset: offset, row: row, src: src};
+			} else {
+				if (_Utils_eq(newOffset, -2)) {
+					var $temp$isGood = isGood,
+						$temp$offset = offset + 1,
+						$temp$row = row + 1,
+						$temp$col = 1,
+						$temp$src = src,
+						$temp$indent = indent,
+						$temp$context = context;
+					isGood = $temp$isGood;
+					offset = $temp$offset;
+					row = $temp$row;
+					col = $temp$col;
+					src = $temp$src;
+					indent = $temp$indent;
+					context = $temp$context;
+					continue varHelp;
+				} else {
+					var $temp$isGood = isGood,
+						$temp$offset = newOffset,
+						$temp$row = row,
+						$temp$col = col + 1,
+						$temp$src = src,
+						$temp$indent = indent,
+						$temp$context = context;
+					isGood = $temp$isGood;
+					offset = $temp$offset;
+					row = $temp$row;
+					col = $temp$col;
+					src = $temp$src;
+					indent = $temp$indent;
+					context = $temp$context;
+					continue varHelp;
+				}
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$variable = function (i) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var firstOffset = A3($elm$parser$Parser$Advanced$isSubChar, i.start, s.offset, s.src);
+			if (_Utils_eq(firstOffset, -1)) {
+				return A2(
+					$elm$parser$Parser$Advanced$Bad,
+					false,
+					A2($elm$parser$Parser$Advanced$fromState, s, i.expecting));
+			} else {
+				var s1 = _Utils_eq(firstOffset, -2) ? A7($elm$parser$Parser$Advanced$varHelp, i.inner, s.offset + 1, s.row + 1, 1, s.src, s.indent, s.context) : A7($elm$parser$Parser$Advanced$varHelp, i.inner, firstOffset, s.row, s.col + 1, s.src, s.indent, s.context);
+				var name = A3($elm$core$String$slice, s.offset, s1.offset, s.src);
+				return A2($elm$core$Set$member, name, i.reserved) ? A2(
+					$elm$parser$Parser$Advanced$Bad,
+					false,
+					A2($elm$parser$Parser$Advanced$fromState, s, i.expecting)) : A3($elm$parser$Parser$Advanced$Good, true, name, s1);
+			}
+		});
+};
+var $elm$parser$Parser$variable = function (i) {
+	return $elm$parser$Parser$Advanced$variable(
+		{expecting: $elm$parser$Parser$ExpectingVariable, inner: i.inner, reserved: i.reserved, start: i.start});
+};
+var $author$project$IMP$Parser_$holeVar = $elm$parser$Parser$variable(
+	{inner: $elm$core$Char$isAlphaNum, reserved: $elm$core$Set$empty, start: $elm$core$Char$isLower});
+var $author$project$IMP$Parser_$holeNameBase = $elm$parser$Parser$oneOf(
+	_List_fromArray(
+		[
+			A2(
+			$elm$parser$Parser$keeper,
+			$elm$parser$Parser$succeed($author$project$IMP$Syntax$HOri),
+			$elm$parser$Parser$int),
+			A2(
+			$elm$parser$Parser$keeper,
+			$elm$parser$Parser$succeed($author$project$IMP$Syntax$HVar),
+			$author$project$IMP$Parser_$holeVar)
+		]));
+var $author$project$IMP$Syntax$HSub = F2(
+	function (a, b) {
+		return {$: 'HSub', a: a, b: b};
+	});
+var $author$project$IMP$Parser_$holeSubsHelper = function (acc) {
+	return $elm$parser$Parser$oneOf(
+		_List_fromArray(
+			[
+				A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$ignorer,
+					$elm$parser$Parser$succeed(
+						function (n) {
+							return $elm$parser$Parser$Loop(
+								A2($author$project$IMP$Syntax$HSub, acc, n));
+						}),
+					$elm$parser$Parser$symbol('_')),
+				$elm$parser$Parser$int),
+				$elm$parser$Parser$succeed(
+				$elm$parser$Parser$Done(acc))
+			]));
+};
+var $author$project$IMP$Parser_$holeSubs = function (acc) {
+	return A2($elm$parser$Parser$loop, acc, $author$project$IMP$Parser_$holeSubsHelper);
+};
+var $author$project$IMP$Parser_$holeNameAfterHash = A2($elm$parser$Parser$andThen, $author$project$IMP$Parser_$holeSubs, $author$project$IMP$Parser_$holeNameBase);
+var $author$project$IMP$Parser_$holeName = $elm$parser$Parser$oneOf(
+	_List_fromArray(
+		[
+			A2(
+			$elm$parser$Parser$ignorer,
+			$elm$parser$Parser$succeed($author$project$IMP$Syntax$HTmp),
+			$elm$parser$Parser$symbol('*')),
+			A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$succeed($elm$core$Basics$identity),
+				$elm$parser$Parser$symbol('#')),
+			$author$project$IMP$Parser_$holeNameAfterHash)
+		]));
+var $author$project$IMP$Parser_$vhole = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$ignorer,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$succeed($author$project$IMP$Syntax$VHole),
+				$elm$parser$Parser$symbol('{')),
+			$author$project$IMP$Parser_$mSpaces),
+		A2(
+			$elm$parser$Parser$ignorer,
+			A2(
+				$elm$parser$Parser$ignorer,
+				A2($elm$parser$Parser$ignorer, $author$project$IMP$Parser_$holeName, $author$project$IMP$Parser_$mSpaces),
+				$elm$parser$Parser$symbol('@')),
+			$author$project$IMP$Parser_$mSpaces)),
+	A2(
+		$elm$parser$Parser$ignorer,
+		A2(
+			$elm$parser$Parser$ignorer,
+			A2($elm$parser$Parser$ignorer, $author$project$IMP$Parser_$holeId, $author$project$IMP$Parser_$mSpaces),
+			$elm$parser$Parser$symbol('}')),
+		$author$project$IMP$Parser_$mSpaces));
+var $author$project$IMP$Syntax$VInt = function (a) {
+	return {$: 'VInt', a: a};
+};
+var $author$project$IMP$Parser_$vint = $elm$parser$Parser$oneOf(
+	_List_fromArray(
+		[
+			A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$succeed(
+					function (n) {
+						return $author$project$IMP$Syntax$VInt(-n);
+					}),
+				$elm$parser$Parser$symbol('-')),
+			A2($elm$parser$Parser$ignorer, $elm$parser$Parser$int, $author$project$IMP$Parser_$mSpaces)),
+			A2(
+			$elm$parser$Parser$keeper,
+			$elm$parser$Parser$succeed($author$project$IMP$Syntax$VInt),
+			A2($elm$parser$Parser$ignorer, $elm$parser$Parser$int, $author$project$IMP$Parser_$mSpaces))
+		]));
+var $author$project$IMP$Syntax$VString = function (a) {
+	return {$: 'VString', a: a};
+};
+var $elm$parser$Parser$Advanced$findSubString = _Parser_findSubString;
+var $elm$parser$Parser$Advanced$chompUntil = function (_v0) {
+	var str = _v0.a;
+	var expecting = _v0.b;
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var _v1 = A5($elm$parser$Parser$Advanced$findSubString, str, s.offset, s.row, s.col, s.src);
+			var newOffset = _v1.a;
+			var newRow = _v1.b;
+			var newCol = _v1.c;
+			return _Utils_eq(newOffset, -1) ? A2(
+				$elm$parser$Parser$Advanced$Bad,
+				false,
+				A4($elm$parser$Parser$Advanced$fromInfo, newRow, newCol, expecting, s.context)) : A3(
+				$elm$parser$Parser$Advanced$Good,
+				_Utils_cmp(s.offset, newOffset) < 0,
+				_Utils_Tuple0,
+				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
+		});
+};
+var $elm$parser$Parser$Expecting = function (a) {
+	return {$: 'Expecting', a: a};
+};
+var $elm$parser$Parser$toToken = function (str) {
+	return A2(
+		$elm$parser$Parser$Advanced$Token,
+		str,
+		$elm$parser$Parser$Expecting(str));
+};
+var $elm$parser$Parser$chompUntil = function (str) {
+	return $elm$parser$Parser$Advanced$chompUntil(
+		$elm$parser$Parser$toToken(str));
+};
+var $author$project$IMP$Parser_$string_ = $elm$parser$Parser$getChompedString(
+	$elm$parser$Parser$chompUntil('\"'));
+var $author$project$IMP$Parser_$vstring = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$ignorer,
+		$elm$parser$Parser$succeed($author$project$IMP$Syntax$VString),
+		$elm$parser$Parser$symbol('\"')),
+	A2(
+		$elm$parser$Parser$ignorer,
+		A2(
+			$elm$parser$Parser$ignorer,
+			$author$project$IMP$Parser_$string_,
+			$elm$parser$Parser$symbol('\"')),
+		$author$project$IMP$Parser_$mSpaces));
+var $author$project$IMP$Parser_$vtrue = A2(
+	$elm$parser$Parser$ignorer,
+	A2(
+		$elm$parser$Parser$ignorer,
+		$elm$parser$Parser$succeed(
+			$author$project$IMP$Syntax$VBool(true)),
+		$elm$parser$Parser$keyword('true')),
+	$author$project$IMP$Parser_$mSpaces);
+var $author$project$IMP$Parser_$vlistTailHelper = function (revItems) {
+	return $elm$parser$Parser$oneOf(
+		_List_fromArray(
+			[
+				A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$ignorer,
+					A2(
+						$elm$parser$Parser$ignorer,
+						$elm$parser$Parser$succeed(
+							function (v) {
+								return $elm$parser$Parser$Loop(
+									A2($elm$core$List$cons, v, revItems));
+							}),
+						$elm$parser$Parser$symbol(',')),
+					$author$project$IMP$Parser_$mSpaces),
+				$elm$parser$Parser$lazy(
+					function (_v0) {
+						return $author$project$IMP$Parser_$cyclic$value_();
+					})),
+				A2(
+				$elm$parser$Parser$map,
+				function (_v1) {
+					return $elm$parser$Parser$Done(
+						$elm$core$List$reverse(revItems));
+				},
+				$elm$parser$Parser$succeed(_Utils_Tuple0))
+			]));
+};
+function $author$project$IMP$Parser_$cyclic$value_() {
+	return $elm$parser$Parser$oneOf(
+		_List_fromArray(
+			[
+				$author$project$IMP$Parser_$vhole,
+				$author$project$IMP$Parser_$cyclic$vlist(),
+				$author$project$IMP$Parser_$vstring,
+				$author$project$IMP$Parser_$vtrue,
+				$author$project$IMP$Parser_$vfalse,
+				$author$project$IMP$Parser_$vint
+			]));
+}
+function $author$project$IMP$Parser_$cyclic$vlist() {
+	return A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$ignorer,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$succeed($author$project$IMP$Syntax$VList),
+				$elm$parser$Parser$symbol('[')),
+			$author$project$IMP$Parser_$mSpaces),
+		A2(
+			$elm$parser$Parser$ignorer,
+			A2(
+				$elm$parser$Parser$ignorer,
+				$author$project$IMP$Parser_$cyclic$vlistItems(),
+				$elm$parser$Parser$symbol(']')),
+			$author$project$IMP$Parser_$mSpaces));
+}
+function $author$project$IMP$Parser_$cyclic$vlistItems() {
+	return $elm$parser$Parser$oneOf(
+		_List_fromArray(
+			[
+				A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$keeper,
+					$elm$parser$Parser$succeed(
+						F2(
+							function (v, rest) {
+								return A2($elm$core$List$cons, v, rest);
+							})),
+					$elm$parser$Parser$lazy(
+						function (_v2) {
+							return $author$project$IMP$Parser_$cyclic$value_();
+						})),
+				$author$project$IMP$Parser_$cyclic$vlistTail()),
+				$elm$parser$Parser$succeed(_List_Nil)
+			]));
+}
+function $author$project$IMP$Parser_$cyclic$vlistTail() {
+	return A2($elm$parser$Parser$loop, _List_Nil, $author$project$IMP$Parser_$vlistTailHelper);
+}
+try {
+	var $author$project$IMP$Parser_$value_ = $author$project$IMP$Parser_$cyclic$value_();
+	$author$project$IMP$Parser_$cyclic$value_ = function () {
+		return $author$project$IMP$Parser_$value_;
+	};
+	var $author$project$IMP$Parser_$vlist = $author$project$IMP$Parser_$cyclic$vlist();
+	$author$project$IMP$Parser_$cyclic$vlist = function () {
+		return $author$project$IMP$Parser_$vlist;
+	};
+	var $author$project$IMP$Parser_$vlistItems = $author$project$IMP$Parser_$cyclic$vlistItems();
+	$author$project$IMP$Parser_$cyclic$vlistItems = function () {
+		return $author$project$IMP$Parser_$vlistItems;
+	};
+	var $author$project$IMP$Parser_$vlistTail = $author$project$IMP$Parser_$cyclic$vlistTail();
+	$author$project$IMP$Parser_$cyclic$vlistTail = function () {
+		return $author$project$IMP$Parser_$vlistTail;
+	};
+} catch ($) {
+	throw 'Some top-level definitions from `IMP.Parser_` are causing infinite recursion:\n\n  ┌─────┐\n  │    value_\n  │     ↓\n  │    vlist\n  │     ↓\n  │    vlistItems\n  │     ↓\n  │    vlistTail\n  │     ↓\n  │    vlistTailHelper\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
+var $author$project$IMP$Parser_$parseValue = $elm$parser$Parser$run(
+	A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$ignorer,
+			$elm$parser$Parser$succeed($elm$core$Basics$identity),
+			$author$project$IMP$Parser_$mSpaces),
+		A2($elm$parser$Parser$ignorer, $author$project$IMP$Parser_$value_, $elm$parser$Parser$end)));
+var $author$project$Controller$parseStoreDraftsWalk = F2(
+	function (orig, drafts) {
+		if (!orig.b) {
+			return $elm$core$Result$Ok(_List_Nil);
+		} else {
+			var _v1 = orig.a;
+			var x = _v1.a;
+			var oldv = _v1.b;
+			var rest = orig.b;
+			var _v2 = A2($elm$core$Dict$get, x, drafts);
+			if (_v2.$ === 'Just') {
+				var src = _v2.a;
+				var _v3 = $author$project$IMP$Parser_$parseValue(src);
+				if (_v3.$ === 'Ok') {
+					var v = _v3.a;
+					return A2(
+						$elm$core$Result$map,
+						function (rest_) {
+							return A2(
+								$elm$core$List$cons,
+								_Utils_Tuple2(x, v),
+								rest_);
+						},
+						A2($author$project$Controller$parseStoreDraftsWalk, rest, drafts));
+				} else {
+					return $elm$core$Result$Err('Parse error in ' + x);
+				}
+			} else {
+				return A2(
+					$elm$core$Result$map,
+					function (rest_) {
+						return A2(
+							$elm$core$List$cons,
+							_Utils_Tuple2(x, oldv),
+							rest_);
+					},
+					A2($author$project$Controller$parseStoreDraftsWalk, rest, drafts));
+			}
+		}
+	});
+var $author$project$Controller$parseStoreDrafts = F2(
+	function (maybeStore, drafts) {
+		if (maybeStore.$ === 'Nothing') {
+			return $elm$core$Result$Err('No residual selected');
+		} else {
+			var orig = maybeStore.a;
+			return A2($author$project$Controller$parseStoreDraftsWalk, orig, drafts);
+		}
+	});
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var $author$project$Controller$riStoreOf = F2(
+	function (id, ris) {
+		var _v0 = A2(
+			$elm$core$List$filter,
+			function (_v1) {
+				var id_ = _v1.a;
+				return _Utils_eq(id_, id);
+			},
+			ris);
+		if (_v0.b) {
+			var _v2 = _v0.a;
+			var store = _v2.c;
+			return $elm$core$Maybe$Just(store);
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$Controller$updateRiStore = F3(
+	function (id, store, ris) {
+		return A2(
+			$elm$core$List$map,
+			function (_v0) {
+				var id_ = _v0.a;
+				var s = _v0.b;
+				var st = _v0.c;
+				return _Utils_eq(id_, id) ? _Utils_Tuple3(id_, s, store) : _Utils_Tuple3(id_, s, st);
+			},
+			ris);
+	});
+var $author$project$Controller$contextValueChange = F3(
+	function (x, text, model) {
+		var drafts = A3($elm$core$Dict$insert, x, text, model.contextDrafts);
+		var model1 = _Utils_update(
+			model,
+			{contextDrafts: drafts});
+		var _v0 = A2(
+			$author$project$Controller$parseStoreDrafts,
+			A2($author$project$Controller$riStoreOf, model.currentContext, model.riStmts),
+			drafts);
+		if (_v0.$ === 'Ok') {
+			var store = _v0.a;
+			return _Utils_update(
+				model1,
+				{
+					riStmts: A3($author$project$Controller$updateRiStore, model.currentContext, store, model.riStmts)
+				});
+		} else {
+			return model1;
+		}
+	});
+var $author$project$IMP$Syntax$EVar = F2(
+	function (a, b) {
+		return {$: 'EVar', a: a, b: b};
+	});
 var $author$project$IMP$Syntax$SAssign = F3(
 	function (a, b, c) {
 		return {$: 'SAssign', a: a, b: b, c: c};
@@ -5371,21 +6685,7 @@ var $author$project$IMP$Syntax$SWhile = F3(
 var $author$project$IMP$Syntax$VError = function (a) {
 	return {$: 'VError', a: a};
 };
-var $author$project$IMP$Syntax$VHole = F2(
-	function (a, b) {
-		return {$: 'VHole', a: a, b: b};
-	});
-var $author$project$IMP$Syntax$VInt = function (a) {
-	return {$: 'VInt', a: a};
-};
 var $author$project$IMP$Eval$defaultFwdRes = {readOnly: $elm$core$Set$empty, riStmts: _List_Nil, scount: 0, store: _List_Nil};
-var $author$project$IMP$Syntax$HTmp = {$: 'HTmp'};
-var $author$project$IMP$Syntax$VBool = function (a) {
-	return {$: 'VBool', a: a};
-};
-var $author$project$IMP$Syntax$VString = function (a) {
-	return {$: 'VString', a: a};
-};
 var $elm$core$Basics$ge = _Utils_ge;
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $author$project$IMP$Eval$bop = F3(
@@ -5983,6 +7283,13 @@ var $author$project$IMP$Eval$bop = F3(
 				return $author$project$IMP$Syntax$VError('Unsupported operation');
 		}
 	});
+var $author$project$IMP$Eval$eraseHoleName = function (v) {
+	if (v.$ === 'VHole') {
+		return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
+	} else {
+		return v;
+	}
+};
 var $author$project$IMP$Utils$lookup = F2(
 	function (x, store) {
 		lookup:
@@ -6006,47 +7313,42 @@ var $author$project$IMP$Utils$lookup = F2(
 			}
 		}
 	});
-var $author$project$IMP$Utils$isSameStore = F2(
-	function (store1, store2) {
-		isSameStore:
+var $author$project$IMP$Utils$sameVars = F3(
+	function (xs, s1, s2) {
+		sameVars:
 		while (true) {
-			var _v0 = _Utils_Tuple2(store1, store2);
-			_v0$2:
-			while (true) {
-				if (_v0.a.b) {
-					if (_v0.b.b) {
-						var _v1 = _v0.a;
-						var _v2 = _v1.a;
-						var x1 = _v2.a;
-						var v1 = _v2.b;
-						var rest1 = _v1.b;
-						var _v3 = _v0.b;
-						var _v4 = _v3.a;
-						var x2 = _v4.a;
-						var v2 = _v4.b;
-						var rest2 = _v3.b;
-						if (_Utils_eq(x1, x2) && _Utils_eq(v1, v2)) {
-							var $temp$store1 = rest1,
-								$temp$store2 = rest2;
-							store1 = $temp$store1;
-							store2 = $temp$store2;
-							continue isSameStore;
-						} else {
-							return false;
-						}
-					} else {
-						break _v0$2;
-					}
+			if (!xs.b) {
+				return true;
+			} else {
+				var x = xs.a;
+				var rest = xs.b;
+				if (_Utils_eq(
+					A2($author$project$IMP$Utils$lookup, x, s1),
+					A2($author$project$IMP$Utils$lookup, x, s2))) {
+					var $temp$xs = rest,
+						$temp$s1 = s1,
+						$temp$s2 = s2;
+					xs = $temp$xs;
+					s1 = $temp$s1;
+					s2 = $temp$s2;
+					continue sameVars;
 				} else {
-					if (!_v0.b.b) {
-						return true;
-					} else {
-						break _v0$2;
-					}
+					return false;
 				}
 			}
-			return false;
 		}
+	});
+var $author$project$IMP$Utils$isSameStore = F2(
+	function (store1, store2) {
+		return A3(
+			$author$project$IMP$Utils$sameVars,
+			A2($elm$core$List$map, $elm$core$Tuple$first, store1),
+			store1,
+			store2) && A3(
+			$author$project$IMP$Utils$sameVars,
+			A2($elm$core$List$map, $elm$core$Tuple$first, store2),
+			store1,
+			store2);
 	});
 var $author$project$IMP$Utils$lookupHB = F3(
 	function (h, store, holeBindings) {
@@ -6074,7 +7376,6 @@ var $author$project$IMP$Utils$lookupHB = F3(
 			}
 		}
 	});
-var $elm$core$Basics$not = _Basics_not;
 var $author$project$IMP$Utils$nthValue = F2(
 	function (vs, i) {
 		nthValue:
@@ -6102,153 +7403,133 @@ var $author$project$IMP$Utils$nthValue = F2(
 	});
 var $author$project$IMP$Eval$eval = F3(
 	function (store, holeBindings, expr) {
-		_eval:
-		while (true) {
-			switch (expr.$) {
-				case 'EVar':
-					var x = expr.b;
-					var _v1 = A2($author$project$IMP$Utils$lookup, x, store);
-					if (_v1.$ === 'Just') {
-						if (_v1.a.$ === 'VHole') {
-							var _v2 = _v1.a;
-							var h = _v2.a;
-							var id = _v2.b;
-							return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
-						} else {
-							var v = _v1.a;
-							return v;
-						}
-					} else {
-						return $author$project$IMP$Syntax$VError('Variable not found');
-					}
-				case 'EInt':
-					var ws = expr.a;
-					var i = expr.b;
-					return $author$project$IMP$Syntax$VInt(i);
-				case 'EBool':
-					var ws = expr.a;
-					var b = expr.b;
-					return $author$project$IMP$Syntax$VBool(b);
-				case 'EString':
-					var ws = expr.a;
-					var s = expr.b;
-					return $author$project$IMP$Syntax$VString(s);
-				case 'EHole':
-					var ws = expr.a;
-					var h = expr.b;
-					var _v3 = A3($author$project$IMP$Utils$lookupHB, h, store, holeBindings);
-					if (_v3.$ === 'Just') {
-						var v = _v3.a;
-						return v;
-					} else {
+		return $author$project$IMP$Eval$eraseHoleName(
+			A3($author$project$IMP$Eval$evalCore, store, holeBindings, expr));
+	});
+var $author$project$IMP$Eval$evalCore = F3(
+	function (store, holeBindings, expr) {
+		switch (expr.$) {
+			case 'EVar':
+				var x = expr.b;
+				var _v1 = A2($author$project$IMP$Utils$lookup, x, store);
+				if (_v1.$ === 'Just') {
+					var v = _v1.a;
+					return v;
+				} else {
+					return $author$project$IMP$Syntax$VError('Variable not found');
+				}
+			case 'EInt':
+				var ws = expr.a;
+				var i = expr.b;
+				return $author$project$IMP$Syntax$VInt(i);
+			case 'EBool':
+				var ws = expr.a;
+				var b = expr.b;
+				return $author$project$IMP$Syntax$VBool(b);
+			case 'EString':
+				var ws = expr.a;
+				var s = expr.b;
+				return $author$project$IMP$Syntax$VString(s);
+			case 'EHole':
+				var ws = expr.a;
+				var h = expr.b;
+				var _v2 = A3($author$project$IMP$Utils$lookupHB, h, store, holeBindings);
+				if (_v2.$ === 'Just') {
+					var v = _v2.a;
+					return v;
+				} else {
+					return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
+				}
+			case 'Eop':
+				var ws = expr.a;
+				var op = expr.b;
+				var e1 = expr.c;
+				var e2 = expr.d;
+				var v2 = A3($author$project$IMP$Eval$eval, store, holeBindings, e2);
+				var v1 = A3($author$project$IMP$Eval$eval, store, holeBindings, e1);
+				return A3($author$project$IMP$Eval$bop, op, v1, v2);
+			case 'EParens':
+				var ws = expr.a;
+				var e = expr.b;
+				return A3($author$project$IMP$Eval$eval, store, holeBindings, e);
+			case 'ENot':
+				var ws = expr.a;
+				var e = expr.b;
+				var v = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
+				switch (v.$) {
+					case 'VBool':
+						var b = v.a;
+						return $author$project$IMP$Syntax$VBool(!b);
+					case 'VHole':
 						return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
-					}
-				case 'Eop':
-					var ws = expr.a;
-					var op = expr.b;
-					var e1 = expr.c;
-					var e2 = expr.d;
-					var v2 = A3($author$project$IMP$Eval$eval, store, holeBindings, e2);
-					var v1 = A3($author$project$IMP$Eval$eval, store, holeBindings, e1);
-					return A3($author$project$IMP$Eval$bop, op, v1, v2);
-				case 'EParens':
-					var ws = expr.a;
-					var e = expr.b;
-					var $temp$store = store,
-						$temp$holeBindings = holeBindings,
-						$temp$expr = e;
-					store = $temp$store;
-					holeBindings = $temp$holeBindings;
-					expr = $temp$expr;
-					continue _eval;
-				case 'ENot':
-					var ws = expr.a;
-					var e = expr.b;
-					var v = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
-					_v4$2:
-					while (true) {
-						switch (v.$) {
-							case 'VBool':
-								var b = v.a;
-								return $author$project$IMP$Syntax$VBool(!b);
+					default:
+						return $author$project$IMP$Syntax$VError('Unsupported expression');
+				}
+			case 'EList':
+				var ws = expr.a;
+				var es = expr.b;
+				return $author$project$IMP$Syntax$VList(
+					A2(
+						$elm$core$List$map,
+						A2($author$project$IMP$Eval$eval, store, holeBindings),
+						es));
+			case 'EIndex':
+				var ws = expr.a;
+				var e1 = expr.b;
+				var e2 = expr.c;
+				var v1 = A3($author$project$IMP$Eval$eval, store, holeBindings, e1);
+				var v2 = A3($author$project$IMP$Eval$eval, store, holeBindings, e2);
+				switch (v1.$) {
+					case 'VString':
+						var s = v1.a;
+						switch (v2.$) {
+							case 'VInt':
+								var i = v2.a;
+								return $author$project$IMP$Syntax$VString(
+									A3($elm$core$String$slice, i, i + 1, s));
 							case 'VHole':
-								if (v.a.$ === 'HTmp') {
-									var _v5 = v.a;
-									return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
-								} else {
-									break _v4$2;
-								}
+								return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
 							default:
-								break _v4$2;
+								return $author$project$IMP$Syntax$VError('Unsupported expression');
 						}
-					}
-					return $author$project$IMP$Syntax$VError('Unsupported expression');
-				case 'EList':
-					var ws = expr.a;
-					var es = expr.b;
-					return $author$project$IMP$Syntax$VList(
-						A2(
-							$elm$core$List$map,
-							A2($author$project$IMP$Eval$eval, store, holeBindings),
-							es));
-				case 'EIndex':
-					var ws = expr.a;
-					var e1 = expr.b;
-					var e2 = expr.c;
-					var v1 = A3($author$project$IMP$Eval$eval, store, holeBindings, e1);
-					var v2 = A3($author$project$IMP$Eval$eval, store, holeBindings, e2);
-					switch (v1.$) {
-						case 'VString':
-							var s = v1.a;
-							switch (v2.$) {
-								case 'VInt':
-									var i = v2.a;
-									return $author$project$IMP$Syntax$VString(
-										A3($elm$core$String$slice, i, i + 1, s));
-								case 'VHole':
-									return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
-								default:
-									return $author$project$IMP$Syntax$VError('Unsupported expression');
-							}
-						case 'VList':
-							var vs = v1.a;
-							switch (v2.$) {
-								case 'VInt':
-									var i = v2.a;
-									return ((i >= 0) && (_Utils_cmp(
-										i,
-										$elm$core$List$length(vs)) < 0)) ? A2($author$project$IMP$Utils$nthValue, vs, i) : $author$project$IMP$Syntax$VError('Index out of range');
-								case 'VHole':
-									return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
-								default:
-									return $author$project$IMP$Syntax$VError('Unsupported expression');
-							}
-						case 'VHole':
-							return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
-						default:
-							return $author$project$IMP$Syntax$VError('Unsupported expression');
-					}
-				case 'ELength':
-					var ws = expr.a;
-					var e = expr.b;
-					var v = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
-					switch (v.$) {
-						case 'VString':
-							var s = v.a;
-							return $author$project$IMP$Syntax$VInt(
-								$elm$core$String$length(s));
-						case 'VList':
-							var vs = v.a;
-							return $author$project$IMP$Syntax$VInt(
-								$elm$core$List$length(vs));
-						case 'VHole':
-							return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
-						default:
-							return $author$project$IMP$Syntax$VError('Unsupported expression');
-					}
-				default:
-					return $author$project$IMP$Syntax$VError('Unsupported expression');
-			}
+					case 'VList':
+						var vs = v1.a;
+						switch (v2.$) {
+							case 'VInt':
+								var i = v2.a;
+								return ((i >= 0) && (_Utils_cmp(
+									i,
+									$elm$core$List$length(vs)) < 0)) ? A2($author$project$IMP$Utils$nthValue, vs, i) : $author$project$IMP$Syntax$VError('Index out of range');
+							case 'VHole':
+								return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
+							default:
+								return $author$project$IMP$Syntax$VError('Unsupported expression');
+						}
+					case 'VHole':
+						return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
+					default:
+						return $author$project$IMP$Syntax$VError('Unsupported expression');
+				}
+			case 'ELength':
+				var ws = expr.a;
+				var e = expr.b;
+				var v = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
+				switch (v.$) {
+					case 'VString':
+						var s = v.a;
+						return $author$project$IMP$Syntax$VInt(
+							$elm$core$String$length(s));
+					case 'VList':
+						var vs = v.a;
+						return $author$project$IMP$Syntax$VInt(
+							$elm$core$List$length(vs));
+					case 'VHole':
+						return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
+					default:
+						return $author$project$IMP$Syntax$VError('Unsupported expression');
+				}
+			default:
+				return $author$project$IMP$Syntax$VError('Unsupported expression');
 		}
 	});
 var $author$project$IMP$Eval$findIndex = F3(
@@ -6331,165 +7612,41 @@ var $author$project$IMP$Utils$hasHole = function (vs) {
 		}
 	}
 };
-var $elm$core$Dict$Black = {$: 'Black'};
-var $elm$core$Dict$RBNode_elm_builtin = F5(
-	function (a, b, c, d, e) {
-		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
-	});
-var $elm$core$Dict$Red = {$: 'Red'};
-var $elm$core$Dict$balance = F5(
-	function (color, key, value, left, right) {
-		if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Red')) {
-			var _v1 = right.a;
-			var rK = right.b;
-			var rV = right.c;
-			var rLeft = right.d;
-			var rRight = right.e;
-			if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
-				var _v3 = left.a;
-				var lK = left.b;
-				var lV = left.c;
-				var lLeft = left.d;
-				var lRight = left.e;
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					$elm$core$Dict$Red,
-					key,
-					value,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, lK, lV, lLeft, lRight),
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rLeft, rRight));
-			} else {
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					color,
-					rK,
-					rV,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, left, rLeft),
-					rRight);
-			}
-		} else {
-			if ((((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) && (left.d.$ === 'RBNode_elm_builtin')) && (left.d.a.$ === 'Red')) {
-				var _v5 = left.a;
-				var lK = left.b;
-				var lV = left.c;
-				var _v6 = left.d;
-				var _v7 = _v6.a;
-				var llK = _v6.b;
-				var llV = _v6.c;
-				var llLeft = _v6.d;
-				var llRight = _v6.e;
-				var lRight = left.e;
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					$elm$core$Dict$Red,
-					lK,
-					lV,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, lRight, right));
-			} else {
-				return A5($elm$core$Dict$RBNode_elm_builtin, color, key, value, left, right);
-			}
-		}
-	});
-var $elm$core$Basics$compare = _Utils_compare;
-var $elm$core$Dict$insertHelp = F3(
-	function (key, value, dict) {
-		if (dict.$ === 'RBEmpty_elm_builtin') {
-			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
-		} else {
-			var nColor = dict.a;
-			var nKey = dict.b;
-			var nValue = dict.c;
-			var nLeft = dict.d;
-			var nRight = dict.e;
-			var _v1 = A2($elm$core$Basics$compare, key, nKey);
-			switch (_v1.$) {
-				case 'LT':
-					return A5(
-						$elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						A3($elm$core$Dict$insertHelp, key, value, nLeft),
-						nRight);
-				case 'EQ':
-					return A5($elm$core$Dict$RBNode_elm_builtin, nColor, nKey, value, nLeft, nRight);
-				default:
-					return A5(
-						$elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						nLeft,
-						A3($elm$core$Dict$insertHelp, key, value, nRight));
-			}
-		}
-	});
-var $elm$core$Dict$insert = F3(
-	function (key, value, dict) {
-		var _v0 = A3($elm$core$Dict$insertHelp, key, value, dict);
-		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
-			var _v1 = _v0.a;
-			var k = _v0.b;
-			var v = _v0.c;
-			var l = _v0.d;
-			var r = _v0.e;
-			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
-		} else {
-			var x = _v0;
-			return x;
-		}
-	});
 var $elm$core$Set$insert = F2(
 	function (key, _v0) {
 		var dict = _v0.a;
 		return $elm$core$Set$Set_elm_builtin(
 			A3($elm$core$Dict$insert, key, _Utils_Tuple0, dict));
 	});
-var $elm$core$Dict$get = F2(
-	function (targetKey, dict) {
-		get:
+var $author$project$IMP$Utils$isErrorStore = function (store) {
+	var _v0 = A2($author$project$IMP$Utils$lookup, 'error', store);
+	if ((_v0.$ === 'Just') && (_v0.a.$ === 'VError')) {
+		return true;
+	} else {
+		return false;
+	}
+};
+var $author$project$IMP$Utils$lookupFunc = F2(
+	function (name, env) {
+		lookupFunc:
 		while (true) {
-			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return $elm$core$Maybe$Nothing;
-			} else {
-				var key = dict.b;
-				var value = dict.c;
-				var left = dict.d;
-				var right = dict.e;
-				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
-				switch (_v1.$) {
-					case 'LT':
-						var $temp$targetKey = targetKey,
-							$temp$dict = left;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-					case 'EQ':
-						return $elm$core$Maybe$Just(value);
-					default:
-						var $temp$targetKey = targetKey,
-							$temp$dict = right;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
+			if (env.b) {
+				var f = env.a;
+				var rest = env.b;
+				if (_Utils_eq(f.name, name)) {
+					return $elm$core$Maybe$Just(
+						_Utils_Tuple2(f.params, f.body));
+				} else {
+					var $temp$name = name,
+						$temp$env = rest;
+					name = $temp$name;
+					env = $temp$env;
+					continue lookupFunc;
 				}
+			} else {
+				return $elm$core$Maybe$Nothing;
 			}
 		}
-	});
-var $elm$core$Dict$member = F2(
-	function (key, dict) {
-		var _v0 = A2($elm$core$Dict$get, key, dict);
-		if (_v0.$ === 'Just') {
-			return true;
-		} else {
-			return false;
-		}
-	});
-var $elm$core$Set$member = F2(
-	function (key, _v0) {
-		var dict = _v0.a;
-		return A2($elm$core$Dict$member, key, dict);
 	});
 var $author$project$IMP$Utils$findVar = function (e) {
 	findVar:
@@ -6508,59 +7665,191 @@ var $author$project$IMP$Utils$findVar = function (e) {
 		}
 	}
 };
-var $author$project$IMP$Utils$modVars = function (s) {
-	modVars:
-	while (true) {
-		switch (s.$) {
-			case 'SAssign':
-				var e = s.b;
-				switch (e.$) {
-					case 'EVar':
-						var x = e.b;
-						return _List_fromArray(
-							[x]);
-					case 'EIndex':
-						var e1 = e.b;
-						var e2 = e.c;
-						return _List_fromArray(
-							[
-								$author$project$IMP$Utils$findVar(e1)
-							]);
-					default:
-						return _List_Nil;
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
 				}
-			case 'SIf':
-				var s1 = s.c;
-				var s2 = s.d;
-				return _Utils_ap(
-					$author$project$IMP$Utils$modVars(s1),
-					$author$project$IMP$Utils$modVars(s2));
-			case 'SWhile':
-				var s_ = s.c;
-				var $temp$s = s_;
-				s = $temp$s;
-				continue modVars;
-			case 'SRead':
-				var x = s.b;
-				return _List_fromArray(
-					[x, 'input']);
-			case 'SPrint':
-				return _List_fromArray(
-					['output']);
-			case 'SSeq':
-				var s1 = s.b;
-				var s2 = s.c;
-				return _Utils_ap(
-					$author$project$IMP$Utils$modVars(s1),
-					$author$project$IMP$Utils$modVars(s2));
-			default:
-				return _List_Nil;
+			}
 		}
-	}
-};
-var $author$project$IMP$Syntax$HSub = F2(
-	function (a, b) {
-		return {$: 'HSub', a: a, b: b};
+	});
+var $elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			$elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var $author$project$IMP$Utils$modVarsSeen = F3(
+	function (seen, env, s) {
+		modVarsSeen:
+		while (true) {
+			switch (s.$) {
+				case 'SAssign':
+					var e = s.b;
+					switch (e.$) {
+						case 'EVar':
+							var x = e.b;
+							return _List_fromArray(
+								[x]);
+						case 'EIndex':
+							var e1 = e.b;
+							var e2 = e.c;
+							return _List_fromArray(
+								[
+									$author$project$IMP$Utils$findVar(e1)
+								]);
+						default:
+							return _List_Nil;
+					}
+				case 'SIf':
+					var s1 = s.c;
+					var s2 = s.d;
+					return _Utils_ap(
+						A3($author$project$IMP$Utils$modVarsSeen, seen, env, s1),
+						A3($author$project$IMP$Utils$modVarsSeen, seen, env, s2));
+				case 'SWhile':
+					var s_ = s.c;
+					var $temp$seen = seen,
+						$temp$env = env,
+						$temp$s = s_;
+					seen = $temp$seen;
+					env = $temp$env;
+					s = $temp$s;
+					continue modVarsSeen;
+				case 'SRead':
+					var x = s.b;
+					return _List_fromArray(
+						[x, 'input']);
+				case 'SPrint':
+					return _List_fromArray(
+						['output']);
+				case 'SSeq':
+					var s1 = s.b;
+					var s2 = s.c;
+					return _Utils_ap(
+						A3($author$project$IMP$Utils$modVarsSeen, seen, env, s1),
+						A3($author$project$IMP$Utils$modVarsSeen, seen, env, s2));
+				case 'SFuncCall':
+					var name = s.b;
+					var args = s.c;
+					if (A2($elm$core$List$member, name, seen)) {
+						return _List_Nil;
+					} else {
+						var _v2 = A2($author$project$IMP$Utils$lookupFunc, name, env);
+						if (_v2.$ === 'Just') {
+							var _v3 = _v2.a;
+							var params = _v3.a;
+							var body = _v3.b;
+							return A2(
+								$elm$core$List$filter,
+								function (x) {
+									return !A2($elm$core$List$member, x, params);
+								},
+								A3(
+									$author$project$IMP$Utils$modVarsSeen,
+									A2($elm$core$List$cons, name, seen),
+									env,
+									body));
+						} else {
+							return _List_Nil;
+						}
+					}
+				default:
+					return _List_Nil;
+			}
+		}
+	});
+var $author$project$IMP$Utils$modVars = F2(
+	function (env, s) {
+		return A3($author$project$IMP$Utils$modVarsSeen, _List_Nil, env, s);
+	});
+var $author$project$IMP$Utils$outputSuffixHole = F2(
+	function (i, scount) {
+		return A2(
+			$author$project$IMP$Syntax$VHole,
+			$author$project$IMP$Syntax$HVar(
+				'output-' + $elm$core$String$fromInt(i)),
+			scount);
+	});
+var $author$project$IMP$Utils$delStore = F2(
+	function (x, store) {
+		if (store.b) {
+			var _v1 = store.a;
+			var x_ = _v1.a;
+			var v = _v1.b;
+			var rest = store.b;
+			return _Utils_eq(x, x_) ? rest : A2(
+				$elm$core$List$cons,
+				_Utils_Tuple2(x_, v),
+				A2($author$project$IMP$Utils$delStore, x, rest));
+		} else {
+			return _List_Nil;
+		}
+	});
+var $author$project$IMP$Utils$updateStore = F3(
+	function (x, v, store) {
+		if (store.b) {
+			var _v1 = store.a;
+			var x_ = _v1.a;
+			var v_ = _v1.b;
+			var rest = store.b;
+			return _Utils_eq(x, x_) ? A2(
+				$elm$core$List$cons,
+				_Utils_Tuple2(x, v),
+				rest) : A2(
+				$elm$core$List$cons,
+				_Utils_Tuple2(x_, v_),
+				A3($author$project$IMP$Utils$updateStore, x, v, rest));
+		} else {
+			return A2(
+				$elm$core$List$cons,
+				_Utils_Tuple2(x, v),
+				store);
+		}
+	});
+var $author$project$IMP$Utils$overlayParams = F3(
+	function (params, from, to) {
+		overlayParams:
+		while (true) {
+			if (!params.b) {
+				return to;
+			} else {
+				var p = params.a;
+				var rest = params.b;
+				var to_ = function () {
+					var _v1 = A2($author$project$IMP$Utils$lookup, p, from);
+					if (_v1.$ === 'Just') {
+						var v = _v1.a;
+						return A3($author$project$IMP$Utils$updateStore, p, v, to);
+					} else {
+						return A2($author$project$IMP$Utils$delStore, p, to);
+					}
+				}();
+				var $temp$params = rest,
+					$temp$from = from,
+					$temp$to = to_;
+				params = $temp$params;
+				from = $temp$from;
+				to = $temp$to;
+				continue overlayParams;
+			}
+		}
 	});
 var $author$project$IMP$Utils$pathToName = F2(
 	function (prefix, path) {
@@ -6590,27 +7879,6 @@ var $author$project$IMP$Utils$pathToName = F2(
 				}
 			}
 			return prefix;
-		}
-	});
-var $author$project$IMP$Utils$updateStore = F3(
-	function (x, v, store) {
-		if (store.b) {
-			var _v1 = store.a;
-			var x_ = _v1.a;
-			var v_ = _v1.b;
-			var rest = store.b;
-			return _Utils_eq(x, x_) ? A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(x, v),
-				rest) : A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(x_, v_),
-				A3($author$project$IMP$Utils$updateStore, x, v, rest));
-		} else {
-			return A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(x, v),
-				store);
 		}
 	});
 var $author$project$IMP$Utils$polluteState = F3(
@@ -6643,8 +7911,8 @@ var $author$project$IMP$Utils$polluteState = F3(
 										_List_fromArray(
 											[
 												A2(
-												$author$project$IMP$Syntax$VHole,
-												$author$project$IMP$Syntax$HVar(x),
+												$author$project$IMP$Utils$outputSuffixHole,
+												$elm$core$List$length(vs),
 												scount)
 											]))),
 								store);
@@ -7115,6 +8383,114 @@ var $elm$core$Set$remove = F2(
 		return $elm$core$Set$Set_elm_builtin(
 			A2($elm$core$Dict$remove, key, dict));
 	});
+var $author$project$IMP$Utils$restoreParams = F2(
+	function (saved, store) {
+		restoreParams:
+		while (true) {
+			if (!saved.b) {
+				return store;
+			} else {
+				if (saved.a.b.$ === 'Just') {
+					var _v1 = saved.a;
+					var x = _v1.a;
+					var v = _v1.b.a;
+					var rest = saved.b;
+					var $temp$saved = rest,
+						$temp$store = A3($author$project$IMP$Utils$updateStore, x, v, store);
+					saved = $temp$saved;
+					store = $temp$store;
+					continue restoreParams;
+				} else {
+					var _v2 = saved.a;
+					var x = _v2.a;
+					var _v3 = _v2.b;
+					var rest = saved.b;
+					var $temp$saved = rest,
+						$temp$store = A2($author$project$IMP$Utils$delStore, x, store);
+					saved = $temp$saved;
+					store = $temp$store;
+					continue restoreParams;
+				}
+			}
+		}
+	});
+var $elm$core$Set$fromList = function (list) {
+	return A3($elm$core$List$foldl, $elm$core$Set$insert, $elm$core$Set$empty, list);
+};
+var $elm$core$Dict$foldl = F3(
+	function (func, acc, dict) {
+		foldl:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return acc;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var $temp$func = func,
+					$temp$acc = A3(
+					func,
+					key,
+					value,
+					A3($elm$core$Dict$foldl, func, acc, left)),
+					$temp$dict = right;
+				func = $temp$func;
+				acc = $temp$acc;
+				dict = $temp$dict;
+				continue foldl;
+			}
+		}
+	});
+var $elm$core$Dict$filter = F2(
+	function (isGood, dict) {
+		return A3(
+			$elm$core$Dict$foldl,
+			F3(
+				function (k, v, d) {
+					return A2(isGood, k, v) ? A3($elm$core$Dict$insert, k, v, d) : d;
+				}),
+			$elm$core$Dict$empty,
+			dict);
+	});
+var $elm$core$Dict$intersect = F2(
+	function (t1, t2) {
+		return A2(
+			$elm$core$Dict$filter,
+			F2(
+				function (k, _v0) {
+					return A2($elm$core$Dict$member, k, t2);
+				}),
+			t1);
+	});
+var $elm$core$Set$intersect = F2(
+	function (_v0, _v1) {
+		var dict1 = _v0.a;
+		var dict2 = _v1.a;
+		return $elm$core$Set$Set_elm_builtin(
+			A2($elm$core$Dict$intersect, dict1, dict2));
+	});
+var $elm$core$Dict$union = F2(
+	function (t1, t2) {
+		return A3($elm$core$Dict$foldl, $elm$core$Dict$insert, t2, t1);
+	});
+var $elm$core$Set$union = F2(
+	function (_v0, _v1) {
+		var dict1 = _v0.a;
+		var dict2 = _v1.a;
+		return $elm$core$Set$Set_elm_builtin(
+			A2($elm$core$Dict$union, dict1, dict2));
+	});
+var $author$project$IMP$Eval$restoreReadOnly = F3(
+	function (params, before, after) {
+		return A2(
+			$elm$core$Set$union,
+			A3($elm$core$List$foldl, $elm$core$Set$remove, after, params),
+			A2(
+				$elm$core$Set$intersect,
+				before,
+				$elm$core$Set$fromList(params)));
+	});
 var $author$project$IMP$Syntax$EBool = F2(
 	function (a, b) {
 		return {$: 'EBool', a: a, b: b};
@@ -7122,10 +8498,6 @@ var $author$project$IMP$Syntax$EBool = F2(
 var $author$project$IMP$Syntax$EError = function (a) {
 	return {$: 'EError', a: a};
 };
-var $author$project$IMP$Syntax$EHole = F2(
-	function (a, b) {
-		return {$: 'EHole', a: a, b: b};
-	});
 var $author$project$IMP$Syntax$EIndex = F3(
 	function (a, b, c) {
 		return {$: 'EIndex', a: a, b: b, c: c};
@@ -7142,17 +8514,43 @@ var $author$project$IMP$Syntax$EList = F2(
 	function (a, b) {
 		return {$: 'EList', a: a, b: b};
 	});
+var $author$project$IMP$Syntax$ENot = F2(
+	function (a, b) {
+		return {$: 'ENot', a: a, b: b};
+	});
 var $author$project$IMP$Syntax$EParens = F2(
 	function (a, b) {
 		return {$: 'EParens', a: a, b: b};
 	});
-var $author$project$IMP$Syntax$EString = F2(
-	function (a, b) {
-		return {$: 'EString', a: a, b: b};
-	});
 var $author$project$IMP$Syntax$Eop = F4(
 	function (a, b, c, d) {
 		return {$: 'Eop', a: a, b: b, c: c, d: d};
+	});
+var $author$project$IMP$Utils$isIndet = function (v) {
+	switch (v.$) {
+		case 'VHole':
+			return true;
+		case 'VList':
+			var vs = v.a;
+			return $author$project$IMP$Utils$hasHole(vs);
+		default:
+			return false;
+	}
+};
+var $author$project$IMP$Eval$isFullyDet = function (v) {
+	if (v.$ === 'VError') {
+		return false;
+	} else {
+		return !$author$project$IMP$Utils$isIndet(v);
+	}
+};
+var $author$project$IMP$Syntax$EHole = F2(
+	function (a, b) {
+		return {$: 'EHole', a: a, b: b};
+	});
+var $author$project$IMP$Syntax$EString = F2(
+	function (a, b) {
+		return {$: 'EString', a: a, b: b};
 	});
 var $author$project$IMP$Utils$encodeHoleId = F2(
 	function (h, id) {
@@ -7205,156 +8603,162 @@ var $author$project$IMP$Eval$simplifyExpr = F3(
 		switch (e.$) {
 			case 'EVar':
 				var x = e.b;
-				var _v1 = A2($author$project$IMP$Utils$lookup, x, store);
-				if (_v1.$ === 'Just') {
-					var v = _v1.a;
-					return $author$project$IMP$Utils$value2Expr(v);
+				var _v2 = A2($author$project$IMP$Utils$lookup, x, store);
+				if (_v2.$ === 'Just') {
+					var v = _v2.a;
+					return $author$project$IMP$Eval$isFullyDet(v) ? $author$project$IMP$Utils$value2Expr(v) : A2($author$project$IMP$Syntax$EVar, _List_Nil, x);
 				} else {
 					return $author$project$IMP$Syntax$EError('Variable not found');
 				}
-			case 'EInt':
-				var i = e.b;
-				return A2($author$project$IMP$Syntax$EInt, _List_Nil, i);
-			case 'EBool':
-				var b = e.b;
-				return A2($author$project$IMP$Syntax$EBool, _List_Nil, b);
-			case 'EString':
-				var s = e.b;
-				return A2($author$project$IMP$Syntax$EString, _List_Nil, s);
-			case 'EHole':
-				var h = e.b;
-				var _v2 = A3($author$project$IMP$Utils$lookupHB, h, store, holeBindings);
-				if (_v2.$ === 'Just') {
-					var v = _v2.a;
-					return $author$project$IMP$Utils$value2Expr(v);
-				} else {
-					return A2($author$project$IMP$Syntax$EHole, _List_Nil, h);
+			case 'EIndex':
+				var e1 = e.b;
+				var e2 = e.c;
+				var e2_ = A3($author$project$IMP$Eval$simplifyExpr, store, e2, holeBindings);
+				var v2 = A3($author$project$IMP$Eval$eval, store, holeBindings, e2_);
+				var e1_ = A3($author$project$IMP$Eval$simplifyLhs, store, e1, holeBindings);
+				var v1 = A3($author$project$IMP$Eval$eval, store, holeBindings, e1_);
+				var _v3 = _Utils_Tuple2(v1, v2);
+				_v3$2:
+				while (true) {
+					if (_v3.b.$ === 'VInt') {
+						switch (_v3.a.$) {
+							case 'VList':
+								var vs = _v3.a.a;
+								var i = _v3.b.a;
+								if ((i >= 0) && (_Utils_cmp(
+									i,
+									$elm$core$List$length(vs)) < 0)) {
+									var _v4 = A2($author$project$IMP$Utils$nthValue, vs, i);
+									if (_v4.$ === 'VHole') {
+										return A3($author$project$IMP$Syntax$EIndex, _List_Nil, e1_, e2_);
+									} else {
+										var v = _v4;
+										return $author$project$IMP$Eval$isFullyDet(v) ? $author$project$IMP$Utils$value2Expr(v) : A3($author$project$IMP$Syntax$EIndex, _List_Nil, e1_, e2_);
+									}
+								} else {
+									return $author$project$IMP$Syntax$EError('Index out of range');
+								}
+							case 'VString':
+								var s = _v3.a.a;
+								var i = _v3.b.a;
+								return ((i >= 0) && (_Utils_cmp(
+									i,
+									$elm$core$String$length(s)) < 0)) ? $author$project$IMP$Utils$value2Expr(
+									$author$project$IMP$Syntax$VString(
+										A3($elm$core$String$slice, i, i + 1, s))) : $author$project$IMP$Syntax$EError('Index out of range');
+							default:
+								break _v3$2;
+						}
+					} else {
+						break _v3$2;
+					}
 				}
+				return A3($author$project$IMP$Syntax$EIndex, _List_Nil, e1_, e2_);
 			case 'Eop':
+				var ws = e.a;
 				var op = e.b;
 				var e1 = e.c;
 				var e2 = e.d;
-				var e1_ = A3($author$project$IMP$Eval$simplifyExpr, store, e1, holeBindings);
 				var e2_ = A3($author$project$IMP$Eval$simplifyExpr, store, e2, holeBindings);
-				var v = A3(
-					$author$project$IMP$Eval$eval,
-					store,
-					holeBindings,
-					A4($author$project$IMP$Syntax$Eop, _List_Nil, op, e1_, e2_));
-				if ((v.$ === 'VHole') && (v.a.$ === 'HTmp')) {
-					var _v4 = v.a;
-					return A4($author$project$IMP$Syntax$Eop, _List_Nil, op, e1_, e2_);
+				var v2 = A3($author$project$IMP$Eval$eval, store, holeBindings, e2_);
+				var e1_ = A3($author$project$IMP$Eval$simplifyExpr, store, e1, holeBindings);
+				var v1 = A3($author$project$IMP$Eval$eval, store, holeBindings, e1_);
+				if ($author$project$IMP$Eval$isFullyDet(v1) && $author$project$IMP$Eval$isFullyDet(v2)) {
+					var v = A3($author$project$IMP$Eval$bop, op, v1, v2);
+					return $author$project$IMP$Eval$isFullyDet(v) ? $author$project$IMP$Utils$value2Expr(v) : A4($author$project$IMP$Syntax$Eop, ws, op, e1_, e2_);
 				} else {
-					return $author$project$IMP$Utils$value2Expr(v);
+					return A4($author$project$IMP$Syntax$Eop, ws, op, e1_, e2_);
 				}
+			case 'ENot':
+				var ws = e.a;
+				var e1 = e.b;
+				var e1_ = A3($author$project$IMP$Eval$simplifyExpr, store, e1, holeBindings);
+				var v1 = A3($author$project$IMP$Eval$eval, store, holeBindings, e1_);
+				if ($author$project$IMP$Eval$isFullyDet(v1)) {
+					if (v1.$ === 'VBool') {
+						var b = v1.a;
+						return A2($author$project$IMP$Syntax$EBool, _List_Nil, !b);
+					} else {
+						return A2($author$project$IMP$Syntax$ENot, ws, e1_);
+					}
+				} else {
+					return A2($author$project$IMP$Syntax$ENot, ws, e1_);
+				}
+			case 'EParens':
+				var ws = e.a;
+				var e1 = e.b;
+				var e1_ = A3($author$project$IMP$Eval$simplifyExpr, store, e1, holeBindings);
+				var v = A3($author$project$IMP$Eval$eval, store, holeBindings, e1_);
+				return $author$project$IMP$Eval$isFullyDet(v) ? $author$project$IMP$Utils$value2Expr(v) : A2($author$project$IMP$Syntax$EParens, ws, e1_);
 			case 'EList':
+				var ws = e.a;
 				var es = e.b;
 				return A2(
 					$author$project$IMP$Syntax$EList,
-					_List_Nil,
+					ws,
 					A2(
 						$elm$core$List$map,
 						function (e_) {
 							return A3($author$project$IMP$Eval$simplifyExpr, store, e_, holeBindings);
 						},
 						es));
-			case 'EIndex':
-				var e1 = e.b;
-				var e2 = e.c;
-				var _v5 = A3(
-					$author$project$IMP$Eval$findIndex,
-					store,
-					holeBindings,
-					A3($author$project$IMP$Syntax$EIndex, _List_Nil, e1, e2));
-				var x = _v5.a;
-				var p = _v5.b;
-				switch (p.$) {
-					case 'VHole':
-						var e1_ = A3($author$project$IMP$Eval$simplifyExpr, store, e1, holeBindings);
-						var e2_ = A3($author$project$IMP$Eval$simplifyExpr, store, e2, holeBindings);
-						return A3($author$project$IMP$Syntax$EIndex, _List_Nil, e1_, e2_);
-					case 'VList':
-						var v1 = A3($author$project$IMP$Eval$eval, store, holeBindings, e1);
-						var v2 = A3($author$project$IMP$Eval$eval, store, holeBindings, e2);
-						switch (v1.$) {
-							case 'VList':
-								var vs = v1.a;
-								if (v2.$ === 'VInt') {
-									var i = v2.a;
-									return ((i >= 0) && (_Utils_cmp(
-										i,
-										$elm$core$List$length(vs)) < 0)) ? $author$project$IMP$Utils$value2Expr(
-										A2($author$project$IMP$Utils$nthValue, vs, i)) : $author$project$IMP$Syntax$EError('Index out of range');
-								} else {
-									return $author$project$IMP$Syntax$EError('Unsupported expression');
-								}
-							case 'VString':
-								var s = v1.a;
-								if (v2.$ === 'VInt') {
-									var i = v2.a;
-									return ((i >= 0) && (_Utils_cmp(
-										i,
-										$elm$core$String$length(s)) < 0)) ? $author$project$IMP$Utils$value2Expr(
-										$author$project$IMP$Syntax$VString(
-											A3($elm$core$String$slice, i, i + 1, s))) : $author$project$IMP$Syntax$EError('Index out of range');
-								} else {
-									return $author$project$IMP$Syntax$EError('Unsupported expression');
-								}
-							default:
-								return $author$project$IMP$Syntax$EError('Unsupported expression');
-						}
-					default:
-						return $author$project$IMP$Syntax$EError('Unsupported expression');
-				}
 			case 'ELength':
-				var e_ = e.b;
-				var e__ = A3($author$project$IMP$Eval$simplifyExpr, store, e_, holeBindings);
-				if (e__.$ === 'EList') {
-					var es = e__.b;
-					return A2(
-						$author$project$IMP$Syntax$EInt,
-						_List_Nil,
-						$elm$core$List$length(es));
+				var ws = e.a;
+				var e1 = e.b;
+				var e1_ = A3($author$project$IMP$Eval$simplifyExpr, store, e1, holeBindings);
+				var v1 = A3($author$project$IMP$Eval$eval, store, holeBindings, e1_);
+				if ($author$project$IMP$Eval$isFullyDet(v1)) {
+					switch (v1.$) {
+						case 'VString':
+							var s = v1.a;
+							return A2(
+								$author$project$IMP$Syntax$EInt,
+								_List_Nil,
+								$elm$core$String$length(s));
+						case 'VList':
+							var vs = v1.a;
+							return A2(
+								$author$project$IMP$Syntax$EInt,
+								_List_Nil,
+								$elm$core$List$length(vs));
+						default:
+							return A2($author$project$IMP$Syntax$ELength, ws, e1_);
+					}
 				} else {
-					return A2($author$project$IMP$Syntax$ELength, _List_Nil, e__);
+					return A2($author$project$IMP$Syntax$ELength, ws, e1_);
 				}
-			case 'EParens':
-				var e_ = e.b;
-				var e__ = A3($author$project$IMP$Eval$simplifyExpr, store, e_, holeBindings);
-				return A2($author$project$IMP$Syntax$EParens, _List_Nil, e__);
 			default:
 				return e;
 		}
 	});
-var $elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
+var $author$project$IMP$Eval$simplifyLhs = F3(
+	function (store, e, holeBindings) {
+		switch (e.$) {
+			case 'EVar':
+				var x = e.b;
+				return A2($author$project$IMP$Syntax$EVar, _List_Nil, x);
+			case 'EIndex':
+				var e1 = e.b;
+				var e2 = e.c;
+				return A3(
+					$author$project$IMP$Syntax$EIndex,
+					_List_Nil,
+					A3($author$project$IMP$Eval$simplifyLhs, store, e1, holeBindings),
+					A3($author$project$IMP$Eval$simplifyExpr, store, e2, holeBindings));
+			default:
+				return e;
 		}
 	});
-var $elm$core$List$member = F2(
-	function (x, xs) {
+var $author$project$IMP$Utils$snapshotParams = F2(
+	function (params, store) {
 		return A2(
-			$elm$core$List$any,
-			function (a) {
-				return _Utils_eq(a, x);
+			$elm$core$List$map,
+			function (x) {
+				return _Utils_Tuple2(
+					x,
+					A2($author$project$IMP$Utils$lookup, x, store));
 			},
-			xs);
+			params);
 	});
 var $author$project$IMP$Utils$unique = function (ls) {
 	unique:
@@ -7535,53 +8939,130 @@ var $elm$core$List$take = F2(
 	});
 var $author$project$IMP$Utils$updateValue = F3(
 	function (path, vs, v) {
-		if (vs.$ === 'VList') {
-			var vs_ = vs.a;
-			if (((path.$ === 'VList') && path.a.b) && (path.a.a.$ === 'VInt')) {
-				if (!path.a.b.b) {
-					var _v2 = path.a;
-					var i = _v2.a.a;
-					return $author$project$IMP$Syntax$VList(
-						_Utils_ap(
-							A2($elm$core$List$take, i, vs_),
-							_Utils_ap(
-								_List_fromArray(
-									[v]),
-								A2($elm$core$List$drop, i + 1, vs_))));
-				} else {
-					var _v3 = path.a;
-					var i = _v3.a.a;
-					var rest = _v3.b;
-					var oriv = $elm$core$List$head(
-						$elm$core$List$reverse(
-							A2($elm$core$List$take, i + 1, vs_)));
-					if (oriv.$ === 'Just') {
-						var oriv_ = oriv.a;
-						var newv = A3(
-							$author$project$IMP$Utils$updateValue,
-							$author$project$IMP$Syntax$VList(rest),
-							oriv_,
-							v);
+		switch (vs.$) {
+			case 'VList':
+				var vs_ = vs.a;
+				if (((path.$ === 'VList') && path.a.b) && (path.a.a.$ === 'VInt')) {
+					if (!path.a.b.b) {
+						var _v2 = path.a;
+						var i = _v2.a.a;
 						return $author$project$IMP$Syntax$VList(
 							_Utils_ap(
 								A2($elm$core$List$take, i, vs_),
 								_Utils_ap(
 									_List_fromArray(
-										[newv]),
+										[v]),
 									A2($elm$core$List$drop, i + 1, vs_))));
 					} else {
-						return $author$project$IMP$Syntax$VError('Index out of range');
+						var _v3 = path.a;
+						var i = _v3.a.a;
+						var rest = _v3.b;
+						var oriv = $elm$core$List$head(
+							$elm$core$List$reverse(
+								A2($elm$core$List$take, i + 1, vs_)));
+						if (oriv.$ === 'Just') {
+							var oriv_ = oriv.a;
+							var newv = A3(
+								$author$project$IMP$Utils$updateValue,
+								$author$project$IMP$Syntax$VList(rest),
+								oriv_,
+								v);
+							return $author$project$IMP$Syntax$VList(
+								_Utils_ap(
+									A2($elm$core$List$take, i, vs_),
+									_Utils_ap(
+										_List_fromArray(
+											[newv]),
+										A2($elm$core$List$drop, i + 1, vs_))));
+						} else {
+							return $author$project$IMP$Syntax$VError('Index out of range');
+						}
 					}
+				} else {
+					return $author$project$IMP$Syntax$VError('Unsupported expression');
 				}
-			} else {
+			case 'VHole':
+				return vs;
+			default:
 				return $author$project$IMP$Syntax$VError('Unsupported expression');
-			}
-		} else {
-			return $author$project$IMP$Syntax$VError('Unsupported expression');
 		}
 	});
-var $author$project$IMP$Eval$exec = F6(
-	function (store, holeBindings, riStmts, stmt, readOnly, scount) {
+var $author$project$IMP$Eval$bindParamsParallel = F8(
+	function (funcEnv, evalStore, holeBindings, riStmts, readOnly, scount, params, args) {
+		var _v24 = _Utils_Tuple2(params, args);
+		_v24$2:
+		while (true) {
+			if (!_v24.a.b) {
+				if (!_v24.b.b) {
+					return _Utils_Tuple2(
+						{readOnly: readOnly, riStmts: riStmts, scount: scount, store: evalStore},
+						_List_Nil);
+				} else {
+					break _v24$2;
+				}
+			} else {
+				if (_v24.b.b) {
+					var _v25 = _v24.a;
+					var p = _v25.a;
+					var ps = _v25.b;
+					var _v26 = _v24.b;
+					var e = _v26.a;
+					var es = _v26.b;
+					var res = A7(
+						$author$project$IMP$Eval$exec,
+						funcEnv,
+						evalStore,
+						holeBindings,
+						riStmts,
+						A3(
+							$author$project$IMP$Syntax$SAssign,
+							_List_Nil,
+							A2($author$project$IMP$Syntax$EVar, _List_Nil, p),
+							e),
+						readOnly,
+						scount);
+					if ($author$project$IMP$Utils$isErrorStore(res.store)) {
+						return _Utils_Tuple2(res, _List_Nil);
+					} else {
+						var _v27 = A8($author$project$IMP$Eval$bindParamsParallel, funcEnv, evalStore, holeBindings, res.riStmts, readOnly, res.scount, ps, es);
+						var rest = _v27.a;
+						var steps = _v27.b;
+						return $author$project$IMP$Utils$isErrorStore(rest.store) ? _Utils_Tuple2(rest, _List_Nil) : _Utils_Tuple2(
+							_Utils_update(
+								rest,
+								{
+									store: A3(
+										$author$project$IMP$Utils$overlayParams,
+										_List_fromArray(
+											[p]),
+										res.store,
+										rest.store)
+								}),
+							A2(
+								$elm$core$List$cons,
+								{arg: e, param: p, scount: scount},
+								steps));
+					}
+				} else {
+					break _v24$2;
+				}
+			}
+		}
+		return _Utils_Tuple2(
+			_Utils_update(
+				$author$project$IMP$Eval$defaultFwdRes,
+				{
+					store: _List_fromArray(
+						[
+							_Utils_Tuple2(
+							'error',
+							$author$project$IMP$Syntax$VError('Argument count mismatch'))
+						])
+				}),
+			_List_Nil);
+	});
+var $author$project$IMP$Eval$exec = F7(
+	function (funcEnv, store, holeBindings, riStmts, stmt, readOnly, scount) {
 		exec:
 		while (true) {
 			switch (stmt.$) {
@@ -7595,12 +9076,12 @@ var $author$project$IMP$Eval$exec = F6(
 						case 'EVar':
 							var x = e1.b;
 							var newReadOnly = A2($elm$core$Set$member, x, readOnly) ? A2($elm$core$Set$remove, x, readOnly) : readOnly;
-							_v2$3:
+							_v5$3:
 							while (true) {
 								switch (v.$) {
 									case 'VHole':
 										if (v.a.$ === 'HTmp') {
-											var _v3 = v.a;
+											var _v6 = v.a;
 											var e_ = A3($author$project$IMP$Eval$simplifyExpr, store, e2, holeBindings);
 											return {
 												readOnly: newReadOnly,
@@ -7624,7 +9105,7 @@ var $author$project$IMP$Eval$exec = F6(
 													store)
 											};
 										} else {
-											break _v2$3;
+											break _v5$3;
 										}
 									case 'VError':
 										return _Utils_update(
@@ -7678,7 +9159,7 @@ var $author$project$IMP$Eval$exec = F6(
 											};
 										}
 									default:
-										break _v2$3;
+										break _v5$3;
 								}
 							}
 							return {
@@ -7688,40 +9169,43 @@ var $author$project$IMP$Eval$exec = F6(
 								store: A3($author$project$IMP$Utils$updateStore, x, v, store)
 							};
 						case 'EIndex':
-							var _v4 = A3($author$project$IMP$Eval$findIndex, store, holeBindings, e1);
-							var x = _v4.a;
-							var path = _v4.b;
+							var _v7 = A3($author$project$IMP$Eval$findIndex, store, holeBindings, e1);
+							var x = _v7.a;
+							var path = _v7.b;
 							var newReadOnly = A2($elm$core$Set$member, x, readOnly) ? A2($elm$core$Set$remove, x, readOnly) : readOnly;
+							var residualizeLoc = function () {
+								var e2_ = A3($author$project$IMP$Eval$simplifyExpr, store, e2, holeBindings);
+								var e1_ = A3($author$project$IMP$Eval$simplifyLhs, store, e1, holeBindings);
+								return {
+									readOnly: newReadOnly,
+									riStmts: _Utils_ap(
+										riStmts,
+										_List_fromArray(
+											[
+												_Utils_Tuple3(
+												scount,
+												A3($author$project$IMP$Syntax$SAssign, _List_Nil, e1_, e2_),
+												store)
+											])),
+									scount: scount + 1,
+									store: A3(
+										$author$project$IMP$Utils$updateStore,
+										x,
+										A2(
+											$author$project$IMP$Syntax$VHole,
+											$author$project$IMP$Syntax$HVar(x),
+											scount),
+										store)
+								};
+							}();
 							switch (path.$) {
 								case 'VHole':
-									var e1_ = A3($author$project$IMP$Eval$simplifyExpr, store, e1, holeBindings);
-									var e2_ = A3($author$project$IMP$Eval$simplifyExpr, store, e2, holeBindings);
-									return {
-										readOnly: newReadOnly,
-										riStmts: _Utils_ap(
-											riStmts,
-											_List_fromArray(
-												[
-													_Utils_Tuple3(
-													scount,
-													A3($author$project$IMP$Syntax$SAssign, _List_Nil, e1_, e2_),
-													store)
-												])),
-										scount: scount + 1,
-										store: A3(
-											$author$project$IMP$Utils$updateStore,
-											x,
-											A2(
-												$author$project$IMP$Syntax$VHole,
-												$author$project$IMP$Syntax$HVar(x),
-												scount),
-											store)
-									};
+									return residualizeLoc;
 								case 'VList':
 									var p = path.a;
-									var oriv = A2($author$project$IMP$Utils$lookup, x, store);
-									if ((oriv.$ === 'Just') && (oriv.a.$ === 'VList')) {
-										var vs = oriv.a.a;
+									var _v9 = A2($author$project$IMP$Utils$lookup, x, store);
+									if ((_v9.$ === 'Just') && (_v9.a.$ === 'VList')) {
+										var vs = _v9.a.a;
 										switch (v.$) {
 											case 'VHole':
 												var newv = A3(
@@ -7735,8 +9219,8 @@ var $author$project$IMP$Eval$exec = F6(
 															$author$project$IMP$Syntax$HVar(x),
 															path),
 														scount));
-												var e1_ = A3($author$project$IMP$Eval$simplifyExpr, store, e1, holeBindings);
 												var e2_ = A3($author$project$IMP$Eval$simplifyExpr, store, e2, holeBindings);
+												var e1_ = A3($author$project$IMP$Eval$simplifyLhs, store, e1, holeBindings);
 												return {
 													readOnly: newReadOnly,
 													riStmts: _Utils_ap(
@@ -7755,13 +9239,13 @@ var $author$project$IMP$Eval$exec = F6(
 												var vs_ = v.a;
 												if ($author$project$IMP$Utils$hasHole(vs_)) {
 													var resv = A4($author$project$IMP$Eval$processHoleinList, vs_, x, scount, path);
-													var e1_ = A3($author$project$IMP$Eval$simplifyExpr, store, e1, holeBindings);
-													var e2_ = A3($author$project$IMP$Eval$simplifyExpr, store, e2, holeBindings);
 													var newv = A3(
 														$author$project$IMP$Utils$updateValue,
 														path,
 														$author$project$IMP$Syntax$VList(vs),
 														$author$project$IMP$Syntax$VList(resv));
+													var e2_ = A3($author$project$IMP$Eval$simplifyExpr, store, e2, holeBindings);
+													var e1_ = A3($author$project$IMP$Eval$simplifyLhs, store, e1, holeBindings);
 													return {
 														readOnly: newReadOnly,
 														riStmts: _Utils_ap(
@@ -7809,28 +9293,10 @@ var $author$project$IMP$Eval$exec = F6(
 												};
 										}
 									} else {
-										return _Utils_update(
-											$author$project$IMP$Eval$defaultFwdRes,
-											{
-												store: _List_fromArray(
-													[
-														_Utils_Tuple2(
-														'error',
-														$author$project$IMP$Syntax$VError('Index not found'))
-													])
-											});
+										return residualizeLoc;
 									}
 								default:
-									return _Utils_update(
-										$author$project$IMP$Eval$defaultFwdRes,
-										{
-											store: _List_fromArray(
-												[
-													_Utils_Tuple2(
-													'error',
-													$author$project$IMP$Syntax$VError('Index not found'))
-												])
-										});
+									return residualizeLoc;
 							}
 						default:
 							return _Utils_update(
@@ -7847,24 +9313,41 @@ var $author$project$IMP$Eval$exec = F6(
 				case 'SSeq':
 					var s1 = stmt.b;
 					var s2 = stmt.c;
-					var res1 = A6($author$project$IMP$Eval$exec, store, holeBindings, riStmts, s1, readOnly, scount);
-					var res2 = A6($author$project$IMP$Eval$exec, res1.store, holeBindings, res1.riStmts, s2, res1.readOnly, res1.scount);
-					return res2;
+					var res1 = A7($author$project$IMP$Eval$exec, funcEnv, store, holeBindings, riStmts, s1, readOnly, scount);
+					if ($author$project$IMP$Utils$isErrorStore(res1.store)) {
+						return res1;
+					} else {
+						var $temp$funcEnv = funcEnv,
+							$temp$store = res1.store,
+							$temp$holeBindings = holeBindings,
+							$temp$riStmts = res1.riStmts,
+							$temp$stmt = s2,
+							$temp$readOnly = res1.readOnly,
+							$temp$scount = res1.scount;
+						funcEnv = $temp$funcEnv;
+						store = $temp$store;
+						holeBindings = $temp$holeBindings;
+						riStmts = $temp$riStmts;
+						stmt = $temp$stmt;
+						readOnly = $temp$readOnly;
+						scount = $temp$scount;
+						continue exec;
+					}
 				case 'SIf':
 					var e = stmt.b;
 					var s1 = stmt.c;
 					var s2 = stmt.d;
 					var v = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
-					_v8$3:
+					_v11$3:
 					while (true) {
 						switch (v.$) {
 							case 'VHole':
 								if (v.a.$ === 'HTmp') {
-									var _v9 = v.a;
+									var _v12 = v.a;
 									var mod = $author$project$IMP$Utils$unique(
 										_Utils_ap(
-											$author$project$IMP$Utils$modVars(s1),
-											$author$project$IMP$Utils$modVars(s2)));
+											A2($author$project$IMP$Utils$modVars, funcEnv, s1),
+											A2($author$project$IMP$Utils$modVars, funcEnv, s2)));
 									var store_ = A3($author$project$IMP$Utils$polluteState, mod, store, scount);
 									var e_ = A3($author$project$IMP$Eval$simplifyExpr, store, e, holeBindings);
 									return {
@@ -7882,16 +9365,18 @@ var $author$project$IMP$Eval$exec = F6(
 										store: store_
 									};
 								} else {
-									break _v8$3;
+									break _v11$3;
 								}
 							case 'VBool':
 								if (v.a) {
-									var $temp$store = store,
+									var $temp$funcEnv = funcEnv,
+										$temp$store = store,
 										$temp$holeBindings = holeBindings,
 										$temp$riStmts = riStmts,
 										$temp$stmt = s1,
 										$temp$readOnly = readOnly,
 										$temp$scount = scount;
+									funcEnv = $temp$funcEnv;
 									store = $temp$store;
 									holeBindings = $temp$holeBindings;
 									riStmts = $temp$riStmts;
@@ -7900,12 +9385,14 @@ var $author$project$IMP$Eval$exec = F6(
 									scount = $temp$scount;
 									continue exec;
 								} else {
-									var $temp$store = store,
+									var $temp$funcEnv = funcEnv,
+										$temp$store = store,
 										$temp$holeBindings = holeBindings,
 										$temp$riStmts = riStmts,
 										$temp$stmt = s2,
 										$temp$readOnly = readOnly,
 										$temp$scount = scount;
+									funcEnv = $temp$funcEnv;
 									store = $temp$store;
 									holeBindings = $temp$holeBindings;
 									riStmts = $temp$riStmts;
@@ -7915,7 +9402,7 @@ var $author$project$IMP$Eval$exec = F6(
 									continue exec;
 								}
 							default:
-								break _v8$3;
+								break _v11$3;
 						}
 					}
 					return _Utils_update(
@@ -7931,15 +9418,15 @@ var $author$project$IMP$Eval$exec = F6(
 				case 'SWhile':
 					var e = stmt.b;
 					var s = stmt.c;
-					var _v10 = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
-					_v10$3:
+					var _v13 = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
+					_v13$3:
 					while (true) {
-						switch (_v10.$) {
+						switch (_v13.$) {
 							case 'VHole':
-								if (_v10.a.$ === 'HTmp') {
-									var _v11 = _v10.a;
+								if (_v13.a.$ === 'HTmp') {
+									var _v14 = _v13.a;
 									var mod = $author$project$IMP$Utils$unique(
-										$author$project$IMP$Utils$modVars(s));
+										A2($author$project$IMP$Utils$modVars, funcEnv, s));
 									var store_ = A3($author$project$IMP$Utils$polluteState, mod, store, scount);
 									var e_ = A3($author$project$IMP$Eval$simplifyExpr, store, e, holeBindings);
 									return {
@@ -7966,16 +9453,18 @@ var $author$project$IMP$Eval$exec = F6(
 										store: store_
 									};
 								} else {
-									break _v10$3;
+									break _v13$3;
 								}
 							case 'VBool':
-								if (_v10.a) {
-									var $temp$store = store,
+								if (_v13.a) {
+									var $temp$funcEnv = funcEnv,
+										$temp$store = store,
 										$temp$holeBindings = holeBindings,
 										$temp$riStmts = riStmts,
 										$temp$stmt = A3($author$project$IMP$Syntax$SSeq, _List_Nil, s, stmt),
 										$temp$readOnly = readOnly,
 										$temp$scount = scount;
+									funcEnv = $temp$funcEnv;
 									store = $temp$store;
 									holeBindings = $temp$holeBindings;
 									riStmts = $temp$riStmts;
@@ -7987,7 +9476,7 @@ var $author$project$IMP$Eval$exec = F6(
 									return {readOnly: readOnly, riStmts: riStmts, scount: scount, store: store};
 								}
 							default:
-								break _v10$3;
+								break _v13$3;
 						}
 					}
 					return _Utils_update(
@@ -8003,15 +9492,15 @@ var $author$project$IMP$Eval$exec = F6(
 				case 'SRead':
 					var x = stmt.b;
 					var input = A2($author$project$IMP$Utils$lookup, 'input', store);
-					_v12$2:
+					_v15$2:
 					while (true) {
 						if (input.$ === 'Just') {
 							switch (input.a.$) {
 								case 'VList':
 									if (input.a.a.b) {
-										var _v13 = input.a.a;
-										var v = _v13.a;
-										var rest = _v13.b;
+										var _v16 = input.a.a;
+										var v = _v16.a;
+										var rest = _v16.b;
 										var newstore = A3($author$project$IMP$Utils$updateStore, x, v, store);
 										return {
 											readOnly: A2($elm$core$Set$insert, x, readOnly),
@@ -8024,10 +9513,10 @@ var $author$project$IMP$Eval$exec = F6(
 												newstore)
 										};
 									} else {
-										break _v12$2;
+										break _v15$2;
 									}
 								case 'VHole':
-									var _v14 = input.a;
+									var _v17 = input.a;
 									var newstore = A3(
 										$author$project$IMP$Utils$updateStore,
 										x,
@@ -8058,10 +9547,10 @@ var $author$project$IMP$Eval$exec = F6(
 											newstore)
 									};
 								default:
-									break _v12$2;
+									break _v15$2;
 							}
 						} else {
-							break _v12$2;
+							break _v15$2;
 						}
 					}
 					return _Utils_update(
@@ -8077,13 +9566,13 @@ var $author$project$IMP$Eval$exec = F6(
 				case 'SPrint':
 					var e = stmt.b;
 					var oldval = A2($author$project$IMP$Utils$lookup, 'output', store);
-					var _v15 = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
-					_v15$3:
+					var _v18 = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
+					_v18$3:
 					while (true) {
-						switch (_v15.$) {
+						switch (_v18.$) {
 							case 'VHole':
-								if (_v15.a.$ === 'HTmp') {
-									var _v16 = _v15.a;
+								if (_v18.a.$ === 'HTmp') {
+									var _v19 = _v18.a;
 									var e_ = A3($author$project$IMP$Eval$simplifyExpr, store, e, holeBindings);
 									if ((oldval.$ === 'Just') && (oldval.a.$ === 'VList')) {
 										var vs = oldval.a.a;
@@ -8108,16 +9597,8 @@ var $author$project$IMP$Eval$exec = F6(
 														_List_fromArray(
 															[
 																A2(
-																$author$project$IMP$Syntax$VHole,
-																A2(
-																	$author$project$IMP$Utils$pathToName,
-																	$author$project$IMP$Syntax$HVar('output'),
-																	$author$project$IMP$Syntax$VList(
-																		_List_fromArray(
-																			[
-																				$author$project$IMP$Syntax$VInt(
-																				$elm$core$List$length(vs))
-																			]))),
+																$author$project$IMP$Utils$outputSuffixHole,
+																$elm$core$List$length(vs),
 																scount)
 															]))),
 												store)
@@ -8135,7 +9616,7 @@ var $author$project$IMP$Eval$exec = F6(
 											});
 									}
 								} else {
-									break _v15$3;
+									break _v18$3;
 								}
 							case 'VError':
 								return _Utils_update(
@@ -8149,7 +9630,7 @@ var $author$project$IMP$Eval$exec = F6(
 											])
 									});
 							case 'VList':
-								var vs = _v15.a;
+								var vs = _v18.a;
 								if ($author$project$IMP$Utils$hasHole(vs)) {
 									var e_ = A3($author$project$IMP$Eval$simplifyExpr, store, e, holeBindings);
 									if ((oldval.$ === 'Just') && (oldval.a.$ === 'VList')) {
@@ -8234,10 +9715,10 @@ var $author$project$IMP$Eval$exec = F6(
 									}
 								}
 							default:
-								break _v15$3;
+								break _v18$3;
 						}
 					}
-					var v = _v15;
+					var v = _v18;
 					if ((oldval.$ === 'Just') && (oldval.a.$ === 'VList')) {
 						var vs = oldval.a.a;
 						return {
@@ -8266,6 +9747,21 @@ var $author$project$IMP$Eval$exec = F6(
 									])
 							});
 					}
+				case 'SFuncDef':
+					return _Utils_update(
+						$author$project$IMP$Eval$defaultFwdRes,
+						{
+							store: _List_fromArray(
+								[
+									_Utils_Tuple2(
+									'error',
+									$author$project$IMP$Syntax$VError('function definition is not allowed during execution'))
+								])
+						});
+				case 'SFuncCall':
+					var name = stmt.b;
+					var args = stmt.c;
+					return A8($author$project$IMP$Eval$execFuncCall, funcEnv, store, holeBindings, riStmts, readOnly, scount, name, args);
 				default:
 					var s = stmt.a;
 					return _Utils_update(
@@ -8281,100 +9777,66 @@ var $author$project$IMP$Eval$exec = F6(
 			}
 		}
 	});
-var $elm$parser$Parser$ExpectingEnd = {$: 'ExpectingEnd'};
-var $elm$parser$Parser$Advanced$Bad = F2(
-	function (a, b) {
-		return {$: 'Bad', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$Good = F3(
-	function (a, b, c) {
-		return {$: 'Good', a: a, b: b, c: c};
-	});
-var $elm$parser$Parser$Advanced$Parser = function (a) {
-	return {$: 'Parser', a: a};
-};
-var $elm$parser$Parser$Advanced$AddRight = F2(
-	function (a, b) {
-		return {$: 'AddRight', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$DeadEnd = F4(
-	function (row, col, problem, contextStack) {
-		return {col: col, contextStack: contextStack, problem: problem, row: row};
-	});
-var $elm$parser$Parser$Advanced$Empty = {$: 'Empty'};
-var $elm$parser$Parser$Advanced$fromState = F2(
-	function (s, x) {
-		return A2(
-			$elm$parser$Parser$Advanced$AddRight,
-			$elm$parser$Parser$Advanced$Empty,
-			A4($elm$parser$Parser$Advanced$DeadEnd, s.row, s.col, x, s.context));
-	});
-var $elm$parser$Parser$Advanced$end = function (x) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return _Utils_eq(
-				$elm$core$String$length(s.src),
-				s.offset) ? A3($elm$parser$Parser$Advanced$Good, false, _Utils_Tuple0, s) : A2(
-				$elm$parser$Parser$Advanced$Bad,
-				false,
-				A2($elm$parser$Parser$Advanced$fromState, s, x));
-		});
-};
-var $elm$parser$Parser$end = $elm$parser$Parser$Advanced$end($elm$parser$Parser$ExpectingEnd);
-var $elm$core$Basics$always = F2(
-	function (a, _v0) {
-		return a;
-	});
-var $elm$parser$Parser$Advanced$map2 = F3(
-	function (func, _v0, _v1) {
-		var parseA = _v0.a;
-		var parseB = _v1.a;
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s0) {
-				var _v2 = parseA(s0);
-				if (_v2.$ === 'Bad') {
-					var p = _v2.a;
-					var x = _v2.b;
-					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+var $author$project$IMP$Eval$execFuncCall = F8(
+	function (funcEnv, store, holeBindings, riStmts, readOnly, scount, name, args) {
+		var _v0 = A2($author$project$IMP$Utils$lookupFunc, name, funcEnv);
+		if (_v0.$ === 'Nothing') {
+			return _Utils_update(
+				$author$project$IMP$Eval$defaultFwdRes,
+				{
+					store: _List_fromArray(
+						[
+							_Utils_Tuple2(
+							'error',
+							$author$project$IMP$Syntax$VError('Function not found'))
+						])
+				});
+		} else {
+			var _v1 = _v0.a;
+			var params = _v1.a;
+			var body = _v1.b;
+			if (!_Utils_eq(
+				$elm$core$List$length(params),
+				$elm$core$List$length(args))) {
+				return _Utils_update(
+					$author$project$IMP$Eval$defaultFwdRes,
+					{
+						store: _List_fromArray(
+							[
+								_Utils_Tuple2(
+								'error',
+								$author$project$IMP$Syntax$VError('Argument count mismatch'))
+							])
+					});
+			} else {
+				var saved = A2($author$project$IMP$Utils$snapshotParams, params, store);
+				var readOnlyBound = A3($elm$core$List$foldl, $elm$core$Set$remove, readOnly, params);
+				var _v2 = A8($author$project$IMP$Eval$bindParamsParallel, funcEnv, store, holeBindings, riStmts, readOnlyBound, scount, params, args);
+				var bound = _v2.a;
+				if ($author$project$IMP$Utils$isErrorStore(bound.store)) {
+					return bound;
 				} else {
-					var p1 = _v2.a;
-					var a = _v2.b;
-					var s1 = _v2.c;
-					var _v3 = parseB(s1);
-					if (_v3.$ === 'Bad') {
-						var p2 = _v3.a;
-						var x = _v3.b;
-						return A2($elm$parser$Parser$Advanced$Bad, p1 || p2, x);
-					} else {
-						var p2 = _v3.a;
-						var b = _v3.b;
-						var s2 = _v3.c;
-						return A3(
-							$elm$parser$Parser$Advanced$Good,
-							p1 || p2,
-							A2(func, a, b),
-							s2);
-					}
+					var res = A7($author$project$IMP$Eval$exec, funcEnv, bound.store, holeBindings, bound.riStmts, body, bound.readOnly, bound.scount);
+					return $author$project$IMP$Utils$isErrorStore(res.store) ? res : _Utils_update(
+						res,
+						{
+							readOnly: A3($author$project$IMP$Eval$restoreReadOnly, params, readOnly, res.readOnly),
+							store: A2($author$project$IMP$Utils$restoreParams, saved, res.store)
+						});
 				}
-			});
+			}
+		}
 	});
-var $elm$parser$Parser$Advanced$ignorer = F2(
-	function (keepParser, ignoreParser) {
-		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$always, keepParser, ignoreParser);
+var $author$project$IMP$Syntax$SFuncDef = F4(
+	function (a, b, c, d) {
+		return {$: 'SFuncDef', a: a, b: b, c: c, d: d};
 	});
-var $elm$parser$Parser$ignorer = $elm$parser$Parser$Advanced$ignorer;
 var $author$project$IMP$Parser_$AIndex = F3(
 	function (a, b, c) {
 		return {$: 'AIndex', a: a, b: b, c: c};
 	});
 var $author$project$IMP$Parser_$ALength = function (a) {
 	return {$: 'ALength', a: a};
-};
-var $elm$parser$Parser$Done = function (a) {
-	return {$: 'Done', a: a};
-};
-var $elm$parser$Parser$Loop = function (a) {
-	return {$: 'Loop', a: a};
 };
 var $author$project$IMP$Parser_$applySuffix = F2(
 	function (suf, acc) {
@@ -8397,37 +9859,6 @@ var $author$project$IMP$Parser_$applySuffix = F2(
 				acc);
 		}
 	});
-var $elm$parser$Parser$Advanced$andThen = F2(
-	function (callback, _v0) {
-		var parseA = _v0.a;
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s0) {
-				var _v1 = parseA(s0);
-				if (_v1.$ === 'Bad') {
-					var p = _v1.a;
-					var x = _v1.b;
-					return A2($elm$parser$Parser$Advanced$Bad, p, x);
-				} else {
-					var p1 = _v1.a;
-					var a = _v1.b;
-					var s1 = _v1.c;
-					var _v2 = callback(a);
-					var parseB = _v2.a;
-					var _v3 = parseB(s1);
-					if (_v3.$ === 'Bad') {
-						var p2 = _v3.a;
-						var x = _v3.b;
-						return A2($elm$parser$Parser$Advanced$Bad, p1 || p2, x);
-					} else {
-						var p2 = _v3.a;
-						var b = _v3.b;
-						var s2 = _v3.c;
-						return A3($elm$parser$Parser$Advanced$Good, p1 || p2, b, s2);
-					}
-				}
-			});
-	});
-var $elm$parser$Parser$andThen = $elm$parser$Parser$Advanced$andThen;
 var $elm$parser$Parser$Advanced$backtrackable = function (_v0) {
 	var parse = _v0.a;
 	return $elm$parser$Parser$Advanced$Parser(
@@ -8445,54 +9876,6 @@ var $elm$parser$Parser$Advanced$backtrackable = function (_v0) {
 };
 var $elm$parser$Parser$backtrackable = $elm$parser$Parser$Advanced$backtrackable;
 var $Punie$elm_parser_extras$Parser$Expression$initOps = {lassoc: _List_Nil, nassoc: _List_Nil, postfix: _List_Nil, prefix: _List_Nil, rassoc: _List_Nil};
-var $elm$parser$Parser$Advanced$keeper = F2(
-	function (parseFunc, parseArg) {
-		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$apL, parseFunc, parseArg);
-	});
-var $elm$parser$Parser$keeper = $elm$parser$Parser$Advanced$keeper;
-var $elm$parser$Parser$Advanced$Append = F2(
-	function (a, b) {
-		return {$: 'Append', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$oneOfHelp = F3(
-	function (s0, bag, parsers) {
-		oneOfHelp:
-		while (true) {
-			if (!parsers.b) {
-				return A2($elm$parser$Parser$Advanced$Bad, false, bag);
-			} else {
-				var parse = parsers.a.a;
-				var remainingParsers = parsers.b;
-				var _v1 = parse(s0);
-				if (_v1.$ === 'Good') {
-					var step = _v1;
-					return step;
-				} else {
-					var step = _v1;
-					var p = step.a;
-					var x = step.b;
-					if (p) {
-						return step;
-					} else {
-						var $temp$s0 = s0,
-							$temp$bag = A2($elm$parser$Parser$Advanced$Append, bag, x),
-							$temp$parsers = remainingParsers;
-						s0 = $temp$s0;
-						bag = $temp$bag;
-						parsers = $temp$parsers;
-						continue oneOfHelp;
-					}
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$oneOf = function (parsers) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return A3($elm$parser$Parser$Advanced$oneOfHelp, s, $elm$parser$Parser$Advanced$Empty, parsers);
-		});
-};
-var $elm$parser$Parser$oneOf = $elm$parser$Parser$Advanced$oneOf;
 var $elm$core$Tuple$pair = F2(
 	function (a, b) {
 		return _Utils_Tuple2(a, b);
@@ -8564,13 +9947,6 @@ var $Punie$elm_parser_extras$Parser$Expression$splitOp = F2(
 					});
 		}
 	});
-var $elm$parser$Parser$Advanced$succeed = function (a) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return A3($elm$parser$Parser$Advanced$Good, false, a, s);
-		});
-};
-var $elm$parser$Parser$succeed = $elm$parser$Parser$Advanced$succeed;
 var $Punie$elm_parser_extras$Parser$Expression$makeParser = F2(
 	function (ops, term) {
 		var ambiguous = F2(
@@ -8724,137 +10100,6 @@ var $Punie$elm_parser_extras$Parser$Expression$buildExpressionParser = F2(
 	function (operators, simpleExpr) {
 		return A3($elm$core$List$foldl, $Punie$elm_parser_extras$Parser$Expression$makeParser, simpleExpr, operators);
 	});
-var $elm$parser$Parser$ExpectingKeyword = function (a) {
-	return {$: 'ExpectingKeyword', a: a};
-};
-var $elm$parser$Parser$Advanced$Token = F2(
-	function (a, b) {
-		return {$: 'Token', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$isSubChar = _Parser_isSubChar;
-var $elm$parser$Parser$Advanced$isSubString = _Parser_isSubString;
-var $elm$parser$Parser$Advanced$keyword = function (_v0) {
-	var kwd = _v0.a;
-	var expecting = _v0.b;
-	var progress = !$elm$core$String$isEmpty(kwd);
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var _v1 = A5($elm$parser$Parser$Advanced$isSubString, kwd, s.offset, s.row, s.col, s.src);
-			var newOffset = _v1.a;
-			var newRow = _v1.b;
-			var newCol = _v1.c;
-			return (_Utils_eq(newOffset, -1) || (0 <= A3(
-				$elm$parser$Parser$Advanced$isSubChar,
-				function (c) {
-					return $elm$core$Char$isAlphaNum(c) || _Utils_eq(
-						c,
-						_Utils_chr('_'));
-				},
-				newOffset,
-				s.src))) ? A2(
-				$elm$parser$Parser$Advanced$Bad,
-				false,
-				A2($elm$parser$Parser$Advanced$fromState, s, expecting)) : A3(
-				$elm$parser$Parser$Advanced$Good,
-				progress,
-				_Utils_Tuple0,
-				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
-		});
-};
-var $elm$parser$Parser$keyword = function (kwd) {
-	return $elm$parser$Parser$Advanced$keyword(
-		A2(
-			$elm$parser$Parser$Advanced$Token,
-			kwd,
-			$elm$parser$Parser$ExpectingKeyword(kwd)));
-};
-var $elm$parser$Parser$Advanced$chompWhileHelp = F5(
-	function (isGood, offset, row, col, s0) {
-		chompWhileHelp:
-		while (true) {
-			var newOffset = A3($elm$parser$Parser$Advanced$isSubChar, isGood, offset, s0.src);
-			if (_Utils_eq(newOffset, -1)) {
-				return A3(
-					$elm$parser$Parser$Advanced$Good,
-					_Utils_cmp(s0.offset, offset) < 0,
-					_Utils_Tuple0,
-					{col: col, context: s0.context, indent: s0.indent, offset: offset, row: row, src: s0.src});
-			} else {
-				if (_Utils_eq(newOffset, -2)) {
-					var $temp$isGood = isGood,
-						$temp$offset = offset + 1,
-						$temp$row = row + 1,
-						$temp$col = 1,
-						$temp$s0 = s0;
-					isGood = $temp$isGood;
-					offset = $temp$offset;
-					row = $temp$row;
-					col = $temp$col;
-					s0 = $temp$s0;
-					continue chompWhileHelp;
-				} else {
-					var $temp$isGood = isGood,
-						$temp$offset = newOffset,
-						$temp$row = row,
-						$temp$col = col + 1,
-						$temp$s0 = s0;
-					isGood = $temp$isGood;
-					offset = $temp$offset;
-					row = $temp$row;
-					col = $temp$col;
-					s0 = $temp$s0;
-					continue chompWhileHelp;
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$chompWhile = function (isGood) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return A5($elm$parser$Parser$Advanced$chompWhileHelp, isGood, s.offset, s.row, s.col, s);
-		});
-};
-var $elm$parser$Parser$chompWhile = $elm$parser$Parser$Advanced$chompWhile;
-var $elm$parser$Parser$Advanced$mapChompedString = F2(
-	function (func, _v0) {
-		var parse = _v0.a;
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s0) {
-				var _v1 = parse(s0);
-				if (_v1.$ === 'Bad') {
-					var p = _v1.a;
-					var x = _v1.b;
-					return A2($elm$parser$Parser$Advanced$Bad, p, x);
-				} else {
-					var p = _v1.a;
-					var a = _v1.b;
-					var s1 = _v1.c;
-					return A3(
-						$elm$parser$Parser$Advanced$Good,
-						p,
-						A2(
-							func,
-							A3($elm$core$String$slice, s0.offset, s1.offset, s0.src),
-							a),
-						s1);
-				}
-			});
-	});
-var $elm$parser$Parser$Advanced$getChompedString = function (parser) {
-	return A2($elm$parser$Parser$Advanced$mapChompedString, $elm$core$Basics$always, parser);
-};
-var $elm$parser$Parser$getChompedString = $elm$parser$Parser$Advanced$getChompedString;
-var $author$project$IMP$Parser_$isWhiteSpace = function (c) {
-	return _Utils_eq(
-		c,
-		_Utils_chr(' ')) || (_Utils_eq(
-		c,
-		_Utils_chr('\n')) || _Utils_eq(
-		c,
-		_Utils_chr('\r')));
-};
-var $author$project$IMP$Parser_$mSpaces = $elm$parser$Parser$getChompedString(
-	$elm$parser$Parser$chompWhile($author$project$IMP$Parser_$isWhiteSpace));
 var $author$project$IMP$Parser_$false = A2(
 	$elm$parser$Parser$keeper,
 	A2(
@@ -8869,9 +10114,6 @@ var $author$project$IMP$Parser_$false = A2(
 			}),
 		$elm$parser$Parser$keyword('false')),
 	$author$project$IMP$Parser_$mSpaces);
-var $author$project$IMP$Syntax$HOri = function (a) {
-	return {$: 'HOri', a: a};
-};
 var $author$project$IMP$Parser_$hole = A2(
 	$elm$parser$Parser$keeper,
 	A2(
@@ -8886,168 +10128,6 @@ var $author$project$IMP$Parser_$hole = A2(
 			}),
 		$elm$parser$Parser$keyword('_')),
 	$author$project$IMP$Parser_$mSpaces);
-var $elm$parser$Parser$ExpectingInt = {$: 'ExpectingInt'};
-var $elm$parser$Parser$Advanced$consumeBase = _Parser_consumeBase;
-var $elm$parser$Parser$Advanced$consumeBase16 = _Parser_consumeBase16;
-var $elm$parser$Parser$Advanced$bumpOffset = F2(
-	function (newOffset, s) {
-		return {col: s.col + (newOffset - s.offset), context: s.context, indent: s.indent, offset: newOffset, row: s.row, src: s.src};
-	});
-var $elm$parser$Parser$Advanced$chompBase10 = _Parser_chompBase10;
-var $elm$parser$Parser$Advanced$isAsciiCode = _Parser_isAsciiCode;
-var $elm$parser$Parser$Advanced$consumeExp = F2(
-	function (offset, src) {
-		if (A3($elm$parser$Parser$Advanced$isAsciiCode, 101, offset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 69, offset, src)) {
-			var eOffset = offset + 1;
-			var expOffset = (A3($elm$parser$Parser$Advanced$isAsciiCode, 43, eOffset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 45, eOffset, src)) ? (eOffset + 1) : eOffset;
-			var newOffset = A2($elm$parser$Parser$Advanced$chompBase10, expOffset, src);
-			return _Utils_eq(expOffset, newOffset) ? (-newOffset) : newOffset;
-		} else {
-			return offset;
-		}
-	});
-var $elm$parser$Parser$Advanced$consumeDotAndExp = F2(
-	function (offset, src) {
-		return A3($elm$parser$Parser$Advanced$isAsciiCode, 46, offset, src) ? A2(
-			$elm$parser$Parser$Advanced$consumeExp,
-			A2($elm$parser$Parser$Advanced$chompBase10, offset + 1, src),
-			src) : A2($elm$parser$Parser$Advanced$consumeExp, offset, src);
-	});
-var $elm$parser$Parser$Advanced$finalizeInt = F5(
-	function (invalid, handler, startOffset, _v0, s) {
-		var endOffset = _v0.a;
-		var n = _v0.b;
-		if (handler.$ === 'Err') {
-			var x = handler.a;
-			return A2(
-				$elm$parser$Parser$Advanced$Bad,
-				true,
-				A2($elm$parser$Parser$Advanced$fromState, s, x));
-		} else {
-			var toValue = handler.a;
-			return _Utils_eq(startOffset, endOffset) ? A2(
-				$elm$parser$Parser$Advanced$Bad,
-				_Utils_cmp(s.offset, startOffset) < 0,
-				A2($elm$parser$Parser$Advanced$fromState, s, invalid)) : A3(
-				$elm$parser$Parser$Advanced$Good,
-				true,
-				toValue(n),
-				A2($elm$parser$Parser$Advanced$bumpOffset, endOffset, s));
-		}
-	});
-var $elm$parser$Parser$Advanced$fromInfo = F4(
-	function (row, col, x, context) {
-		return A2(
-			$elm$parser$Parser$Advanced$AddRight,
-			$elm$parser$Parser$Advanced$Empty,
-			A4($elm$parser$Parser$Advanced$DeadEnd, row, col, x, context));
-	});
-var $elm$core$String$toFloat = _String_toFloat;
-var $elm$parser$Parser$Advanced$finalizeFloat = F6(
-	function (invalid, expecting, intSettings, floatSettings, intPair, s) {
-		var intOffset = intPair.a;
-		var floatOffset = A2($elm$parser$Parser$Advanced$consumeDotAndExp, intOffset, s.src);
-		if (floatOffset < 0) {
-			return A2(
-				$elm$parser$Parser$Advanced$Bad,
-				true,
-				A4($elm$parser$Parser$Advanced$fromInfo, s.row, s.col - (floatOffset + s.offset), invalid, s.context));
-		} else {
-			if (_Utils_eq(s.offset, floatOffset)) {
-				return A2(
-					$elm$parser$Parser$Advanced$Bad,
-					false,
-					A2($elm$parser$Parser$Advanced$fromState, s, expecting));
-			} else {
-				if (_Utils_eq(intOffset, floatOffset)) {
-					return A5($elm$parser$Parser$Advanced$finalizeInt, invalid, intSettings, s.offset, intPair, s);
-				} else {
-					if (floatSettings.$ === 'Err') {
-						var x = floatSettings.a;
-						return A2(
-							$elm$parser$Parser$Advanced$Bad,
-							true,
-							A2($elm$parser$Parser$Advanced$fromState, s, invalid));
-					} else {
-						var toValue = floatSettings.a;
-						var _v1 = $elm$core$String$toFloat(
-							A3($elm$core$String$slice, s.offset, floatOffset, s.src));
-						if (_v1.$ === 'Nothing') {
-							return A2(
-								$elm$parser$Parser$Advanced$Bad,
-								true,
-								A2($elm$parser$Parser$Advanced$fromState, s, invalid));
-						} else {
-							var n = _v1.a;
-							return A3(
-								$elm$parser$Parser$Advanced$Good,
-								true,
-								toValue(n),
-								A2($elm$parser$Parser$Advanced$bumpOffset, floatOffset, s));
-						}
-					}
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$number = function (c) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			if (A3($elm$parser$Parser$Advanced$isAsciiCode, 48, s.offset, s.src)) {
-				var zeroOffset = s.offset + 1;
-				var baseOffset = zeroOffset + 1;
-				return A3($elm$parser$Parser$Advanced$isAsciiCode, 120, zeroOffset, s.src) ? A5(
-					$elm$parser$Parser$Advanced$finalizeInt,
-					c.invalid,
-					c.hex,
-					baseOffset,
-					A2($elm$parser$Parser$Advanced$consumeBase16, baseOffset, s.src),
-					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 111, zeroOffset, s.src) ? A5(
-					$elm$parser$Parser$Advanced$finalizeInt,
-					c.invalid,
-					c.octal,
-					baseOffset,
-					A3($elm$parser$Parser$Advanced$consumeBase, 8, baseOffset, s.src),
-					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 98, zeroOffset, s.src) ? A5(
-					$elm$parser$Parser$Advanced$finalizeInt,
-					c.invalid,
-					c.binary,
-					baseOffset,
-					A3($elm$parser$Parser$Advanced$consumeBase, 2, baseOffset, s.src),
-					s) : A6(
-					$elm$parser$Parser$Advanced$finalizeFloat,
-					c.invalid,
-					c.expecting,
-					c._int,
-					c._float,
-					_Utils_Tuple2(zeroOffset, 0),
-					s)));
-			} else {
-				return A6(
-					$elm$parser$Parser$Advanced$finalizeFloat,
-					c.invalid,
-					c.expecting,
-					c._int,
-					c._float,
-					A3($elm$parser$Parser$Advanced$consumeBase, 10, s.offset, s.src),
-					s);
-			}
-		});
-};
-var $elm$parser$Parser$Advanced$int = F2(
-	function (expecting, invalid) {
-		return $elm$parser$Parser$Advanced$number(
-			{
-				binary: $elm$core$Result$Err(invalid),
-				expecting: expecting,
-				_float: $elm$core$Result$Err(invalid),
-				hex: $elm$core$Result$Err(invalid),
-				_int: $elm$core$Result$Ok($elm$core$Basics$identity),
-				invalid: invalid,
-				octal: $elm$core$Result$Err(invalid)
-			});
-	});
-var $elm$parser$Parser$int = A2($elm$parser$Parser$Advanced$int, $elm$parser$Parser$ExpectingInt, $elm$parser$Parser$ExpectingInt);
 var $author$project$IMP$Parser_$int_ = A2(
 	$elm$parser$Parser$keeper,
 	A2(
@@ -9063,105 +10143,6 @@ var $author$project$IMP$Parser_$int_ = A2(
 				})),
 		$elm$parser$Parser$int),
 	$author$project$IMP$Parser_$mSpaces);
-var $elm$parser$Parser$Advanced$lazy = function (thunk) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var _v0 = thunk(_Utils_Tuple0);
-			var parse = _v0.a;
-			return parse(s);
-		});
-};
-var $elm$parser$Parser$lazy = $elm$parser$Parser$Advanced$lazy;
-var $elm$parser$Parser$Advanced$loopHelp = F4(
-	function (p, state, callback, s0) {
-		loopHelp:
-		while (true) {
-			var _v0 = callback(state);
-			var parse = _v0.a;
-			var _v1 = parse(s0);
-			if (_v1.$ === 'Good') {
-				var p1 = _v1.a;
-				var step = _v1.b;
-				var s1 = _v1.c;
-				if (step.$ === 'Loop') {
-					var newState = step.a;
-					var $temp$p = p || p1,
-						$temp$state = newState,
-						$temp$callback = callback,
-						$temp$s0 = s1;
-					p = $temp$p;
-					state = $temp$state;
-					callback = $temp$callback;
-					s0 = $temp$s0;
-					continue loopHelp;
-				} else {
-					var result = step.a;
-					return A3($elm$parser$Parser$Advanced$Good, p || p1, result, s1);
-				}
-			} else {
-				var p1 = _v1.a;
-				var x = _v1.b;
-				return A2($elm$parser$Parser$Advanced$Bad, p || p1, x);
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$loop = F2(
-	function (state, callback) {
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s) {
-				return A4($elm$parser$Parser$Advanced$loopHelp, false, state, callback, s);
-			});
-	});
-var $elm$parser$Parser$Advanced$map = F2(
-	function (func, _v0) {
-		var parse = _v0.a;
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s0) {
-				var _v1 = parse(s0);
-				if (_v1.$ === 'Good') {
-					var p = _v1.a;
-					var a = _v1.b;
-					var s1 = _v1.c;
-					return A3(
-						$elm$parser$Parser$Advanced$Good,
-						p,
-						func(a),
-						s1);
-				} else {
-					var p = _v1.a;
-					var x = _v1.b;
-					return A2($elm$parser$Parser$Advanced$Bad, p, x);
-				}
-			});
-	});
-var $elm$parser$Parser$map = $elm$parser$Parser$Advanced$map;
-var $elm$parser$Parser$Advanced$Done = function (a) {
-	return {$: 'Done', a: a};
-};
-var $elm$parser$Parser$Advanced$Loop = function (a) {
-	return {$: 'Loop', a: a};
-};
-var $elm$parser$Parser$toAdvancedStep = function (step) {
-	if (step.$ === 'Loop') {
-		var s = step.a;
-		return $elm$parser$Parser$Advanced$Loop(s);
-	} else {
-		var a = step.a;
-		return $elm$parser$Parser$Advanced$Done(a);
-	}
-};
-var $elm$parser$Parser$loop = F2(
-	function (state, callback) {
-		return A2(
-			$elm$parser$Parser$Advanced$loop,
-			state,
-			function (s) {
-				return A2(
-					$elm$parser$Parser$map,
-					$elm$parser$Parser$toAdvancedStep,
-					callback(s));
-			});
-	});
 var $Punie$elm_parser_extras$Parser$Expression$AssocLeft = {$: 'AssocLeft'};
 var $Punie$elm_parser_extras$Parser$Expression$AssocNone = {$: 'AssocNone'};
 var $Punie$elm_parser_extras$Parser$Expression$Infix = F2(
@@ -9170,37 +10151,6 @@ var $Punie$elm_parser_extras$Parser$Expression$Infix = F2(
 	});
 var $Punie$elm_parser_extras$Parser$Expression$Prefix = function (a) {
 	return {$: 'Prefix', a: a};
-};
-var $elm$parser$Parser$ExpectingSymbol = function (a) {
-	return {$: 'ExpectingSymbol', a: a};
-};
-var $elm$parser$Parser$Advanced$token = function (_v0) {
-	var str = _v0.a;
-	var expecting = _v0.b;
-	var progress = !$elm$core$String$isEmpty(str);
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var _v1 = A5($elm$parser$Parser$Advanced$isSubString, str, s.offset, s.row, s.col, s.src);
-			var newOffset = _v1.a;
-			var newRow = _v1.b;
-			var newCol = _v1.c;
-			return _Utils_eq(newOffset, -1) ? A2(
-				$elm$parser$Parser$Advanced$Bad,
-				false,
-				A2($elm$parser$Parser$Advanced$fromState, s, expecting)) : A3(
-				$elm$parser$Parser$Advanced$Good,
-				progress,
-				_Utils_Tuple0,
-				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
-		});
-};
-var $elm$parser$Parser$Advanced$symbol = $elm$parser$Parser$Advanced$token;
-var $elm$parser$Parser$symbol = function (str) {
-	return $elm$parser$Parser$Advanced$symbol(
-		A2(
-			$elm$parser$Parser$Advanced$Token,
-			str,
-			$elm$parser$Parser$ExpectingSymbol(str)));
 };
 var $author$project$IMP$Parser_$bopParser = function (s) {
 	return A2(
@@ -9218,10 +10168,6 @@ var $author$project$IMP$Parser_$bopParser = function (s) {
 			$elm$parser$Parser$symbol(s)),
 		$author$project$IMP$Parser_$mSpaces);
 };
-var $author$project$IMP$Syntax$ENot = F2(
-	function (a, b) {
-		return {$: 'ENot', a: a, b: b};
-	});
 var $author$project$IMP$Parser_$uopParser = A2(
 	$elm$parser$Parser$keeper,
 	A2(
@@ -9315,41 +10261,6 @@ var $elm$core$Tuple$second = function (_v0) {
 	var y = _v0.b;
 	return y;
 };
-var $elm$parser$Parser$Advanced$findSubString = _Parser_findSubString;
-var $elm$parser$Parser$Advanced$chompUntil = function (_v0) {
-	var str = _v0.a;
-	var expecting = _v0.b;
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var _v1 = A5($elm$parser$Parser$Advanced$findSubString, str, s.offset, s.row, s.col, s.src);
-			var newOffset = _v1.a;
-			var newRow = _v1.b;
-			var newCol = _v1.c;
-			return _Utils_eq(newOffset, -1) ? A2(
-				$elm$parser$Parser$Advanced$Bad,
-				false,
-				A4($elm$parser$Parser$Advanced$fromInfo, newRow, newCol, expecting, s.context)) : A3(
-				$elm$parser$Parser$Advanced$Good,
-				_Utils_cmp(s.offset, newOffset) < 0,
-				_Utils_Tuple0,
-				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
-		});
-};
-var $elm$parser$Parser$Expecting = function (a) {
-	return {$: 'Expecting', a: a};
-};
-var $elm$parser$Parser$toToken = function (str) {
-	return A2(
-		$elm$parser$Parser$Advanced$Token,
-		str,
-		$elm$parser$Parser$Expecting(str));
-};
-var $elm$parser$Parser$chompUntil = function (str) {
-	return $elm$parser$Parser$Advanced$chompUntil(
-		$elm$parser$Parser$toToken(str));
-};
-var $author$project$IMP$Parser_$string_ = $elm$parser$Parser$getChompedString(
-	$elm$parser$Parser$chompUntil('\"'));
 var $author$project$IMP$Parser_$string = A2(
 	$elm$parser$Parser$keeper,
 	A2(
@@ -9385,81 +10296,6 @@ var $author$project$IMP$Parser_$true = A2(
 			}),
 		$elm$parser$Parser$keyword('true')),
 	$author$project$IMP$Parser_$mSpaces);
-var $author$project$IMP$Syntax$EVar = F2(
-	function (a, b) {
-		return {$: 'EVar', a: a, b: b};
-	});
-var $elm$core$Set$fromList = function (list) {
-	return A3($elm$core$List$foldl, $elm$core$Set$insert, $elm$core$Set$empty, list);
-};
-var $elm$parser$Parser$ExpectingVariable = {$: 'ExpectingVariable'};
-var $elm$parser$Parser$Advanced$varHelp = F7(
-	function (isGood, offset, row, col, src, indent, context) {
-		varHelp:
-		while (true) {
-			var newOffset = A3($elm$parser$Parser$Advanced$isSubChar, isGood, offset, src);
-			if (_Utils_eq(newOffset, -1)) {
-				return {col: col, context: context, indent: indent, offset: offset, row: row, src: src};
-			} else {
-				if (_Utils_eq(newOffset, -2)) {
-					var $temp$isGood = isGood,
-						$temp$offset = offset + 1,
-						$temp$row = row + 1,
-						$temp$col = 1,
-						$temp$src = src,
-						$temp$indent = indent,
-						$temp$context = context;
-					isGood = $temp$isGood;
-					offset = $temp$offset;
-					row = $temp$row;
-					col = $temp$col;
-					src = $temp$src;
-					indent = $temp$indent;
-					context = $temp$context;
-					continue varHelp;
-				} else {
-					var $temp$isGood = isGood,
-						$temp$offset = newOffset,
-						$temp$row = row,
-						$temp$col = col + 1,
-						$temp$src = src,
-						$temp$indent = indent,
-						$temp$context = context;
-					isGood = $temp$isGood;
-					offset = $temp$offset;
-					row = $temp$row;
-					col = $temp$col;
-					src = $temp$src;
-					indent = $temp$indent;
-					context = $temp$context;
-					continue varHelp;
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$variable = function (i) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var firstOffset = A3($elm$parser$Parser$Advanced$isSubChar, i.start, s.offset, s.src);
-			if (_Utils_eq(firstOffset, -1)) {
-				return A2(
-					$elm$parser$Parser$Advanced$Bad,
-					false,
-					A2($elm$parser$Parser$Advanced$fromState, s, i.expecting));
-			} else {
-				var s1 = _Utils_eq(firstOffset, -2) ? A7($elm$parser$Parser$Advanced$varHelp, i.inner, s.offset + 1, s.row + 1, 1, s.src, s.indent, s.context) : A7($elm$parser$Parser$Advanced$varHelp, i.inner, firstOffset, s.row, s.col + 1, s.src, s.indent, s.context);
-				var name = A3($elm$core$String$slice, s.offset, s1.offset, s.src);
-				return A2($elm$core$Set$member, name, i.reserved) ? A2(
-					$elm$parser$Parser$Advanced$Bad,
-					false,
-					A2($elm$parser$Parser$Advanced$fromState, s, i.expecting)) : A3($elm$parser$Parser$Advanced$Good, true, name, s1);
-			}
-		});
-};
-var $elm$parser$Parser$variable = function (i) {
-	return $elm$parser$Parser$Advanced$variable(
-		{expecting: $elm$parser$Parser$ExpectingVariable, inner: i.inner, reserved: i.reserved, start: i.start});
-};
 var $author$project$IMP$Parser_$varName = $elm$parser$Parser$variable(
 	{
 		inner: function (c) {
@@ -9469,7 +10305,7 @@ var $author$project$IMP$Parser_$varName = $elm$parser$Parser$variable(
 		},
 		reserved: $elm$core$Set$fromList(
 			_List_fromArray(
-				['if', 'then', 'else', 'end', 'while', 'do', 'skip', 'read', 'print', 'true', 'false', 'length', 'input', 'output'])),
+				['if', 'then', 'else', 'end', 'while', 'do', 'skip', 'read', 'print', 'true', 'false', 'length', 'input', 'output', 'func'])),
 		start: $elm$core$Char$isLower
 	});
 var $author$project$IMP$Parser_$var = A2(
@@ -9773,6 +10609,111 @@ var $author$project$IMP$Parser_$assign = A2(
 		function (_v1) {
 			return $author$project$IMP$Parser_$expr;
 		}));
+var $author$project$IMP$Syntax$SFuncCall = F3(
+	function (a, b, c) {
+		return {$: 'SFuncCall', a: a, b: b, c: c};
+	});
+var $author$project$IMP$Parser_$funcCall = A2(
+	$elm$parser$Parser$andThen,
+	function (_v0) {
+		var name = _v0.a;
+		var sOpen = _v0.b;
+		return A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				$elm$parser$Parser$succeed(
+					F2(
+						function (_v1, sClose) {
+							var commaWs = _v1.a;
+							var args = _v1.b;
+							return A3(
+								$author$project$IMP$Syntax$SFuncCall,
+								A2(
+									$elm$core$List$cons,
+									sOpen,
+									_Utils_ap(
+										commaWs,
+										_List_fromArray(
+											[sClose]))),
+								name,
+								args);
+						})),
+				A2(
+					$elm$parser$Parser$ignorer,
+					$author$project$IMP$Parser_$listItems,
+					$elm$parser$Parser$symbol(')'))),
+			$author$project$IMP$Parser_$mSpaces);
+	},
+	$elm$parser$Parser$backtrackable(
+		A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				$elm$parser$Parser$succeed(
+					F2(
+						function (name, sOpen) {
+							return _Utils_Tuple2(name, sOpen);
+						})),
+				A2(
+					$elm$parser$Parser$ignorer,
+					A2($elm$parser$Parser$ignorer, $author$project$IMP$Parser_$varName, $author$project$IMP$Parser_$mSpaces),
+					$elm$parser$Parser$symbol('('))),
+			$author$project$IMP$Parser_$mSpaces)));
+var $author$project$IMP$Parser_$paramTailHelper = function (revItems) {
+	return $elm$parser$Parser$oneOf(
+		_List_fromArray(
+			[
+				A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$keeper,
+					A2(
+						$elm$parser$Parser$ignorer,
+						$elm$parser$Parser$succeed(
+							F2(
+								function (s, p) {
+									return $elm$parser$Parser$Loop(
+										A2(
+											$elm$core$List$cons,
+											_Utils_Tuple2(s, p),
+											revItems));
+								})),
+						$elm$parser$Parser$symbol(',')),
+					$author$project$IMP$Parser_$mSpaces),
+				A2($elm$parser$Parser$ignorer, $author$project$IMP$Parser_$varName, $author$project$IMP$Parser_$mSpaces)),
+				A2(
+				$elm$parser$Parser$map,
+				function (_v0) {
+					return $elm$parser$Parser$Done(
+						$elm$core$List$reverse(revItems));
+				},
+				$elm$parser$Parser$succeed(_Utils_Tuple0))
+			]));
+};
+var $author$project$IMP$Parser_$paramTail = A2($elm$parser$Parser$loop, _List_Nil, $author$project$IMP$Parser_$paramTailHelper);
+var $author$project$IMP$Parser_$paramItems = $elm$parser$Parser$oneOf(
+	_List_fromArray(
+		[
+			A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				$elm$parser$Parser$succeed(
+					F2(
+						function (p, rest) {
+							return _Utils_Tuple2(
+								A2($elm$core$List$map, $elm$core$Tuple$first, rest),
+								A2(
+									$elm$core$List$cons,
+									p,
+									A2($elm$core$List$map, $elm$core$Tuple$second, rest)));
+						})),
+				A2($elm$parser$Parser$ignorer, $author$project$IMP$Parser_$varName, $author$project$IMP$Parser_$mSpaces)),
+			$author$project$IMP$Parser_$paramTail),
+			$elm$parser$Parser$succeed(
+			_Utils_Tuple2(_List_Nil, _List_Nil))
+		]));
 var $author$project$IMP$Parser_$print_ = A2(
 	$elm$parser$Parser$keeper,
 	A2(
@@ -9858,8 +10799,70 @@ function $author$project$IMP$Parser_$cyclic$astmt() {
 				$author$project$IMP$Parser_$cyclic$while_(),
 				$author$project$IMP$Parser_$read_,
 				$author$project$IMP$Parser_$print_,
+				$author$project$IMP$Parser_$cyclic$funcDef(),
+				$author$project$IMP$Parser_$funcCall,
 				$author$project$IMP$Parser_$assign
 			]));
+}
+function $author$project$IMP$Parser_$cyclic$funcDef() {
+	return A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$keeper,
+				A2(
+					$elm$parser$Parser$keeper,
+					A2(
+						$elm$parser$Parser$keeper,
+						A2(
+							$elm$parser$Parser$keeper,
+							A2(
+								$elm$parser$Parser$keeper,
+								A2(
+									$elm$parser$Parser$ignorer,
+									$elm$parser$Parser$succeed(
+										F7(
+											function (s1, name, sOpen, parts, sClose, body, sEnd) {
+												var _v6 = parts;
+												var commaWs = _v6.a;
+												var params = _v6.b;
+												return A4(
+													$author$project$IMP$Syntax$SFuncDef,
+													A2(
+														$elm$core$List$cons,
+														s1,
+														A2(
+															$elm$core$List$cons,
+															sOpen,
+															_Utils_ap(
+																commaWs,
+																_List_fromArray(
+																	[sClose, sEnd])))),
+													name,
+													params,
+													body);
+											})),
+									$elm$parser$Parser$keyword('func')),
+								$author$project$IMP$Parser_$mSpaces),
+							A2(
+								$elm$parser$Parser$ignorer,
+								A2($elm$parser$Parser$ignorer, $author$project$IMP$Parser_$varName, $author$project$IMP$Parser_$mSpaces),
+								$elm$parser$Parser$symbol('('))),
+						$author$project$IMP$Parser_$mSpaces),
+					A2(
+						$elm$parser$Parser$ignorer,
+						$author$project$IMP$Parser_$paramItems,
+						$elm$parser$Parser$symbol(')'))),
+				$author$project$IMP$Parser_$mSpaces),
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$lazy(
+					function (_v7) {
+						return $author$project$IMP$Parser_$cyclic$stmt();
+					}),
+				$elm$parser$Parser$keyword('end'))),
+		$author$project$IMP$Parser_$mSpaces);
 }
 function $author$project$IMP$Parser_$cyclic$if_() {
 	return A2(
@@ -9972,6 +10975,10 @@ try {
 	$author$project$IMP$Parser_$cyclic$astmt = function () {
 		return $author$project$IMP$Parser_$astmt;
 	};
+	var $author$project$IMP$Parser_$funcDef = $author$project$IMP$Parser_$cyclic$funcDef();
+	$author$project$IMP$Parser_$cyclic$funcDef = function () {
+		return $author$project$IMP$Parser_$funcDef;
+	};
 	var $author$project$IMP$Parser_$if_ = $author$project$IMP$Parser_$cyclic$if_();
 	$author$project$IMP$Parser_$cyclic$if_ = function () {
 		return $author$project$IMP$Parser_$if_;
@@ -9985,71 +10992,36 @@ try {
 		return $author$project$IMP$Parser_$while_;
 	};
 } catch ($) {
-	throw 'Some top-level definitions from `IMP.Parser_` are causing infinite recursion:\n\n  ┌─────┐\n  │    astmt\n  │     ↓\n  │    if_\n  │     ↓\n  │    stmt\n  │     ↓\n  │    while_\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
+	throw 'Some top-level definitions from `IMP.Parser_` are causing infinite recursion:\n\n  ┌─────┐\n  │    astmt\n  │     ↓\n  │    funcDef\n  │     ↓\n  │    if_\n  │     ↓\n  │    stmt\n  │     ↓\n  │    while_\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
 var $author$project$IMP$Parser_$program = $author$project$IMP$Parser_$stmt;
-var $elm$parser$Parser$DeadEnd = F3(
-	function (row, col, problem) {
-		return {col: col, problem: problem, row: row};
-	});
-var $elm$parser$Parser$problemToDeadEnd = function (p) {
-	return A3($elm$parser$Parser$DeadEnd, p.row, p.col, p.problem);
-};
-var $elm$parser$Parser$Advanced$bagToList = F2(
-	function (bag, list) {
-		bagToList:
-		while (true) {
-			switch (bag.$) {
-				case 'Empty':
-					return list;
-				case 'AddRight':
-					var bag1 = bag.a;
-					var x = bag.b;
-					var $temp$bag = bag1,
-						$temp$list = A2($elm$core$List$cons, x, list);
-					bag = $temp$bag;
-					list = $temp$list;
-					continue bagToList;
-				default:
-					var bag1 = bag.a;
-					var bag2 = bag.b;
-					var $temp$bag = bag1,
-						$temp$list = A2($elm$parser$Parser$Advanced$bagToList, bag2, list);
-					bag = $temp$bag;
-					list = $temp$list;
-					continue bagToList;
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$run = F2(
-	function (_v0, src) {
-		var parse = _v0.a;
-		var _v1 = parse(
-			{col: 1, context: _List_Nil, indent: 1, offset: 0, row: 1, src: src});
-		if (_v1.$ === 'Good') {
-			var value = _v1.b;
-			return $elm$core$Result$Ok(value);
-		} else {
-			var bag = _v1.b;
-			return $elm$core$Result$Err(
-				A2($elm$parser$Parser$Advanced$bagToList, bag, _List_Nil));
-		}
-	});
-var $elm$parser$Parser$run = F2(
-	function (parser, source) {
-		var _v0 = A2($elm$parser$Parser$Advanced$run, parser, source);
-		if (_v0.$ === 'Ok') {
-			var a = _v0.a;
-			return $elm$core$Result$Ok(a);
-		} else {
-			var problems = _v0.a;
-			return $elm$core$Result$Err(
-				A2($elm$core$List$map, $elm$parser$Parser$problemToDeadEnd, problems));
-		}
-	});
 var $author$project$IMP$Parser_$parse = $elm$parser$Parser$run(
 	A2($elm$parser$Parser$ignorer, $author$project$IMP$Parser_$program, $elm$parser$Parser$end));
 var $author$project$IMP$Syntax$SError = function (a) {
 	return {$: 'SError', a: a};
+};
+var $author$project$IMP$Utils$hasFuncDef = function (s) {
+	hasFuncDef:
+	while (true) {
+		switch (s.$) {
+			case 'SFuncDef':
+				return true;
+			case 'SSeq':
+				var s1 = s.b;
+				var s2 = s.c;
+				return $author$project$IMP$Utils$hasFuncDef(s1) || $author$project$IMP$Utils$hasFuncDef(s2);
+			case 'SIf':
+				var s1 = s.c;
+				var s2 = s.d;
+				return $author$project$IMP$Utils$hasFuncDef(s1) || $author$project$IMP$Utils$hasFuncDef(s2);
+			case 'SWhile':
+				var body = s.c;
+				var $temp$s = body;
+				s = $temp$s;
+				continue hasFuncDef;
+			default:
+				return false;
+		}
+	}
 };
 var $author$project$IMP$Utils$preprocessExpr = F2(
 	function (e, hcount) {
@@ -10206,7 +11178,7 @@ var $author$project$IMP$Utils$preprocessStmt = F2(
 				var hcount__ = _v5.b;
 				return _Utils_Tuple2(
 					A3($author$project$IMP$Syntax$SWhile, ws, e_, s__),
-					hcount_);
+					hcount__);
 			case 'SAssign':
 				var ws = s.a;
 				var e1 = s.b;
@@ -10253,13 +11225,86 @@ var $author$project$IMP$Utils$preprocessStmt = F2(
 				return _Utils_Tuple2(
 					$author$project$IMP$Syntax$SSkip(ws),
 					hcount);
-			default:
+			case 'SError':
 				var info = s.a;
 				return _Utils_Tuple2(
 					$author$project$IMP$Syntax$SError(info),
 					hcount);
+			case 'SFuncDef':
+				var ws = s.a;
+				var name = s.b;
+				var params = s.c;
+				var body = s.d;
+				var _v11 = A2($author$project$IMP$Utils$preprocessStmt, body, hcount);
+				var body_ = _v11.a;
+				var hcount_ = _v11.b;
+				return _Utils_Tuple2(
+					A4($author$project$IMP$Syntax$SFuncDef, ws, name, params, body_),
+					hcount_);
+			default:
+				var ws = s.a;
+				var name = s.b;
+				var args = s.c;
+				var _v12 = A2($author$project$IMP$Utils$preprocessList, args, hcount);
+				var args_ = _v12.a;
+				var hcount_ = _v12.b;
+				return _Utils_Tuple2(
+					A3($author$project$IMP$Syntax$SFuncCall, ws, name, args_),
+					hcount_);
 		}
 	});
+var $author$project$IMP$Utils$splitTopFuncs = function (s) {
+	_v0$2:
+	while (true) {
+		switch (s.$) {
+			case 'SSeq':
+				if (s.b.$ === 'SFuncDef') {
+					var ws = s.a;
+					var _v1 = s.b;
+					var defWs = _v1.a;
+					var name = _v1.b;
+					var params = _v1.c;
+					var body = _v1.d;
+					var rest = s.c;
+					var entry = {body: body, name: name, params: params, seqWs: ws, ws: defWs};
+					var _v2 = $author$project$IMP$Utils$splitTopFuncs(rest);
+					var env = _v2.a;
+					var bodyStmt = _v2.b;
+					return _Utils_Tuple2(
+						A2($elm$core$List$cons, entry, env),
+						bodyStmt);
+				} else {
+					break _v0$2;
+				}
+			case 'SFuncDef':
+				var defWs = s.a;
+				var name = s.b;
+				var params = s.c;
+				var body = s.d;
+				return _Utils_Tuple2(
+					_List_fromArray(
+						[
+							{body: body, name: name, params: params, seqWs: _List_Nil, ws: defWs}
+						]),
+					$author$project$IMP$Syntax$SSkip(_List_Nil));
+			default:
+				break _v0$2;
+		}
+	}
+	return _Utils_Tuple2(_List_Nil, s);
+};
+var $author$project$IMP$Utils$prepareStmt = function (s) {
+	var _v0 = A2($author$project$IMP$Utils$preprocessStmt, s, 0);
+	var s_ = _v0.a;
+	var hcount = _v0.b;
+	var _v1 = $author$project$IMP$Utils$splitTopFuncs(s_);
+	var env = _v1.a;
+	var rest = _v1.b;
+	return $author$project$IMP$Utils$hasFuncDef(rest) ? _Utils_Tuple3(
+		$author$project$IMP$Syntax$SError('function definition must be at the top of the program'),
+		hcount,
+		env) : _Utils_Tuple3(rest, hcount, env);
+};
 var $author$project$IMP$Printer$outputValue = function (store) {
 	outputValue:
 	while (true) {
@@ -10311,7 +11356,8 @@ var $author$project$IMP$Printer$printValue = function (v) {
 			return '\"' + (s + '\"');
 		case 'VHole':
 			var hn = v.a;
-			return '{ ' + ($author$project$IMP$Printer$printHoleName(hn) + ' }');
+			var id = v.b;
+			return '{ ' + ($author$project$IMP$Printer$printHoleName(hn) + ('@' + ($elm$core$String$fromInt(id) + ' }')));
 		case 'VList':
 			var vs = v.a;
 			return '[' + (A2(
@@ -10323,9 +11369,21 @@ var $author$project$IMP$Printer$printValue = function (v) {
 			return info;
 	}
 };
+var $author$project$IMP$Printer$printOutputList = function (vs) {
+	return A2(
+		$elm$core$String$join,
+		'\n',
+		A2($elm$core$List$map, $author$project$IMP$Printer$printValue, vs));
+};
 var $author$project$IMP$Printer$printOutput = function (store) {
-	return $author$project$IMP$Printer$printValue(
-		$author$project$IMP$Printer$outputValue(store));
+	var _v0 = $author$project$IMP$Printer$outputValue(store);
+	if (_v0.$ === 'VList') {
+		var vs = _v0.a;
+		return $author$project$IMP$Printer$printOutputList(vs);
+	} else {
+		var v = _v0;
+		return $author$project$IMP$Printer$printValue(v);
+	}
 };
 var $elm$core$Debug$toString = _Debug_toString;
 var $author$project$Controller$evalCodeToModel = F2(
@@ -10333,14 +11391,18 @@ var $author$project$Controller$evalCodeToModel = F2(
 		var _v0 = $author$project$IMP$Parser_$parse(code);
 		if (_v0.$ === 'Ok') {
 			var stmt = _v0.a;
-			var _v1 = A2($author$project$IMP$Utils$preprocessStmt, stmt, 0);
+			var _v1 = $author$project$IMP$Utils$prepareStmt(stmt);
 			var stmt_ = _v1.a;
-			var res = A6($author$project$IMP$Eval$exec, model.startStore, model.holeBindings, _List_Nil, stmt_, $elm$core$Set$empty, 0);
+			var funcEnv = _v1.c;
+			var res = $timeEval("Forward evaluation", function () {
+				return A7($author$project$IMP$Eval$exec, funcEnv, model.startStore, model.holeBindings, _List_Nil, stmt_, $elm$core$Set$empty, 0);
+			});
 			return _Utils_update(
 				model,
 				{
 					code: code,
 					codeBackup: code,
+					contextDrafts: $elm$core$Dict$empty,
 					currentContext: -1,
 					hbBackup: model.holeBindings,
 					isOutputChange: false,
@@ -10360,6 +11422,25 @@ var $author$project$Controller$evalCodeToModel = F2(
 				});
 		}
 	});
+var $author$project$Controller$parseContextDraft = function (model) {
+	return (model.currentContext < 0) ? $elm$core$Result$Err('No residual selected') : A2(
+		$author$project$Controller$parseStoreDrafts,
+		A2($author$project$Controller$riStoreOf, model.currentContext, model.riStmts),
+		model.contextDrafts);
+};
+var $author$project$Controller$commitContextDraft = function (model) {
+	var _v0 = $author$project$Controller$parseContextDraft(model);
+	if (_v0.$ === 'Ok') {
+		var store = _v0.a;
+		return _Utils_update(
+			model,
+			{
+				riStmts: A3($author$project$Controller$updateRiStore, model.currentContext, store, model.riStmts)
+			});
+	} else {
+		return model;
+	}
+};
 var $elm$core$List$append = F2(
 	function (xs, ys) {
 		if (!ys.b) {
@@ -10430,49 +11511,59 @@ var $author$project$Controller$collectOriInExpr = function (e) {
 	}
 };
 var $author$project$Controller$collectOriInStmt = function (s) {
-	switch (s.$) {
-		case 'SAssign':
-			var e1 = s.b;
-			var e2 = s.c;
-			return _Utils_ap(
-				$author$project$Controller$collectOriInExpr(e1),
-				$author$project$Controller$collectOriInExpr(e2));
-		case 'SIf':
-			var e = s.b;
-			var s1 = s.c;
-			var s2 = s.d;
-			return _Utils_ap(
-				$author$project$Controller$collectOriInExpr(e),
-				_Utils_ap(
+	collectOriInStmt:
+	while (true) {
+		switch (s.$) {
+			case 'SAssign':
+				var e1 = s.b;
+				var e2 = s.c;
+				return _Utils_ap(
+					$author$project$Controller$collectOriInExpr(e1),
+					$author$project$Controller$collectOriInExpr(e2));
+			case 'SIf':
+				var e = s.b;
+				var s1 = s.c;
+				var s2 = s.d;
+				return _Utils_ap(
+					$author$project$Controller$collectOriInExpr(e),
+					_Utils_ap(
+						$author$project$Controller$collectOriInStmt(s1),
+						$author$project$Controller$collectOriInStmt(s2)));
+			case 'SWhile':
+				var e = s.b;
+				var body = s.c;
+				return _Utils_ap(
+					$author$project$Controller$collectOriInExpr(e),
+					$author$project$Controller$collectOriInStmt(body));
+			case 'SPrint':
+				var e = s.b;
+				return $author$project$Controller$collectOriInExpr(e);
+			case 'SSeq':
+				var s1 = s.b;
+				var s2 = s.c;
+				return _Utils_ap(
 					$author$project$Controller$collectOriInStmt(s1),
-					$author$project$Controller$collectOriInStmt(s2)));
-		case 'SWhile':
-			var e = s.b;
-			var body = s.c;
-			return _Utils_ap(
-				$author$project$Controller$collectOriInExpr(e),
-				$author$project$Controller$collectOriInStmt(body));
-		case 'SPrint':
-			var e = s.b;
-			return $author$project$Controller$collectOriInExpr(e);
-		case 'SSeq':
-			var s1 = s.b;
-			var s2 = s.c;
-			return _Utils_ap(
-				$author$project$Controller$collectOriInStmt(s1),
-				$author$project$Controller$collectOriInStmt(s2));
-		default:
-			return _List_Nil;
+					$author$project$Controller$collectOriInStmt(s2));
+			case 'SFuncDef':
+				var body = s.d;
+				var $temp$s = body;
+				s = $temp$s;
+				continue collectOriInStmt;
+			case 'SFuncCall':
+				var args = s.c;
+				return A2($elm$core$List$concatMap, $author$project$Controller$collectOriInExpr, args);
+			default:
+				return _List_Nil;
+		}
 	}
 };
-var $author$project$Controller$collectOriInRiStmts = function (ris) {
+var $author$project$Controller$collectOriInFuncEnv = function (env) {
 	return A2(
 		$elm$core$List$concatMap,
-		function (_v0) {
-			var s = _v0.b;
-			return $author$project$Controller$collectOriInStmt(s);
+		function (f) {
+			return $author$project$Controller$collectOriInStmt(f.body);
 		},
-		ris);
+		env);
 };
 var $author$project$IMP$Utils$exprHoleKey = function (h) {
 	switch (h.$) {
@@ -10521,16 +11612,17 @@ var $author$project$Controller$uniqueOri = function (hs) {
 			_List_Nil,
 			hs));
 };
-var $author$project$Controller$openFill = function (model) {
+var $author$project$Controller$openFillWith = function (model) {
 	var _v0 = $author$project$IMP$Parser_$parse(model.code);
 	if (_v0.$ === 'Ok') {
 		var stmt = _v0.a;
-		var _v1 = A2($author$project$IMP$Utils$preprocessStmt, stmt, 0);
+		var _v1 = $author$project$IMP$Utils$prepareStmt(stmt);
 		var stmt_ = _v1.a;
+		var funcEnv = _v1.c;
 		var holes = $author$project$Controller$uniqueOri(
 			_Utils_ap(
 				$author$project$Controller$collectOriInStmt(stmt_),
-				$author$project$Controller$collectOriInRiStmts(model.riStmts)));
+				$author$project$Controller$collectOriInFuncEnv(funcEnv)));
 		return _Utils_update(
 			model,
 			{fillDraft: $elm$core$Dict$empty, fillSelected: $elm$core$Set$empty, filling: true, oriHoles: holes});
@@ -10542,6 +11634,10 @@ var $author$project$Controller$openFill = function (model) {
 				output: $elm$core$Debug$toString(info)
 			});
 	}
+};
+var $author$project$Controller$openFill = function (model) {
+	var model1 = $author$project$Controller$commitContextDraft(model);
+	return $author$project$Controller$openFillWith(model1);
 };
 var $author$project$Controller$currentInput = function (model) {
 	var _v0 = A2($author$project$IMP$Utils$lookup, 'input', model.startStore);
@@ -10561,6 +11657,25 @@ var $author$project$Controller$openInput = function (model) {
 				$author$project$Controller$currentInput(model))
 		});
 };
+var $author$project$Controller$applyContextDraft = function (model) {
+	if (model.currentContext < 0) {
+		return $elm$core$Result$Ok(model);
+	} else {
+		var _v0 = $author$project$Controller$parseContextDraft(model);
+		if (_v0.$ === 'Ok') {
+			var store = _v0.a;
+			return $elm$core$Result$Ok(
+				_Utils_update(
+					model,
+					{
+						riStmts: A3($author$project$Controller$updateRiStore, model.currentContext, store, model.riStmts)
+					}));
+		} else {
+			var info = _v0.a;
+			return $elm$core$Result$Err(info);
+		}
+	}
+};
 var $elm$core$Maybe$andThen = F2(
 	function (callback, maybeValue) {
 		if (maybeValue.$ === 'Just') {
@@ -10577,6 +11692,42 @@ var $elm$core$List$isEmpty = function (xs) {
 		return false;
 	}
 };
+var $author$project$IMP$Utils$isSkip = function (s) {
+	if (s.$ === 'SSkip') {
+		return true;
+	} else {
+		return false;
+	}
+};
+var $author$project$IMP$Utils$attachFuncs = F2(
+	function (env, body) {
+		if (!env.b) {
+			return body;
+		} else {
+			if (!env.b.b) {
+				var f = env.a;
+				var def = A4($author$project$IMP$Syntax$SFuncDef, f.ws, f.name, f.params, f.body);
+				return ($author$project$IMP$Utils$isSkip(body) && $elm$core$List$isEmpty(f.seqWs)) ? def : A3($author$project$IMP$Syntax$SSeq, f.seqWs, def, body);
+			} else {
+				var f = env.a;
+				var rest = env.b;
+				return A3(
+					$author$project$IMP$Syntax$SSeq,
+					f.seqWs,
+					A4($author$project$IMP$Syntax$SFuncDef, f.ws, f.name, f.params, f.body),
+					A2($author$project$IMP$Utils$attachFuncs, rest, body));
+			}
+		}
+	});
+var $author$project$Controller$collectOriInRiStmts = function (ris) {
+	return A2(
+		$elm$core$List$concatMap,
+		function (_v0) {
+			var s = _v0.b;
+			return $author$project$Controller$collectOriInStmt(s);
+		},
+		ris);
+};
 var $elm$core$Dict$fromList = function (assocs) {
 	return A3(
 		$elm$core$List$foldl,
@@ -10589,127 +11740,635 @@ var $elm$core$Dict$fromList = function (assocs) {
 		$elm$core$Dict$empty,
 		assocs);
 };
-var $elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return $elm$core$Maybe$Just(
-				f(value));
+var $author$project$Controller$contextDraftsOf = F2(
+	function (id, ris) {
+		var _v0 = A2($author$project$Controller$riStoreOf, id, ris);
+		if (_v0.$ === 'Just') {
+			var store = _v0.a;
+			return $elm$core$Dict$fromList(
+				A2(
+					$elm$core$List$map,
+					function (_v1) {
+						var x = _v1.a;
+						var v = _v1.b;
+						return _Utils_Tuple2(
+							x,
+							$author$project$IMP$Printer$printValue(v));
+					},
+					store));
 		} else {
-			return $elm$core$Maybe$Nothing;
+			return $elm$core$Dict$empty;
 		}
 	});
-var $author$project$IMP$Eval$splitIdSuffix = function (s) {
-	var _v0 = $elm$core$List$reverse(
-		A2($elm$core$String$indexes, '-', s));
-	if (_v0.b) {
-		var i = _v0.a;
-		var rest = A2($elm$core$String$dropLeft, i + 1, s);
-		var base = A2($elm$core$String$left, i, s);
-		return $elm$core$String$isEmpty(base) ? $elm$core$Maybe$Nothing : A2(
-			$elm$core$Maybe$map,
-			function (n) {
-				return _Utils_Tuple2(base, n);
-			},
-			$elm$core$String$toInt(rest));
+var $author$project$IMP$Eval$batchExec = F4(
+	function (funcEnv, hb, ris0, scount0) {
+		if (!ris0.b) {
+			return _Utils_Tuple3(_List_Nil, _List_Nil, scount0);
+		} else {
+			var _v1 = ris0.a;
+			var id = _v1.a;
+			var s = _v1.b;
+			var store = _v1.c;
+			var rest = ris0.b;
+			var res = A7($author$project$IMP$Eval$exec, funcEnv, store, hb, _List_Nil, s, $elm$core$Set$empty, scount0);
+			var _v2 = A4($author$project$IMP$Eval$batchExec, funcEnv, hb, rest, res.scount);
+			var stores = _v2.a;
+			var newris = _v2.b;
+			var scount = _v2.c;
+			return _Utils_Tuple3(
+				A2(
+					$elm$core$List$cons,
+					_Utils_Tuple2(id, res.store),
+					stores),
+				_Utils_ap(res.riStmts, newris),
+				scount);
+		}
+	});
+var $author$project$IMP$Eval$markDet = F2(
+	function (isDet, _v0) {
+		var hasDet = _v0.a;
+		var hasIndet = _v0.b;
+		return isDet ? _Utils_Tuple2(true, hasIndet) : _Utils_Tuple2(hasDet, true);
+	});
+var $author$project$IMP$Eval$canUpdatePath = F2(
+	function (vs, path) {
+		canUpdatePath:
+		while (true) {
+			switch (vs.$) {
+				case 'VHole':
+					return false;
+				case 'VList':
+					var vs_ = vs.a;
+					if (!path.b) {
+						return true;
+					} else {
+						if (path.a.$ === 'VInt') {
+							if (!path.b.b) {
+								var i = path.a.a;
+								return (i >= 0) && (_Utils_cmp(
+									i,
+									$elm$core$List$length(vs_)) < 0);
+							} else {
+								var i = path.a.a;
+								var rest = path.b;
+								if ((i >= 0) && (_Utils_cmp(
+									i,
+									$elm$core$List$length(vs_)) < 0)) {
+									var $temp$vs = A2($author$project$IMP$Utils$nthValue, vs_, i),
+										$temp$path = rest;
+									vs = $temp$vs;
+									path = $temp$path;
+									continue canUpdatePath;
+								} else {
+									return false;
+								}
+							}
+						} else {
+							return false;
+						}
+					}
+				default:
+					return false;
+			}
+		}
+	});
+var $author$project$IMP$Eval$lhsCanOverwrite = F2(
+	function (store, e) {
+		switch (e.$) {
+			case 'EVar':
+				return true;
+			case 'EIndex':
+				var _v1 = A3($author$project$IMP$Eval$findIndex, store, _List_Nil, e);
+				var x = _v1.a;
+				var path = _v1.b;
+				if (path.$ === 'VList') {
+					var p = path.a;
+					var _v3 = A2($author$project$IMP$Utils$lookup, x, store);
+					if (_v3.$ === 'Just') {
+						var v = _v3.a;
+						return A2($author$project$IMP$Eval$canUpdatePath, v, p);
+					} else {
+						return false;
+					}
+				} else {
+					return false;
+				}
+			default:
+				return false;
+		}
+	});
+var $author$project$IMP$Eval$mergeFlags = F2(
+	function (_v0, _v1) {
+		var d1 = _v0.a;
+		var i1 = _v0.b;
+		var d2 = _v1.a;
+		var i2 = _v1.b;
+		return _Utils_Tuple2(d1 || d2, i1 || i2);
+	});
+var $author$project$IMP$Eval$varDet = F2(
+	function (store, x) {
+		var _v0 = A2($author$project$IMP$Utils$lookup, x, store);
+		if (_v0.$ === 'Just') {
+			var v = _v0.a;
+			return $author$project$IMP$Eval$isFullyDet(v);
+		} else {
+			return false;
+		}
+	});
+var $author$project$IMP$Eval$scanExpr = F3(
+	function (store, e, flags) {
+		scanExpr:
+		while (true) {
+			switch (e.$) {
+				case 'EVar':
+					var x = e.b;
+					return A2(
+						$author$project$IMP$Eval$markDet,
+						A2($author$project$IMP$Eval$varDet, store, x),
+						flags);
+				case 'EIndex':
+					var e1 = e.b;
+					var e2 = e.c;
+					return A2(
+						$author$project$IMP$Eval$markDet,
+						$author$project$IMP$Eval$isFullyDet(
+							A3($author$project$IMP$Eval$eval, store, _List_Nil, e)),
+						A3($author$project$IMP$Eval$scanIndexVars, store, e, flags));
+				case 'Eop':
+					var e1 = e.c;
+					var e2 = e.d;
+					var $temp$store = store,
+						$temp$e = e2,
+						$temp$flags = A3($author$project$IMP$Eval$scanExpr, store, e1, flags);
+					store = $temp$store;
+					e = $temp$e;
+					flags = $temp$flags;
+					continue scanExpr;
+				case 'ENot':
+					var e1 = e.b;
+					var $temp$store = store,
+						$temp$e = e1,
+						$temp$flags = flags;
+					store = $temp$store;
+					e = $temp$e;
+					flags = $temp$flags;
+					continue scanExpr;
+				case 'EParens':
+					var e1 = e.b;
+					var $temp$store = store,
+						$temp$e = e1,
+						$temp$flags = flags;
+					store = $temp$store;
+					e = $temp$e;
+					flags = $temp$flags;
+					continue scanExpr;
+				case 'EList':
+					var es = e.b;
+					return A3(
+						$elm$core$List$foldl,
+						$author$project$IMP$Eval$scanExpr(store),
+						flags,
+						es);
+				case 'ELength':
+					var e1 = e.b;
+					var $temp$store = store,
+						$temp$e = e1,
+						$temp$flags = flags;
+					store = $temp$store;
+					e = $temp$e;
+					flags = $temp$flags;
+					continue scanExpr;
+				case 'EHole':
+					return A2($author$project$IMP$Eval$markDet, false, flags);
+				default:
+					return flags;
+			}
+		}
+	});
+var $author$project$IMP$Eval$scanIndexVars = F3(
+	function (store, e, flags) {
+		scanIndexVars:
+		while (true) {
+			switch (e.$) {
+				case 'EIndex':
+					var e1 = e.b;
+					var e2 = e.c;
+					var $temp$store = store,
+						$temp$e = e1,
+						$temp$flags = A3($author$project$IMP$Eval$scanExpr, store, e2, flags);
+					store = $temp$store;
+					e = $temp$e;
+					flags = $temp$flags;
+					continue scanIndexVars;
+				case 'EVar':
+					return flags;
+				default:
+					return A3($author$project$IMP$Eval$scanExpr, store, e, flags);
+			}
+		}
+	});
+var $author$project$IMP$Eval$scanLhs = F3(
+	function (store, e, flags) {
+		scanLhs:
+		while (true) {
+			switch (e.$) {
+				case 'EVar':
+					return flags;
+				case 'EIndex':
+					var e1 = e.b;
+					var e2 = e.c;
+					var $temp$store = store,
+						$temp$e = e1,
+						$temp$flags = A3($author$project$IMP$Eval$scanExpr, store, e2, flags);
+					store = $temp$store;
+					e = $temp$e;
+					flags = $temp$flags;
+					continue scanLhs;
+				default:
+					return A3($author$project$IMP$Eval$scanExpr, store, e, flags);
+			}
+		}
+	});
+var $author$project$IMP$Eval$scanAssign = F4(
+	function (store, e1, e2, flags) {
+		var rhsFlags = A3(
+			$author$project$IMP$Eval$scanExpr,
+			store,
+			e2,
+			_Utils_Tuple2(false, false));
+		var rhsDet = !rhsFlags.b;
+		var lhsFlags = A3(
+			$author$project$IMP$Eval$scanLhs,
+			store,
+			e1,
+			_Utils_Tuple2(false, false));
+		var merged = A2(
+			$author$project$IMP$Eval$mergeFlags,
+			flags,
+			A2($author$project$IMP$Eval$mergeFlags, rhsFlags, lhsFlags));
+		return A2($author$project$IMP$Eval$lhsCanOverwrite, store, e1) ? merged : (rhsDet ? A2(
+			$author$project$IMP$Eval$mergeFlags,
+			merged,
+			_Utils_Tuple2(true, true)) : A2($author$project$IMP$Eval$markDet, false, merged));
+	});
+var $author$project$IMP$Eval$scanStmt = F3(
+	function (store, s, flags) {
+		scanStmt:
+		while (true) {
+			switch (s.$) {
+				case 'SAssign':
+					var e1 = s.b;
+					var e2 = s.c;
+					return A4($author$project$IMP$Eval$scanAssign, store, e1, e2, flags);
+				case 'SIf':
+					var e = s.b;
+					return A3($author$project$IMP$Eval$scanExpr, store, e, flags);
+				case 'SWhile':
+					var e = s.b;
+					return A3($author$project$IMP$Eval$scanExpr, store, e, flags);
+				case 'SPrint':
+					var e = s.b;
+					return A3($author$project$IMP$Eval$scanExpr, store, e, flags);
+				case 'SRead':
+					return A2(
+						$author$project$IMP$Eval$markDet,
+						A2($author$project$IMP$Eval$varDet, store, 'input'),
+						flags);
+				case 'SSeq':
+					var s1 = s.b;
+					var s2 = s.c;
+					var $temp$store = store,
+						$temp$s = s2,
+						$temp$flags = A3($author$project$IMP$Eval$scanStmt, store, s1, flags);
+					store = $temp$store;
+					s = $temp$s;
+					flags = $temp$flags;
+					continue scanStmt;
+				case 'SFuncCall':
+					var args = s.c;
+					return A3(
+						$elm$core$List$foldl,
+						$author$project$IMP$Eval$scanExpr(store),
+						flags,
+						args);
+				case 'SFuncDef':
+					var body = s.d;
+					var $temp$store = store,
+						$temp$s = body,
+						$temp$flags = flags;
+					store = $temp$store;
+					s = $temp$s;
+					flags = $temp$flags;
+					continue scanStmt;
+				default:
+					return flags;
+			}
+		}
+	});
+var $author$project$IMP$Eval$classifyStmt = F2(
+	function (store, s) {
+		var _v0 = A3(
+			$author$project$IMP$Eval$scanStmt,
+			store,
+			s,
+			_Utils_Tuple2(false, false));
+		if ((!_v0.a) && _v0.b) {
+			return false;
+		} else {
+			return true;
+		}
+	});
+var $author$project$IMP$Eval$divideAfterFilled = function (filled) {
+	if (!filled.b) {
+		return _Utils_Tuple2(_List_Nil, _List_Nil);
 	} else {
-		return $elm$core$Maybe$Nothing;
+		var _v1 = filled.a;
+		var id = _v1.a;
+		var s = _v1.b;
+		var store = _v1.c;
+		var rest = filled.b;
+		var item = _Utils_Tuple3(id, s, store);
+		var _v2 = $author$project$IMP$Eval$divideAfterFilled(rest);
+		var toExec = _v2.a;
+		var remaining = _v2.b;
+		return A2($author$project$IMP$Eval$classifyStmt, store, s) ? _Utils_Tuple2(
+			A2($elm$core$List$cons, item, toExec),
+			remaining) : _Utils_Tuple2(
+			toExec,
+			A2($elm$core$List$cons, item, remaining));
 	}
 };
-var $author$project$IMP$Eval$reindexHoleName = F2(
-	function (mapId, h) {
-		switch (h.$) {
-			case 'HVar':
-				var x = h.a;
-				var _v1 = $author$project$IMP$Eval$splitIdSuffix(x);
-				if (_v1.$ === 'Just') {
-					var _v2 = _v1.a;
-					var base = _v2.a;
-					var oldId = _v2.b;
-					return $author$project$IMP$Syntax$HVar(
-						base + ('-' + $elm$core$String$fromInt(
-							mapId(oldId))));
-				} else {
-					return $author$project$IMP$Syntax$HVar(x);
+var $author$project$IMP$Eval$exprEq = F2(
+	function (a, b) {
+		exprEq:
+		while (true) {
+			var _v3 = _Utils_Tuple2(a, b);
+			_v3$12:
+			while (true) {
+				switch (_v3.a.$) {
+					case 'EVar':
+						if (_v3.b.$ === 'EVar') {
+							var _v4 = _v3.a;
+							var x = _v4.b;
+							var _v5 = _v3.b;
+							var y = _v5.b;
+							return _Utils_eq(x, y);
+						} else {
+							break _v3$12;
+						}
+					case 'EInt':
+						if (_v3.b.$ === 'EInt') {
+							var _v6 = _v3.a;
+							var i = _v6.b;
+							var _v7 = _v3.b;
+							var j = _v7.b;
+							return _Utils_eq(i, j);
+						} else {
+							break _v3$12;
+						}
+					case 'EBool':
+						if (_v3.b.$ === 'EBool') {
+							var _v8 = _v3.a;
+							var p = _v8.b;
+							var _v9 = _v3.b;
+							var q = _v9.b;
+							return _Utils_eq(p, q);
+						} else {
+							break _v3$12;
+						}
+					case 'EString':
+						if (_v3.b.$ === 'EString') {
+							var _v10 = _v3.a;
+							var s = _v10.b;
+							var _v11 = _v3.b;
+							var t = _v11.b;
+							return _Utils_eq(s, t);
+						} else {
+							break _v3$12;
+						}
+					case 'EHole':
+						if (_v3.b.$ === 'EHole') {
+							var _v12 = _v3.a;
+							var h1 = _v12.b;
+							var _v13 = _v3.b;
+							var h2 = _v13.b;
+							return _Utils_eq(h1, h2);
+						} else {
+							break _v3$12;
+						}
+					case 'Eop':
+						if (_v3.b.$ === 'Eop') {
+							var _v14 = _v3.a;
+							var op1 = _v14.b;
+							var e1 = _v14.c;
+							var e2 = _v14.d;
+							var _v15 = _v3.b;
+							var op2 = _v15.b;
+							var f1 = _v15.c;
+							var f2 = _v15.d;
+							return _Utils_eq(op1, op2) && (A2($author$project$IMP$Eval$exprEq, e1, f1) && A2($author$project$IMP$Eval$exprEq, e2, f2));
+						} else {
+							break _v3$12;
+						}
+					case 'ENot':
+						if (_v3.b.$ === 'ENot') {
+							var _v16 = _v3.a;
+							var e1 = _v16.b;
+							var _v17 = _v3.b;
+							var e2 = _v17.b;
+							var $temp$a = e1,
+								$temp$b = e2;
+							a = $temp$a;
+							b = $temp$b;
+							continue exprEq;
+						} else {
+							break _v3$12;
+						}
+					case 'EParens':
+						if (_v3.b.$ === 'EParens') {
+							var _v18 = _v3.a;
+							var e1 = _v18.b;
+							var _v19 = _v3.b;
+							var e2 = _v19.b;
+							var $temp$a = e1,
+								$temp$b = e2;
+							a = $temp$a;
+							b = $temp$b;
+							continue exprEq;
+						} else {
+							break _v3$12;
+						}
+					case 'EList':
+						if (_v3.b.$ === 'EList') {
+							var _v20 = _v3.a;
+							var xs = _v20.b;
+							var _v21 = _v3.b;
+							var ys = _v21.b;
+							return A2($author$project$IMP$Eval$exprEqList, xs, ys);
+						} else {
+							break _v3$12;
+						}
+					case 'EIndex':
+						if (_v3.b.$ === 'EIndex') {
+							var _v22 = _v3.a;
+							var e1 = _v22.b;
+							var e2 = _v22.c;
+							var _v23 = _v3.b;
+							var f1 = _v23.b;
+							var f2 = _v23.c;
+							return A2($author$project$IMP$Eval$exprEq, e1, f1) && A2($author$project$IMP$Eval$exprEq, e2, f2);
+						} else {
+							break _v3$12;
+						}
+					case 'ELength':
+						if (_v3.b.$ === 'ELength') {
+							var _v24 = _v3.a;
+							var e1 = _v24.b;
+							var _v25 = _v3.b;
+							var e2 = _v25.b;
+							var $temp$a = e1,
+								$temp$b = e2;
+							a = $temp$a;
+							b = $temp$b;
+							continue exprEq;
+						} else {
+							break _v3$12;
+						}
+					default:
+						if (_v3.b.$ === 'EError') {
+							var s1 = _v3.a.a;
+							var s2 = _v3.b.a;
+							return _Utils_eq(s1, s2);
+						} else {
+							break _v3$12;
+						}
 				}
-			case 'HSub':
-				var h_ = h.a;
-				var n = h.b;
-				return A2(
-					$author$project$IMP$Syntax$HSub,
-					A2($author$project$IMP$Eval$reindexHoleName, mapId, h_),
-					n);
-			default:
-				return h;
+			}
+			return false;
 		}
 	});
-var $author$project$IMP$Eval$reindexExpr = F2(
-	function (mapId, e) {
-		switch (e.$) {
-			case 'EHole':
-				var ws = e.a;
-				var h = e.b;
-				return A2(
-					$author$project$IMP$Syntax$EHole,
-					ws,
-					A2($author$project$IMP$Eval$reindexHoleName, mapId, h));
-			case 'Eop':
-				var ws = e.a;
-				var op = e.b;
-				var e1 = e.c;
-				var e2 = e.d;
-				return A4(
-					$author$project$IMP$Syntax$Eop,
-					ws,
-					op,
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e1),
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e2));
-			case 'ENot':
-				var ws = e.a;
-				var e1 = e.b;
-				return A2(
-					$author$project$IMP$Syntax$ENot,
-					ws,
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e1));
-			case 'EParens':
-				var ws = e.a;
-				var e1 = e.b;
-				return A2(
-					$author$project$IMP$Syntax$EParens,
-					ws,
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e1));
-			case 'EList':
-				var ws = e.a;
-				var es = e.b;
-				return A2(
-					$author$project$IMP$Syntax$EList,
-					ws,
-					A2(
-						$elm$core$List$map,
-						$author$project$IMP$Eval$reindexExpr(mapId),
-						es));
-			case 'EIndex':
-				var ws = e.a;
-				var e1 = e.b;
-				var e2 = e.c;
-				return A3(
-					$author$project$IMP$Syntax$EIndex,
-					ws,
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e1),
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e2));
-			case 'ELength':
-				var ws = e.a;
-				var e1 = e.b;
-				return A2(
-					$author$project$IMP$Syntax$ELength,
-					ws,
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e1));
-			default:
-				return e;
+var $author$project$IMP$Eval$exprEqList = F2(
+	function (xs, ys) {
+		var _v0 = _Utils_Tuple2(xs, ys);
+		_v0$2:
+		while (true) {
+			if (!_v0.a.b) {
+				if (!_v0.b.b) {
+					return true;
+				} else {
+					break _v0$2;
+				}
+			} else {
+				if (_v0.b.b) {
+					var _v1 = _v0.a;
+					var x = _v1.a;
+					var xt = _v1.b;
+					var _v2 = _v0.b;
+					var y = _v2.a;
+					var yt = _v2.b;
+					return A2($author$project$IMP$Eval$exprEq, x, y) && A2($author$project$IMP$Eval$exprEqList, xt, yt);
+				} else {
+					break _v0$2;
+				}
+			}
+		}
+		return false;
+	});
+var $author$project$IMP$Eval$recoverAsVar = F2(
+	function (store, e) {
+		recoverAsVar:
+		while (true) {
+			if (!store.b) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var _v1 = store.a;
+				var x = _v1.a;
+				var v = _v1.b;
+				var rest = store.b;
+				if ((x !== 'input') && ((x !== 'output') && ((!$author$project$IMP$Eval$isFullyDet(v)) && A2(
+					$author$project$IMP$Eval$exprEq,
+					$author$project$IMP$Utils$value2Expr(v),
+					e)))) {
+					return $elm$core$Maybe$Just(x);
+				} else {
+					var $temp$store = rest,
+						$temp$e = e;
+					store = $temp$store;
+					e = $temp$e;
+					continue recoverAsVar;
+				}
+			}
 		}
 	});
-var $author$project$IMP$Eval$reindexStmt = F2(
-	function (mapId, s) {
+var $author$project$IMP$Eval$recoverExpr = F2(
+	function (store, e) {
+		var e_ = function () {
+			switch (e.$) {
+				case 'Eop':
+					var ws = e.a;
+					var op = e.b;
+					var e1 = e.c;
+					var e2 = e.d;
+					return A4(
+						$author$project$IMP$Syntax$Eop,
+						ws,
+						op,
+						A2($author$project$IMP$Eval$recoverExpr, store, e1),
+						A2($author$project$IMP$Eval$recoverExpr, store, e2));
+				case 'ENot':
+					var ws = e.a;
+					var e1 = e.b;
+					return A2(
+						$author$project$IMP$Syntax$ENot,
+						ws,
+						A2($author$project$IMP$Eval$recoverExpr, store, e1));
+				case 'EParens':
+					var ws = e.a;
+					var e1 = e.b;
+					return A2(
+						$author$project$IMP$Syntax$EParens,
+						ws,
+						A2($author$project$IMP$Eval$recoverExpr, store, e1));
+				case 'EList':
+					var ws = e.a;
+					var es = e.b;
+					return A2(
+						$author$project$IMP$Syntax$EList,
+						ws,
+						A2(
+							$elm$core$List$map,
+							$author$project$IMP$Eval$recoverExpr(store),
+							es));
+				case 'EIndex':
+					var ws = e.a;
+					var e1 = e.b;
+					var e2 = e.c;
+					return A3(
+						$author$project$IMP$Syntax$EIndex,
+						ws,
+						A2($author$project$IMP$Eval$recoverExpr, store, e1),
+						A2($author$project$IMP$Eval$recoverExpr, store, e2));
+				case 'ELength':
+					var ws = e.a;
+					var e1 = e.b;
+					return A2(
+						$author$project$IMP$Syntax$ELength,
+						ws,
+						A2($author$project$IMP$Eval$recoverExpr, store, e1));
+				default:
+					return e;
+			}
+		}();
+		var _v0 = A2($author$project$IMP$Eval$recoverAsVar, store, e_);
+		if (_v0.$ === 'Just') {
+			var x = _v0.a;
+			return A2($author$project$IMP$Syntax$EVar, _List_Nil, x);
+		} else {
+			return e_;
+		}
+	});
+var $author$project$IMP$Eval$recoverStmt = F2(
+	function (store, s) {
 		switch (s.$) {
 			case 'SAssign':
 				var ws = s.a;
@@ -10718,8 +12377,8 @@ var $author$project$IMP$Eval$reindexStmt = F2(
 				return A3(
 					$author$project$IMP$Syntax$SAssign,
 					ws,
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e1),
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e2));
+					A2($author$project$IMP$Eval$recoverExpr, store, e1),
+					A2($author$project$IMP$Eval$recoverExpr, store, e2));
 			case 'SIf':
 				var ws = s.a;
 				var e = s.b;
@@ -10728,9 +12387,9 @@ var $author$project$IMP$Eval$reindexStmt = F2(
 				return A4(
 					$author$project$IMP$Syntax$SIf,
 					ws,
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e),
-					A2($author$project$IMP$Eval$reindexStmt, mapId, s1),
-					A2($author$project$IMP$Eval$reindexStmt, mapId, s2));
+					A2($author$project$IMP$Eval$recoverExpr, store, e),
+					A2($author$project$IMP$Eval$recoverStmt, store, s1),
+					A2($author$project$IMP$Eval$recoverStmt, store, s2));
 			case 'SWhile':
 				var ws = s.a;
 				var e = s.b;
@@ -10738,15 +12397,15 @@ var $author$project$IMP$Eval$reindexStmt = F2(
 				return A3(
 					$author$project$IMP$Syntax$SWhile,
 					ws,
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e),
-					A2($author$project$IMP$Eval$reindexStmt, mapId, body));
+					A2($author$project$IMP$Eval$recoverExpr, store, e),
+					A2($author$project$IMP$Eval$recoverStmt, store, body));
 			case 'SPrint':
 				var ws = s.a;
 				var e = s.b;
 				return A2(
 					$author$project$IMP$Syntax$SPrint,
 					ws,
-					A2($author$project$IMP$Eval$reindexExpr, mapId, e));
+					A2($author$project$IMP$Eval$recoverExpr, store, e));
 			case 'SSeq':
 				var ws = s.a;
 				var s1 = s.b;
@@ -10754,45 +12413,504 @@ var $author$project$IMP$Eval$reindexStmt = F2(
 				return A3(
 					$author$project$IMP$Syntax$SSeq,
 					ws,
-					A2($author$project$IMP$Eval$reindexStmt, mapId, s1),
-					A2($author$project$IMP$Eval$reindexStmt, mapId, s2));
+					A2($author$project$IMP$Eval$recoverStmt, store, s1),
+					A2($author$project$IMP$Eval$recoverStmt, store, s2));
+			case 'SFuncCall':
+				var ws = s.a;
+				var name = s.b;
+				var args = s.c;
+				return A3(
+					$author$project$IMP$Syntax$SFuncCall,
+					ws,
+					name,
+					A2(
+						$elm$core$List$map,
+						$author$project$IMP$Eval$recoverExpr(store),
+						args));
+			case 'SFuncDef':
+				var ws = s.a;
+				var name = s.b;
+				var params = s.c;
+				var body = s.d;
+				return A4(
+					$author$project$IMP$Syntax$SFuncDef,
+					ws,
+					name,
+					params,
+					A2($author$project$IMP$Eval$recoverStmt, store, body));
 			default:
 				return s;
 		}
 	});
-var $author$project$IMP$Eval$reindexValue = F2(
-	function (mapId, v) {
+var $author$project$IMP$Eval$recoverRiStmts = function (ris) {
+	return A2(
+		$elm$core$List$map,
+		function (_v0) {
+			var id = _v0.a;
+			var s = _v0.b;
+			var st = _v0.c;
+			return _Utils_Tuple3(
+				id,
+				A2($author$project$IMP$Eval$recoverStmt, st, s),
+				st);
+		},
+		ris);
+};
+var $author$project$IMP$Eval$neededVarsExpr = function (e) {
+	neededVarsExpr:
+	while (true) {
+		switch (e.$) {
+			case 'EVar':
+				var x = e.b;
+				return _List_fromArray(
+					[x]);
+			case 'EIndex':
+				var e1 = e.b;
+				var e2 = e.c;
+				return _Utils_ap(
+					$author$project$IMP$Eval$neededVarsExpr(e1),
+					$author$project$IMP$Eval$neededVarsExpr(e2));
+			case 'Eop':
+				var e1 = e.c;
+				var e2 = e.d;
+				return _Utils_ap(
+					$author$project$IMP$Eval$neededVarsExpr(e1),
+					$author$project$IMP$Eval$neededVarsExpr(e2));
+			case 'ENot':
+				var e1 = e.b;
+				var $temp$e = e1;
+				e = $temp$e;
+				continue neededVarsExpr;
+			case 'EParens':
+				var e1 = e.b;
+				var $temp$e = e1;
+				e = $temp$e;
+				continue neededVarsExpr;
+			case 'EList':
+				var es = e.b;
+				return A2($elm$core$List$concatMap, $author$project$IMP$Eval$neededVarsExpr, es);
+			case 'ELength':
+				var e1 = e.b;
+				var $temp$e = e1;
+				e = $temp$e;
+				continue neededVarsExpr;
+			default:
+				return _List_Nil;
+		}
+	}
+};
+var $author$project$IMP$Eval$neededVarsBase = function (e) {
+	switch (e.$) {
+		case 'EVar':
+			var x = e.b;
+			return _List_fromArray(
+				[x]);
+		case 'EIndex':
+			var e1 = e.b;
+			var e2 = e.c;
+			return _Utils_ap(
+				$author$project$IMP$Eval$neededVarsBase(e1),
+				$author$project$IMP$Eval$neededVarsExpr(e2));
+		default:
+			return $author$project$IMP$Eval$neededVarsExpr(e);
+	}
+};
+var $author$project$IMP$Eval$neededVarsLhs = function (e) {
+	switch (e.$) {
+		case 'EVar':
+			return _List_Nil;
+		case 'EIndex':
+			var e1 = e.b;
+			var e2 = e.c;
+			return _Utils_ap(
+				$author$project$IMP$Eval$neededVarsBase(e1),
+				$author$project$IMP$Eval$neededVarsExpr(e2));
+		default:
+			return $author$project$IMP$Eval$neededVarsExpr(e);
+	}
+};
+var $author$project$IMP$Eval$neededVarsOf = function (s) {
+	return $author$project$IMP$Utils$unique(
+		function () {
+			switch (s.$) {
+				case 'SAssign':
+					var e1 = s.b;
+					var e2 = s.c;
+					return _Utils_ap(
+						$author$project$IMP$Eval$neededVarsLhs(e1),
+						$author$project$IMP$Eval$neededVarsExpr(e2));
+				case 'SIf':
+					var e = s.b;
+					return $author$project$IMP$Eval$neededVarsExpr(e);
+				case 'SWhile':
+					var e = s.b;
+					return $author$project$IMP$Eval$neededVarsExpr(e);
+				case 'SPrint':
+					var e = s.b;
+					return $author$project$IMP$Eval$neededVarsExpr(e);
+				case 'SRead':
+					return _List_fromArray(
+						['input']);
+				case 'SSeq':
+					var s1 = s.b;
+					var s2 = s.c;
+					return _Utils_ap(
+						$author$project$IMP$Eval$neededVarsOf(s1),
+						$author$project$IMP$Eval$neededVarsOf(s2));
+				case 'SFuncCall':
+					var args = s.c;
+					return A2($elm$core$List$concatMap, $author$project$IMP$Eval$neededVarsExpr, args);
+				case 'SFuncDef':
+					var body = s.d;
+					return $author$project$IMP$Eval$neededVarsOf(body);
+				default:
+					return _List_Nil;
+			}
+		}());
+};
+var $author$project$IMP$Eval$isMorePrecise = F2(
+	function (old, _new) {
+		var _v3 = _Utils_Tuple2(old, _new);
+		_v3$3:
+		while (true) {
+			switch (_v3.a.$) {
+				case 'VHole':
+					if (_v3.b.$ === 'VHole') {
+						var _v4 = _v3.a;
+						var _v5 = _v3.b;
+						return false;
+					} else {
+						var _v6 = _v3.a;
+						return true;
+					}
+				case 'VList':
+					if (_v3.b.$ === 'VList') {
+						var os = _v3.a.a;
+						var ns = _v3.b.a;
+						return A2($author$project$IMP$Eval$isMorePreciseList, os, ns);
+					} else {
+						break _v3$3;
+					}
+				default:
+					break _v3$3;
+			}
+		}
+		return false;
+	});
+var $author$project$IMP$Eval$isMorePreciseList = F2(
+	function (os, ns) {
+		var _v0 = _Utils_Tuple2(os, ns);
+		if (_v0.a.b && _v0.b.b) {
+			var _v1 = _v0.a;
+			var o = _v1.a;
+			var ot = _v1.b;
+			var _v2 = _v0.b;
+			var n = _v2.a;
+			var nt = _v2.b;
+			return A2($author$project$IMP$Eval$isMorePrecise, o, n) || A2($author$project$IMP$Eval$isMorePreciseList, ot, nt);
+		} else {
+			return false;
+		}
+	});
+var $author$project$IMP$Eval$needsImproved = F3(
+	function (oldStore, newStore, needs) {
+		return A2(
+			$elm$core$List$any,
+			function (x) {
+				var _v0 = _Utils_Tuple2(
+					A2($author$project$IMP$Utils$lookup, x, oldStore),
+					A2($author$project$IMP$Utils$lookup, x, newStore));
+				_v0$2:
+				while (true) {
+					if (_v0.a.$ === 'Nothing') {
+						if (_v0.b.$ === 'Just') {
+							var _v1 = _v0.a;
+							return true;
+						} else {
+							break _v0$2;
+						}
+					} else {
+						if (_v0.b.$ === 'Just') {
+							var ov = _v0.a.a;
+							var nv = _v0.b.a;
+							return A2($author$project$IMP$Eval$isMorePrecise, ov, nv);
+						} else {
+							break _v0$2;
+						}
+					}
+				}
+				return false;
+			},
+			needs);
+	});
+var $author$project$IMP$Eval$findStore = F2(
+	function (id, execList) {
+		findStore:
+		while (true) {
+			if (!execList.b) {
+				return _List_Nil;
+			} else {
+				var _v1 = execList.a;
+				var id_ = _v1.a;
+				var store_ = _v1.b;
+				var rest = execList.b;
+				if (_Utils_eq(id_, id)) {
+					return store_;
+				} else {
+					var $temp$id = id,
+						$temp$execList = rest;
+					id = $temp$id;
+					execList = $temp$execList;
+					continue findStore;
+				}
+			}
+		}
+	});
+var $author$project$IMP$Eval$isCompleted = F2(
+	function (id, execList) {
+		return A2(
+			$elm$core$List$any,
+			function (_v0) {
+				var id_ = _v0.a;
+				return _Utils_eq(id_, id);
+			},
+			execList);
+	});
+var $author$project$IMP$Utils$outputDashIndex = function (x) {
+	return A2($elm$core$String$startsWith, 'output-', x) ? $elm$core$String$toInt(
+		A2($elm$core$String$dropLeft, 7, x)) : $elm$core$Maybe$Nothing;
+};
+var $author$project$IMP$Utils$outputIndexOfName = function (h) {
+	_v0$2:
+	while (true) {
+		switch (h.$) {
+			case 'HVar':
+				var x = h.a;
+				return $author$project$IMP$Utils$outputDashIndex(x);
+			case 'HSub':
+				if ((h.a.$ === 'HVar') && (h.a.a === 'output')) {
+					var n = h.b;
+					return $elm$core$Maybe$Just(n);
+				} else {
+					break _v0$2;
+				}
+			default:
+				break _v0$2;
+		}
+	}
+	return $elm$core$Maybe$Nothing;
+};
+var $author$project$IMP$Utils$isOutputSuffixHole = function (h) {
+	if ((h.$ === 'HVar') && (h.a === 'output')) {
+		return true;
+	} else {
+		return !_Utils_eq(
+			$author$project$IMP$Utils$outputIndexOfName(h),
+			$elm$core$Maybe$Nothing);
+	}
+};
+var $author$project$IMP$Utils$shiftOutputHoleName = F2(
+	function (delta, h) {
+		var _v0 = $author$project$IMP$Utils$outputIndexOfName(h);
+		if (_v0.$ === 'Just') {
+			var i = _v0.a;
+			_v1$2:
+			while (true) {
+				switch (h.$) {
+					case 'HVar':
+						return $author$project$IMP$Syntax$HVar(
+							'output-' + $elm$core$String$fromInt(i + delta));
+					case 'HSub':
+						if ((h.a.$ === 'HVar') && (h.a.a === 'output')) {
+							return A2(
+								$author$project$IMP$Syntax$HSub,
+								$author$project$IMP$Syntax$HVar('output'),
+								i + delta);
+						} else {
+							break _v1$2;
+						}
+					default:
+						break _v1$2;
+				}
+			}
+			return h;
+		} else {
+			return h;
+		}
+	});
+var $author$project$IMP$Utils$shiftOutputIndices = F2(
+	function (delta, v) {
 		switch (v.$) {
 			case 'VHole':
 				var h = v.a;
 				var id = v.b;
 				return A2(
 					$author$project$IMP$Syntax$VHole,
-					A2($author$project$IMP$Eval$reindexHoleName, mapId, h),
-					mapId(id));
+					A2($author$project$IMP$Utils$shiftOutputHoleName, delta, h),
+					id);
 			case 'VList':
 				var vs = v.a;
 				return $author$project$IMP$Syntax$VList(
 					A2(
 						$elm$core$List$map,
-						$author$project$IMP$Eval$reindexValue(mapId),
+						$author$project$IMP$Utils$shiftOutputIndices(delta),
 						vs));
 			default:
 				return v;
 		}
 	});
-var $author$project$IMP$Eval$reindexStore = F2(
-	function (mapId, store) {
-		return A2(
-			$elm$core$List$map,
-			function (_v0) {
-				var x = _v0.a;
-				var v = _v0.b;
-				return _Utils_Tuple2(
-					x,
-					A2($author$project$IMP$Eval$reindexValue, mapId, v));
-			},
-			store);
+var $author$project$IMP$Utils$findVal = F2(
+	function (path, vs) {
+		findVal:
+		while (true) {
+			_v0$2:
+			while (true) {
+				if (path.$ === 'VList') {
+					if (!path.a.b) {
+						return vs;
+					} else {
+						if (path.a.a.$ === 'VInt') {
+							var _v1 = path.a;
+							var i = _v1.a.a;
+							var rest = _v1.b;
+							switch (vs.$) {
+								case 'VList':
+									var nvs = vs.a;
+									var $temp$path = $author$project$IMP$Syntax$VList(rest),
+										$temp$vs = A2($author$project$IMP$Utils$nthValue, nvs, i);
+									path = $temp$path;
+									vs = $temp$vs;
+									continue findVal;
+								case 'VHole':
+									return vs;
+								default:
+									return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
+							}
+						} else {
+							break _v0$2;
+						}
+					}
+				} else {
+					break _v0$2;
+				}
+			}
+			if (vs.$ === 'VHole') {
+				return vs;
+			} else {
+				return A2($author$project$IMP$Syntax$VHole, $author$project$IMP$Syntax$HTmp, -1);
+			}
+		}
+	});
+var $author$project$IMP$Utils$holeBaseVar = function (h) {
+	holeBaseVar:
+	while (true) {
+		switch (h.$) {
+			case 'HVar':
+				var x = h.a;
+				return $elm$core$Maybe$Just(x);
+			case 'HSub':
+				var h_ = h.a;
+				var $temp$h = h_;
+				h = $temp$h;
+				continue holeBaseVar;
+			default:
+				return $elm$core$Maybe$Nothing;
+		}
+	}
+};
+var $author$project$IMP$Utils$nameToPathList = function (h) {
+	if (h.$ === 'HSub') {
+		var h_ = h.a;
+		var n = h.b;
+		return _Utils_ap(
+			$author$project$IMP$Utils$nameToPathList(h_),
+			_List_fromArray(
+				[
+					$author$project$IMP$Syntax$VInt(n)
+				]));
+	} else {
+		return _List_Nil;
+	}
+};
+var $author$project$IMP$Utils$nameToPath = function (h) {
+	return $author$project$IMP$Syntax$VList(
+		$author$project$IMP$Utils$nameToPathList(h));
+};
+var $author$project$IMP$Utils$lookupHoleVal = F2(
+	function (h, store) {
+		var _v0 = $author$project$IMP$Utils$holeBaseVar(h);
+		if (_v0.$ === 'Just') {
+			var x = _v0.a;
+			var _v1 = A2($author$project$IMP$Utils$lookup, x, store);
+			if (_v1.$ === 'Just') {
+				var v = _v1.a;
+				var _v2 = $author$project$IMP$Utils$nameToPath(h);
+				if ((_v2.$ === 'VList') && (!_v2.a.b)) {
+					return $elm$core$Maybe$Just(v);
+				} else {
+					var path = _v2;
+					if (v.$ === 'VHole') {
+						return $elm$core$Maybe$Just(v);
+					} else {
+						var _v4 = A2($author$project$IMP$Utils$findVal, path, v);
+						if (_v4.$ === 'VError') {
+							return $elm$core$Maybe$Nothing;
+						} else {
+							var v_ = _v4;
+							return $elm$core$Maybe$Just(v_);
+						}
+					}
+				}
+			} else {
+				return $elm$core$Maybe$Nothing;
+			}
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$IMP$Eval$substValByFinished = F3(
+	function (finished, seen, v) {
+		substValByFinished:
+		while (true) {
+			switch (v.$) {
+				case 'VHole':
+					var h = v.a;
+					var id = v.b;
+					if (A2($elm$core$List$member, id, seen)) {
+						return v;
+					} else {
+						if (A2($author$project$IMP$Eval$isCompleted, id, finished)) {
+							var _v1 = A2(
+								$author$project$IMP$Utils$lookupHoleVal,
+								h,
+								A2($author$project$IMP$Eval$findStore, id, finished));
+							if (_v1.$ === 'Just') {
+								var v_ = _v1.a;
+								var $temp$finished = finished,
+									$temp$seen = A2($elm$core$List$cons, id, seen),
+									$temp$v = v_;
+								finished = $temp$finished;
+								seen = $temp$seen;
+								v = $temp$v;
+								continue substValByFinished;
+							} else {
+								return v;
+							}
+						} else {
+							return v;
+						}
+					}
+				case 'VList':
+					var vs = v.a;
+					return $author$project$IMP$Syntax$VList(
+						A2(
+							$elm$core$List$map,
+							A2($author$project$IMP$Eval$substValByFinished, finished, seen),
+							vs));
+				default:
+					return v;
+			}
+		}
 	});
 var $elm$core$Maybe$withDefault = F2(
 	function (_default, maybe) {
@@ -10803,42 +12921,177 @@ var $elm$core$Maybe$withDefault = F2(
 			return _default;
 		}
 	});
-var $author$project$IMP$Eval$reindexResiduals = function (fwdRes) {
-	var idMap = $elm$core$Dict$fromList(
-		A2(
-			$elm$core$List$indexedMap,
-			F2(
-				function (newId, _v1) {
-					var oldId = _v1.a;
-					return _Utils_Tuple2(oldId, newId);
-				}),
-			fwdRes.riStmts));
-	var mapId = function (id) {
+var $author$project$IMP$Eval$substOutputList = F3(
+	function (finished, seen, vs) {
+		return A4($author$project$IMP$Eval$substOutputListWalk, finished, seen, vs, 0);
+	});
+var $author$project$IMP$Eval$substOutputListWalk = F4(
+	function (finished, seen, vs, pos) {
+		if (!vs.b) {
+			return _List_Nil;
+		} else {
+			var v = vs.a;
+			var rest = vs.b;
+			var _v3 = A4($author$project$IMP$Eval$trySpliceOutputHole, finished, seen, v, pos);
+			if (_v3.$ === 'Just') {
+				var _v4 = _v3.a;
+				var suffix = _v4.a;
+				var delta = _v4.b;
+				return _Utils_ap(
+					suffix,
+					A4(
+						$author$project$IMP$Eval$substOutputListWalk,
+						finished,
+						seen,
+						A2(
+							$elm$core$List$map,
+							$author$project$IMP$Utils$shiftOutputIndices(delta),
+							rest),
+						pos + $elm$core$List$length(suffix)));
+			} else {
+				return A2(
+					$elm$core$List$cons,
+					A3($author$project$IMP$Eval$substValByFinished, finished, seen, v),
+					A4($author$project$IMP$Eval$substOutputListWalk, finished, seen, rest, pos + 1));
+			}
+		}
+	});
+var $author$project$IMP$Eval$trySpliceOutputHole = F4(
+	function (finished, seen, v, pos) {
+		if (v.$ === 'VHole') {
+			var h = v.a;
+			var id = v.b;
+			if (A2($elm$core$List$member, id, seen) || ((!$author$project$IMP$Utils$isOutputSuffixHole(h)) || (!A2($author$project$IMP$Eval$isCompleted, id, finished)))) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var idx = A2(
+					$elm$core$Maybe$withDefault,
+					pos,
+					$author$project$IMP$Utils$outputIndexOfName(h));
+				var _v1 = A2(
+					$author$project$IMP$Utils$lookup,
+					'output',
+					A2($author$project$IMP$Eval$findStore, id, finished));
+				if ((_v1.$ === 'Just') && (_v1.a.$ === 'VList')) {
+					var nvs = _v1.a.a;
+					var nvs_ = A3(
+						$author$project$IMP$Eval$substOutputList,
+						finished,
+						A2($elm$core$List$cons, id, seen),
+						nvs);
+					var suffix = A2($elm$core$List$drop, idx, nvs_);
+					return $elm$core$Maybe$Just(
+						_Utils_Tuple2(
+							suffix,
+							$elm$core$List$length(suffix) - 1));
+				} else {
+					return $elm$core$Maybe$Nothing;
+				}
+			}
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$IMP$Eval$substOutputVal = F2(
+	function (finished, v) {
+		if (v.$ === 'VList') {
+			var vs = v.a;
+			return $author$project$IMP$Syntax$VList(
+				A3($author$project$IMP$Eval$substOutputList, finished, _List_Nil, vs));
+		} else {
+			return A3($author$project$IMP$Eval$substValByFinished, finished, _List_Nil, v);
+		}
+	});
+var $author$project$IMP$Eval$substStoreByFinished = F2(
+	function (finished, store) {
 		return A2(
-			$elm$core$Maybe$withDefault,
-			id,
-			A2($elm$core$Dict$get, id, idMap));
-	};
-	var newris = A2(
-		$elm$core$List$map,
-		function (_v0) {
-			var id = _v0.a;
-			var s = _v0.b;
-			var st = _v0.c;
-			return _Utils_Tuple3(
-				mapId(id),
-				A2($author$project$IMP$Eval$reindexStmt, mapId, s),
-				A2($author$project$IMP$Eval$reindexStore, mapId, st));
-		},
-		fwdRes.riStmts);
-	return _Utils_update(
-		fwdRes,
-		{
-			riStmts: newris,
-			scount: $elm$core$List$length(newris),
-			store: A2($author$project$IMP$Eval$reindexStore, mapId, fwdRes.store)
-		});
-};
+			$elm$core$List$map,
+			function (_v0) {
+				var x = _v0.a;
+				var v = _v0.b;
+				return (x === 'output') ? _Utils_Tuple2(
+					x,
+					A2($author$project$IMP$Eval$substOutputVal, finished, v)) : _Utils_Tuple2(
+					x,
+					A3($author$project$IMP$Eval$substValByFinished, finished, _List_Nil, v));
+			},
+			store);
+	});
+var $author$project$IMP$Eval$substRiStmts = F2(
+	function (finished, ris) {
+		if (!ris.b) {
+			return _Utils_Tuple2(_List_Nil, _List_Nil);
+		} else {
+			var _v1 = ris.a;
+			var id = _v1.a;
+			var s = _v1.b;
+			var st = _v1.c;
+			var rest = ris.b;
+			var newst = A2($author$project$IMP$Eval$substStoreByFinished, finished, st);
+			var needs = $author$project$IMP$Eval$neededVarsOf(s);
+			var _v2 = A2($author$project$IMP$Eval$substRiStmts, finished, rest);
+			var known = _v2.a;
+			var unknown = _v2.b;
+			return A3($author$project$IMP$Eval$needsImproved, st, newst, needs) ? _Utils_Tuple2(
+				A2(
+					$elm$core$List$cons,
+					_Utils_Tuple3(id, s, newst),
+					known),
+				unknown) : _Utils_Tuple2(
+				known,
+				A2(
+					$elm$core$List$cons,
+					_Utils_Tuple3(id, s, newst),
+					unknown));
+		}
+	});
+var $author$project$IMP$Eval$substValinVal = F3(
+	function (finished, store, ris) {
+		var _v0 = A2($author$project$IMP$Eval$substRiStmts, finished, ris);
+		var known = _v0.a;
+		var unknown = _v0.b;
+		return _Utils_Tuple3(
+			A2($author$project$IMP$Eval$substStoreByFinished, finished, store),
+			known,
+			unknown);
+	});
+var $author$project$IMP$Eval$resume = F6(
+	function (funcEnv, hb, scount, store, known, unknown) {
+		resume:
+		while (true) {
+			if (!known.b) {
+				return {readOnly: $elm$core$Set$empty, riStmts: unknown, scount: scount, store: store};
+			} else {
+				var _v1 = A4($author$project$IMP$Eval$batchExec, funcEnv, hb, known, scount);
+				var finished = _v1.a;
+				var newlyResidual = _v1.b;
+				var scount1 = _v1.c;
+				var _v2 = A3(
+					$author$project$IMP$Eval$substValinVal,
+					finished,
+					store,
+					_Utils_ap(
+						unknown,
+						$author$project$IMP$Eval$recoverRiStmts(newlyResidual)));
+				var store1 = _v2.a;
+				var known1 = _v2.b;
+				var unknown1 = _v2.c;
+				var $temp$funcEnv = funcEnv,
+					$temp$hb = hb,
+					$temp$scount = scount1,
+					$temp$store = store1,
+					$temp$known = known1,
+					$temp$unknown = unknown1;
+				funcEnv = $temp$funcEnv;
+				hb = $temp$hb;
+				scount = $temp$scount;
+				store = $temp$store;
+				known = $temp$known;
+				unknown = $temp$unknown;
+				continue resume;
+			}
+		}
+	});
 var $author$project$IMP$Utils$substHoleinExpr = F3(
 	function (id, e, holes) {
 		switch (e.$) {
@@ -10862,17 +13115,23 @@ var $author$project$IMP$Utils$substHoleinExpr = F3(
 				var i = e.b;
 				return A2($author$project$IMP$Syntax$EInt, ws, i);
 			case 'EHole':
-				var ws = e.a;
-				var h_ = e.b;
-				var _v1 = A2(
-					$elm$core$Dict$get,
-					$author$project$IMP$Utils$exprHoleKey(h_),
-					holes);
-				if (_v1.$ === 'Just') {
-					var expr_ = _v1.a;
-					return expr_;
+				if (e.b.$ === 'HOri') {
+					var ws = e.a;
+					var n = e.b.a;
+					var _v1 = A2($elm$core$Dict$get, n, holes);
+					if (_v1.$ === 'Just') {
+						var expr_ = _v1.a;
+						return expr_;
+					} else {
+						return A2(
+							$author$project$IMP$Syntax$EHole,
+							ws,
+							$author$project$IMP$Syntax$HOri(n));
+					}
 				} else {
-					return A2($author$project$IMP$Syntax$EHole, ws, h_);
+					var ws = e.a;
+					var h = e.b;
+					return A2($author$project$IMP$Syntax$EHole, ws, h);
 				}
 			case 'EBool':
 				var ws = e.a;
@@ -10984,356 +13243,38 @@ var $author$project$IMP$Utils$substHoleinStmt = F3(
 			case 'SSkip':
 				var ws = s.a;
 				return $author$project$IMP$Syntax$SSkip(ws);
-			default:
+			case 'SError':
 				var info = s.a;
 				return $author$project$IMP$Syntax$SError(info);
+			case 'SFuncDef':
+				var ws = s.a;
+				var name = s.b;
+				var params = s.c;
+				var body = s.d;
+				return A4(
+					$author$project$IMP$Syntax$SFuncDef,
+					ws,
+					name,
+					params,
+					A3($author$project$IMP$Utils$substHoleinStmt, id, body, holes));
+			default:
+				var ws = s.a;
+				var name = s.b;
+				var args = s.c;
+				return A3(
+					$author$project$IMP$Syntax$SFuncCall,
+					ws,
+					name,
+					A2(
+						$elm$core$List$map,
+						function (e) {
+							return A3($author$project$IMP$Utils$substHoleinExpr, id, e, holes);
+						},
+						args));
 		}
 	});
 var $author$project$IMP$Utils$substHole = F2(
 	function (holes, ris) {
-		if (!ris.b) {
-			return _List_Nil;
-		} else {
-			var _v1 = ris.a;
-			var id = _v1.a;
-			var s = _v1.b;
-			var store = _v1.c;
-			var rest = ris.b;
-			var news = A3($author$project$IMP$Utils$substHoleinStmt, id, s, holes);
-			return A2(
-				$elm$core$List$cons,
-				_Utils_Tuple3(id, news, store),
-				A2($author$project$IMP$Utils$substHole, holes, rest));
-		}
-	});
-var $author$project$IMP$Eval$findStore = F2(
-	function (id, execList) {
-		findStore:
-		while (true) {
-			if (!execList.b) {
-				return _List_Nil;
-			} else {
-				var _v1 = execList.a;
-				var id_ = _v1.a;
-				var store_ = _v1.b;
-				var rest = execList.b;
-				if (_Utils_eq(id_, id)) {
-					return store_;
-				} else {
-					var $temp$id = id,
-						$temp$execList = rest;
-					id = $temp$id;
-					execList = $temp$execList;
-					continue findStore;
-				}
-			}
-		}
-	});
-var $author$project$IMP$Utils$findVal = F2(
-	function (path, vs) {
-		findVal:
-		while (true) {
-			_v0$2:
-			while (true) {
-				if (path.$ === 'VList') {
-					if (!path.a.b) {
-						return vs;
-					} else {
-						if (path.a.a.$ === 'VInt') {
-							var _v1 = path.a;
-							var i = _v1.a.a;
-							var rest = _v1.b;
-							if (vs.$ === 'VList') {
-								var nvs = vs.a;
-								var $temp$path = $author$project$IMP$Syntax$VList(rest),
-									$temp$vs = A2($author$project$IMP$Utils$nthValue, nvs, i);
-								path = $temp$path;
-								vs = $temp$vs;
-								continue findVal;
-							} else {
-								return $author$project$IMP$Syntax$VError('Index not found');
-							}
-						} else {
-							break _v0$2;
-						}
-					}
-				} else {
-					break _v0$2;
-				}
-			}
-			return $author$project$IMP$Syntax$VError('Index not found');
-		}
-	});
-var $author$project$IMP$Utils$valHoleKey = F2(
-	function (h, id) {
-		return $author$project$IMP$Utils$exprHoleKey(
-			A2($author$project$IMP$Utils$encodeHoleId, h, id));
-	});
-var $author$project$IMP$Eval$substHoleAt = F5(
-	function (execList, x, v, path, h2eMap) {
-		switch (v.$) {
-			case 'VHole':
-				var h = v.a;
-				var id = v.b;
-				if (A2(
-					$elm$core$List$any,
-					function (_v14) {
-						var id_ = _v14.a;
-						return _Utils_eq(id_, id);
-					},
-					execList)) {
-					var store_ = A2($author$project$IMP$Eval$findStore, id, execList);
-					var _v15 = A2($author$project$IMP$Utils$lookup, x, store_);
-					if (_v15.$ === 'Just') {
-						var newx = _v15.a;
-						var v_ = A2($author$project$IMP$Utils$findVal, path, newx);
-						var nd = A3(
-							$elm$core$Dict$insert,
-							A2($author$project$IMP$Utils$valHoleKey, h, id),
-							$author$project$IMP$Utils$value2Expr(v),
-							h2eMap);
-						return _Utils_Tuple2(v_, nd);
-					} else {
-						return _Utils_Tuple2(v, h2eMap);
-					}
-				} else {
-					return _Utils_Tuple2(v, h2eMap);
-				}
-			case 'VList':
-				var inner = v.a;
-				var _v16 = A5($author$project$IMP$Eval$substHoleInList, execList, x, inner, path, h2eMap);
-				var inner_ = _v16.a;
-				var nd = _v16.b;
-				return _Utils_Tuple2(
-					$author$project$IMP$Syntax$VList(inner_),
-					nd);
-			default:
-				return _Utils_Tuple2(v, h2eMap);
-		}
-	});
-var $author$project$IMP$Eval$substHoleInList = F5(
-	function (execList, x, vs, path, h2eMap) {
-		return A6($author$project$IMP$Eval$substHoleInListWalk, execList, x, vs, path, 0, h2eMap);
-	});
-var $author$project$IMP$Eval$substHoleInListWalk = F6(
-	function (execList, x, vs, path, i, h2eMap) {
-		if (!vs.b) {
-			return _Utils_Tuple2(_List_Nil, h2eMap);
-		} else {
-			var v = vs.a;
-			var rest = vs.b;
-			var path_ = function () {
-				if (path.$ === 'VList') {
-					var p = path.a;
-					return $author$project$IMP$Syntax$VList(
-						_Utils_ap(
-							p,
-							_List_fromArray(
-								[
-									$author$project$IMP$Syntax$VInt(i)
-								])));
-				} else {
-					return $author$project$IMP$Syntax$VList(
-						_List_fromArray(
-							[
-								$author$project$IMP$Syntax$VInt(i)
-							]));
-				}
-			}();
-			var _v1 = _Utils_Tuple3(x, v, path_);
-			if ((((((((_v1.a === 'output') && (_v1.b.$ === 'VHole')) && (_v1.b.a.$ === 'HVar')) && (_v1.b.a.a === 'output')) && (_v1.c.$ === 'VList')) && _v1.c.a.b) && (_v1.c.a.a.$ === 'VInt')) && (!_v1.c.a.b.b)) {
-				var _v2 = _v1.b;
-				var id = _v2.b;
-				var _v3 = _v1.c.a;
-				var vid = _v3.a.a;
-				if (A2(
-					$elm$core$List$any,
-					function (_v4) {
-						var id_ = _v4.a;
-						return _Utils_eq(id_, id);
-					},
-					execList)) {
-					var _v5 = A2(
-						$author$project$IMP$Utils$lookup,
-						'output',
-						A2($author$project$IMP$Eval$findStore, id, execList));
-					if ((_v5.$ === 'Just') && (_v5.a.$ === 'VList')) {
-						var nvs = _v5.a.a;
-						var suffix = A2($elm$core$List$drop, vid, nvs);
-						var holeExpr = function () {
-							if (suffix.b && (!suffix.b.b)) {
-								var one = suffix.a;
-								return $author$project$IMP$Utils$value2Expr(one);
-							} else {
-								return $author$project$IMP$Utils$value2Expr(
-									$author$project$IMP$Syntax$VList(suffix));
-							}
-						}();
-						var nd = A3(
-							$elm$core$Dict$insert,
-							A2(
-								$author$project$IMP$Utils$valHoleKey,
-								$author$project$IMP$Syntax$HVar('output'),
-								id),
-							holeExpr,
-							h2eMap);
-						var _v6 = A6($author$project$IMP$Eval$substHoleInListWalk, execList, x, rest, path, i + 1, nd);
-						var rest_ = _v6.a;
-						var nd_ = _v6.b;
-						return _Utils_Tuple2(
-							_Utils_ap(suffix, rest_),
-							nd_);
-					} else {
-						var _v8 = A6($author$project$IMP$Eval$substHoleInListWalk, execList, x, rest, path, i + 1, h2eMap);
-						var rest_ = _v8.a;
-						var nd_ = _v8.b;
-						return _Utils_Tuple2(
-							A2($elm$core$List$cons, v, rest_),
-							nd_);
-					}
-				} else {
-					var _v9 = A6($author$project$IMP$Eval$substHoleInListWalk, execList, x, rest, path, i + 1, h2eMap);
-					var rest_ = _v9.a;
-					var nd_ = _v9.b;
-					return _Utils_Tuple2(
-						A2($elm$core$List$cons, v, rest_),
-						nd_);
-				}
-			} else {
-				var _v10 = A5($author$project$IMP$Eval$substHoleAt, execList, x, v, path_, h2eMap);
-				var v_ = _v10.a;
-				var nd = _v10.b;
-				var _v11 = A6($author$project$IMP$Eval$substHoleInListWalk, execList, x, rest, path, i + 1, nd);
-				var rest_ = _v11.a;
-				var nd_ = _v11.b;
-				return _Utils_Tuple2(
-					A2($elm$core$List$cons, v_, rest_),
-					nd_);
-			}
-		}
-	});
-var $author$project$IMP$Eval$substHoleInStore = F3(
-	function (store, execList, h2eMap) {
-		if (!store.b) {
-			return _Utils_Tuple2(_List_Nil, h2eMap);
-		} else {
-			switch (store.a.b.$) {
-				case 'VHole':
-					var _v1 = store.a;
-					var x = _v1.a;
-					var _v2 = _v1.b;
-					var h = _v2.a;
-					var id = _v2.b;
-					var rest = store.b;
-					if (A2(
-						$elm$core$List$any,
-						function (_v3) {
-							var id_ = _v3.a;
-							return _Utils_eq(id_, id);
-						},
-						execList)) {
-						var store_ = A2($author$project$IMP$Eval$findStore, id, execList);
-						var _v4 = A2($author$project$IMP$Utils$lookup, x, store_);
-						if (_v4.$ === 'Just') {
-							var v = _v4.a;
-							var nd = A3(
-								$elm$core$Dict$insert,
-								A2($author$project$IMP$Utils$valHoleKey, h, id),
-								$author$project$IMP$Utils$value2Expr(v),
-								h2eMap);
-							var _v5 = A3($author$project$IMP$Eval$substHoleInStore, rest, execList, nd);
-							var newstore = _v5.a;
-							var newh2eMap = _v5.b;
-							return _Utils_Tuple2(
-								A2(
-									$elm$core$List$cons,
-									_Utils_Tuple2(x, v),
-									newstore),
-								newh2eMap);
-						} else {
-							return _Utils_Tuple2(_List_Nil, h2eMap);
-						}
-					} else {
-						var _v6 = A3($author$project$IMP$Eval$substHoleInStore, rest, execList, h2eMap);
-						var newstore = _v6.a;
-						var newh2eMap = _v6.b;
-						return _Utils_Tuple2(
-							A2(
-								$elm$core$List$cons,
-								_Utils_Tuple2(
-									x,
-									A2($author$project$IMP$Syntax$VHole, h, id)),
-								newstore),
-							newh2eMap);
-					}
-				case 'VList':
-					var _v7 = store.a;
-					var x = _v7.a;
-					var vs = _v7.b.a;
-					var rest = store.b;
-					var _v8 = A5(
-						$author$project$IMP$Eval$substHoleInList,
-						execList,
-						x,
-						vs,
-						$author$project$IMP$Syntax$VList(_List_Nil),
-						h2eMap);
-					var newvs = _v8.a;
-					var newh2eMap = _v8.b;
-					var _v9 = A3($author$project$IMP$Eval$substHoleInStore, rest, execList, newh2eMap);
-					var newstore = _v9.a;
-					var newh2eMap_ = _v9.b;
-					return _Utils_Tuple2(
-						A2(
-							$elm$core$List$cons,
-							_Utils_Tuple2(
-								x,
-								$author$project$IMP$Syntax$VList(newvs)),
-							newstore),
-						newh2eMap_);
-				default:
-					var _v10 = store.a;
-					var x = _v10.a;
-					var v = _v10.b;
-					var rest = store.b;
-					var _v11 = A3($author$project$IMP$Eval$substHoleInStore, rest, execList, h2eMap);
-					var newstore = _v11.a;
-					var newh2eMap = _v11.b;
-					return _Utils_Tuple2(
-						A2(
-							$elm$core$List$cons,
-							_Utils_Tuple2(x, v),
-							newstore),
-						newh2eMap);
-			}
-		}
-	});
-var $author$project$IMP$Eval$substHoleInStmtStore = F3(
-	function (ris, execList, h2eMap) {
-		if (!ris.b) {
-			return _Utils_Tuple2(_List_Nil, h2eMap);
-		} else {
-			var _v1 = ris.a;
-			var id = _v1.a;
-			var s = _v1.b;
-			var store = _v1.c;
-			var rest = ris.b;
-			var _v2 = A3($author$project$IMP$Eval$substHoleInStore, store, execList, h2eMap);
-			var newstore = _v2.a;
-			var newh2eMap = _v2.b;
-			var _v3 = A3($author$project$IMP$Eval$substHoleInStmtStore, rest, execList, newh2eMap);
-			var resstmt = _v3.a;
-			var newh2eMap_ = _v3.b;
-			return _Utils_Tuple2(
-				A2(
-					$elm$core$List$cons,
-					_Utils_Tuple3(id, s, newstore),
-					resstmt),
-				newh2eMap_);
-		}
-	});
-var $author$project$IMP$Eval$tryExec = F3(
-	function (hb, ris, scount) {
 		if (!ris.b) {
 			return _Utils_Tuple2(_List_Nil, _List_Nil);
 		} else {
@@ -11342,508 +13283,75 @@ var $author$project$IMP$Eval$tryExec = F3(
 			var s = _v1.b;
 			var store = _v1.c;
 			var rest = ris.b;
-			switch (s.$) {
-				case 'SAssign':
-					var ws = s.a;
-					var e1 = s.b;
-					var e2 = s.c;
-					switch (e1.$) {
-						case 'EVar':
-							var x = e1.b;
-							var v = A3($author$project$IMP$Eval$eval, store, hb, e2);
-							_v4$2:
-							while (true) {
-								switch (v.$) {
-									case 'VHole':
-										if (v.a.$ === 'HTmp') {
-											var _v5 = v.a;
-											var e_ = A3($author$project$IMP$Eval$simplifyExpr, store, e2, hb);
-											var _v6 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-											var exec_ = _v6.a;
-											var stmt_ = _v6.b;
-											return _Utils_Tuple2(
-												exec_,
-												A2(
-													$elm$core$List$cons,
-													_Utils_Tuple3(
-														id,
-														A3(
-															$author$project$IMP$Syntax$SAssign,
-															ws,
-															A2($author$project$IMP$Syntax$EVar, _List_Nil, x),
-															e_),
-														store),
-													stmt_));
-										} else {
-											break _v4$2;
-										}
-									case 'VList':
-										var vs = v.a;
-										if ($author$project$IMP$Utils$hasHole(vs)) {
-											var newe = A3($author$project$IMP$Eval$simplifyExpr, store, e2, hb);
-											var _v7 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-											var exec_ = _v7.a;
-											var stmt_ = _v7.b;
-											return _Utils_Tuple2(
-												exec_,
-												A2(
-													$elm$core$List$cons,
-													_Utils_Tuple3(
-														id,
-														A3(
-															$author$project$IMP$Syntax$SAssign,
-															ws,
-															A2($author$project$IMP$Syntax$EVar, _List_Nil, x),
-															newe),
-														store),
-													stmt_));
-										} else {
-											var _v8 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-											var exec_ = _v8.a;
-											var stmt_ = _v8.b;
-											return _Utils_Tuple2(
-												A2(
-													$elm$core$List$cons,
-													_Utils_Tuple2(
-														id,
-														A3($author$project$IMP$Utils$updateStore, x, v, store)),
-													exec_),
-												stmt_);
-										}
-									default:
-										break _v4$2;
-								}
-							}
-							var _v9 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-							var exec_ = _v9.a;
-							var stmt_ = _v9.b;
-							return _Utils_Tuple2(
-								A2(
-									$elm$core$List$cons,
-									_Utils_Tuple2(
-										id,
-										A3($author$project$IMP$Utils$updateStore, x, v, store)),
-									exec_),
-								stmt_);
-						case 'EIndex':
-							var e1_ = e1.b;
-							var e2_ = e1.c;
-							var _v10 = A3($author$project$IMP$Eval$findIndex, store, hb, e1);
-							var x = _v10.a;
-							var path = _v10.b;
-							var v = A3($author$project$IMP$Eval$eval, store, hb, e2);
-							switch (path.$) {
-								case 'VHole':
-									var e1s = A3($author$project$IMP$Eval$simplifyExpr, store, e1, hb);
-									var e2s = A3($author$project$IMP$Eval$simplifyExpr, store, e2, hb);
-									var _v12 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-									var exec_ = _v12.a;
-									var stmt_ = _v12.b;
-									return _Utils_Tuple2(
-										exec_,
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple3(
-												id,
-												A3($author$project$IMP$Syntax$SAssign, ws, e1s, e2s),
-												store),
-											stmt_));
-								case 'VList':
-									var _v13 = A2($author$project$IMP$Utils$lookup, x, store);
-									if ((_v13.$ === 'Just') && (_v13.a.$ === 'VList')) {
-										var vs = _v13.a.a;
-										switch (v.$) {
-											case 'VHole':
-												var e1s = A3($author$project$IMP$Eval$simplifyExpr, store, e1, hb);
-												var e2s = A3($author$project$IMP$Eval$simplifyExpr, store, e2, hb);
-												var _v15 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-												var exec_ = _v15.a;
-												var stmt_ = _v15.b;
-												return _Utils_Tuple2(
-													exec_,
-													A2(
-														$elm$core$List$cons,
-														_Utils_Tuple3(
-															id,
-															A3($author$project$IMP$Syntax$SAssign, ws, e1s, e2s),
-															store),
-														stmt_));
-											case 'VList':
-												var vs_ = v.a;
-												if ($author$project$IMP$Utils$hasHole(vs_)) {
-													var e1s = A3($author$project$IMP$Eval$simplifyExpr, store, e1, hb);
-													var e2s = A3($author$project$IMP$Eval$simplifyExpr, store, e2, hb);
-													var _v16 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-													var exec_ = _v16.a;
-													var stmt_ = _v16.b;
-													return _Utils_Tuple2(
-														exec_,
-														A2(
-															$elm$core$List$cons,
-															_Utils_Tuple3(
-																id,
-																A3($author$project$IMP$Syntax$SAssign, ws, e1s, e2s),
-																store),
-															stmt_));
-												} else {
-													var _v17 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-													var exec_ = _v17.a;
-													var stmt_ = _v17.b;
-													return _Utils_Tuple2(
-														A2(
-															$elm$core$List$cons,
-															_Utils_Tuple2(
-																id,
-																A3(
-																	$author$project$IMP$Utils$updateStore,
-																	x,
-																	A3(
-																		$author$project$IMP$Utils$updateValue,
-																		path,
-																		$author$project$IMP$Syntax$VList(vs),
-																		v),
-																	store)),
-															exec_),
-														stmt_);
-												}
-											default:
-												var _v18 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-												var exec_ = _v18.a;
-												var stmt_ = _v18.b;
-												return _Utils_Tuple2(
-													A2(
-														$elm$core$List$cons,
-														_Utils_Tuple2(
-															id,
-															A3(
-																$author$project$IMP$Utils$updateStore,
-																x,
-																A3(
-																	$author$project$IMP$Utils$updateValue,
-																	path,
-																	$author$project$IMP$Syntax$VList(vs),
-																	v),
-																store)),
-														exec_),
-													stmt_);
-										}
-									} else {
-										return _Utils_Tuple2(_List_Nil, _List_Nil);
-									}
-								default:
-									return _Utils_Tuple2(_List_Nil, _List_Nil);
-							}
-						default:
-							return _Utils_Tuple2(_List_Nil, _List_Nil);
-					}
-				case 'SIf':
-					var ws = s.a;
-					var e = s.b;
-					var s1 = s.c;
-					var s2 = s.d;
-					var v = A3($author$project$IMP$Eval$eval, store, hb, e);
-					_v19$3:
-					while (true) {
-						switch (v.$) {
-							case 'VHole':
-								if (v.a.$ === 'HTmp') {
-									var _v20 = v.a;
-									var e_ = A3($author$project$IMP$Eval$simplifyExpr, store, e, hb);
-									var _v21 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-									var exec_ = _v21.a;
-									var stmt_ = _v21.b;
-									return _Utils_Tuple2(
-										exec_,
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple3(
-												id,
-												A4($author$project$IMP$Syntax$SIf, ws, e_, s1, s2),
-												store),
-											stmt_));
-								} else {
-									break _v19$3;
-								}
-							case 'VBool':
-								if (v.a) {
-									var res = A6($author$project$IMP$Eval$exec, store, hb, _List_Nil, s1, $elm$core$Set$empty, scount);
-									var _v22 = A3($author$project$IMP$Eval$tryExec, hb, rest, res.scount);
-									var exec_ = _v22.a;
-									var stmt_ = _v22.b;
-									return _Utils_Tuple2(
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple2(id, res.store),
-											exec_),
-										_Utils_ap(res.riStmts, stmt_));
-								} else {
-									var res = A6($author$project$IMP$Eval$exec, store, hb, _List_Nil, s2, $elm$core$Set$empty, scount);
-									var _v23 = A3($author$project$IMP$Eval$tryExec, hb, rest, res.scount);
-									var exec_ = _v23.a;
-									var stmt_ = _v23.b;
-									return _Utils_Tuple2(
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple2(id, res.store),
-											exec_),
-										_Utils_ap(res.riStmts, stmt_));
-								}
-							default:
-								break _v19$3;
-						}
-					}
-					return _Utils_Tuple2(_List_Nil, _List_Nil);
-				case 'SWhile':
-					var ws = s.a;
-					var e = s.b;
-					var s_ = s.c;
-					var v = A3($author$project$IMP$Eval$eval, store, hb, e);
-					_v24$3:
-					while (true) {
-						switch (v.$) {
-							case 'VHole':
-								if (v.a.$ === 'HTmp') {
-									var _v25 = v.a;
-									var _v26 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-									var exec_ = _v26.a;
-									var stmt_ = _v26.b;
-									return _Utils_Tuple2(
-										exec_,
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple3(
-												id,
-												A4(
-													$author$project$IMP$Syntax$SIf,
-													_List_Nil,
-													e,
-													A3(
-														$author$project$IMP$Syntax$SSeq,
-														_List_Nil,
-														s_,
-														A3($author$project$IMP$Syntax$SWhile, ws, e, s_)),
-													$author$project$IMP$Syntax$SSkip(_List_Nil)),
-												store),
-											stmt_));
-								} else {
-									break _v24$3;
-								}
-							case 'VBool':
-								if (v.a) {
-									var res = A6(
-										$author$project$IMP$Eval$exec,
-										store,
-										hb,
-										_List_Nil,
-										A3(
-											$author$project$IMP$Syntax$SSeq,
-											_List_Nil,
-											s_,
-											A3($author$project$IMP$Syntax$SWhile, ws, e, s_)),
-										$elm$core$Set$empty,
-										scount);
-									var _v27 = A3($author$project$IMP$Eval$tryExec, hb, rest, res.scount);
-									var exec_ = _v27.a;
-									var stmt_ = _v27.b;
-									return _Utils_Tuple2(
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple2(id, res.store),
-											exec_),
-										_Utils_ap(res.riStmts, stmt_));
-								} else {
-									var _v28 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-									var exec_ = _v28.a;
-									var stmt_ = _v28.b;
-									return _Utils_Tuple2(
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple2(id, store),
-											exec_),
-										stmt_);
-								}
-							default:
-								break _v24$3;
-						}
-					}
-					return _Utils_Tuple2(_List_Nil, _List_Nil);
-				case 'SRead':
-					var x = s.b;
-					var vs = A2($author$project$IMP$Utils$lookup, 'input', store);
-					if (vs.$ === 'Just') {
-						if (vs.a.$ === 'VHole') {
-							var _v30 = vs.a;
-							var _v31 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-							var exec_ = _v31.a;
-							var stmt_ = _v31.b;
-							return _Utils_Tuple2(
-								exec_,
-								A2(
-									$elm$core$List$cons,
-									_Utils_Tuple3(
-										id,
-										A2($author$project$IMP$Syntax$SRead, _List_Nil, x),
-										store),
-									stmt_));
-						} else {
-							var res = A6(
-								$author$project$IMP$Eval$exec,
-								store,
-								hb,
-								_List_Nil,
-								A2($author$project$IMP$Syntax$SRead, _List_Nil, x),
-								$elm$core$Set$empty,
-								scount);
-							var _v32 = A3($author$project$IMP$Eval$tryExec, hb, rest, res.scount);
-							var exec_ = _v32.a;
-							var stmt_ = _v32.b;
-							return _Utils_Tuple2(
-								A2(
-									$elm$core$List$cons,
-									_Utils_Tuple2(id, res.store),
-									exec_),
-								_Utils_ap(res.riStmts, stmt_));
-						}
-					} else {
-						return _Utils_Tuple2(
-							_List_fromArray(
-								[
-									_Utils_Tuple2(-2, _List_Nil)
-								]),
-							_List_Nil);
-					}
-				case 'SPrint':
-					var ws = s.a;
-					var e = s.b;
-					var v = A3($author$project$IMP$Eval$eval, store, hb, e);
-					_v33$2:
-					while (true) {
-						switch (v.$) {
-							case 'VHole':
-								if (v.a.$ === 'HTmp') {
-									var _v34 = v.a;
-									var e_ = A3($author$project$IMP$Eval$simplifyExpr, store, e, hb);
-									var _v35 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-									var exec_ = _v35.a;
-									var stmt_ = _v35.b;
-									return _Utils_Tuple2(
-										exec_,
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple3(
-												id,
-												A2($author$project$IMP$Syntax$SPrint, ws, e_),
-												store),
-											stmt_));
-								} else {
-									break _v33$2;
-								}
-							case 'VList':
-								var vs = v.a;
-								if ($author$project$IMP$Utils$hasHole(vs)) {
-									var e_ = A3($author$project$IMP$Eval$simplifyExpr, store, e, hb);
-									var _v36 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-									var exec_ = _v36.a;
-									var stmt_ = _v36.b;
-									return _Utils_Tuple2(
-										exec_,
-										A2(
-											$elm$core$List$cons,
-											_Utils_Tuple3(
-												id,
-												A2($author$project$IMP$Syntax$SPrint, ws, e_),
-												store),
-											stmt_));
-								} else {
-									var _v37 = A3($author$project$IMP$Eval$tryExec, hb, rest, scount);
-									var exec_ = _v37.a;
-									var stmt_ = _v37.b;
-									var oldv = A2($author$project$IMP$Utils$lookup, 'output', store);
-									if ((oldv.$ === 'Just') && (oldv.a.$ === 'VList')) {
-										var vs_ = oldv.a.a;
-										return _Utils_Tuple2(
-											A2(
-												$elm$core$List$cons,
-												_Utils_Tuple2(
-													id,
-													A3(
-														$author$project$IMP$Utils$updateStore,
-														'output',
-														$author$project$IMP$Syntax$VList(
-															_Utils_ap(
-																vs_,
-																_List_fromArray(
-																	[
-																		$author$project$IMP$Syntax$VList(vs)
-																	]))),
-														store)),
-												exec_),
-											stmt_);
-									} else {
-										return _Utils_Tuple2(_List_Nil, _List_Nil);
-									}
-								}
-							default:
-								break _v33$2;
-						}
-					}
-					var res = A6(
-						$author$project$IMP$Eval$exec,
-						store,
-						hb,
-						_List_Nil,
-						A2($author$project$IMP$Syntax$SPrint, ws, e),
-						$elm$core$Set$empty,
-						scount);
-					var _v39 = A3($author$project$IMP$Eval$tryExec, hb, rest, res.scount);
-					var exec_ = _v39.a;
-					var stmt_ = _v39.b;
-					return _Utils_Tuple2(
-						A2(
-							$elm$core$List$cons,
-							_Utils_Tuple2(id, res.store),
-							exec_),
-						_Utils_ap(res.riStmts, stmt_));
-				default:
-					return _Utils_Tuple2(
-						_List_fromArray(
-							[
-								_Utils_Tuple2(-2, _List_Nil)
-							]),
-						_List_Nil);
+			var news = A3($author$project$IMP$Utils$substHoleinStmt, id, s, holes);
+			if (!_Utils_eq(news, s)) {
+				var _v2 = A2($author$project$IMP$Utils$substHole, holes, rest);
+				var restl = _v2.a;
+				var restr = _v2.b;
+				return _Utils_Tuple2(
+					A2(
+						$elm$core$List$cons,
+						_Utils_Tuple3(id, news, store),
+						restl),
+					restr);
+			} else {
+				var _v3 = A2($author$project$IMP$Utils$substHole, holes, rest);
+				var restl = _v3.a;
+				var restr = _v3.b;
+				return _Utils_Tuple2(
+					restl,
+					A2(
+						$elm$core$List$cons,
+						_Utils_Tuple3(id, news, store),
+						restr));
 			}
 		}
 	});
-var $author$project$IMP$Eval$fill = F3(
-	function (holes, hb, fwdRes) {
-		fill:
-		while (true) {
-			var newris = A2($author$project$IMP$Utils$substHole, holes, fwdRes.riStmts);
-			var _v0 = A3($author$project$IMP$Eval$tryExec, hb, newris, fwdRes.scount);
-			var execList = _v0.a;
-			var newris_ = _v0.b;
-			if ($elm$core$List$isEmpty(execList)) {
-				return $author$project$IMP$Eval$reindexResiduals(
-					_Utils_update(
-						fwdRes,
-						{riStmts: newris_}));
-			} else {
-				var _v1 = A3($author$project$IMP$Eval$substHoleInStore, fwdRes.store, execList, $elm$core$Dict$empty);
-				var store_ = _v1.a;
-				var h2eMap = _v1.b;
-				var _v2 = A3($author$project$IMP$Eval$substHoleInStmtStore, newris_, execList, h2eMap);
-				var newris__ = _v2.a;
-				var h2eMap_ = _v2.b;
-				var $temp$holes = h2eMap_,
-					$temp$hb = hb,
-					$temp$fwdRes = _Utils_update(
-					fwdRes,
-					{riStmts: newris__, store: store_});
-				holes = $temp$holes;
-				hb = $temp$hb;
-				fwdRes = $temp$fwdRes;
-				continue fill;
-			}
+var $author$project$IMP$Utils$substHoleinFuncEnv = F3(
+	function (id, env, holes) {
+		return A2(
+			$elm$core$List$map,
+			function (f) {
+				return _Utils_update(
+					f,
+					{
+						body: A3($author$project$IMP$Utils$substHoleinStmt, id, f.body, holes)
+					});
+			},
+			env);
+	});
+var $author$project$IMP$Eval$fill = F4(
+	function (funcEnv, holes, hb, fwdRes) {
+		var funcEnv1 = A3($author$project$IMP$Utils$substHoleinFuncEnv, 0, funcEnv, holes);
+		var _v0 = A2($author$project$IMP$Utils$substHole, holes, fwdRes.riStmts);
+		var filled0 = _v0.a;
+		var unaffected0 = _v0.b;
+		var filled = $author$project$IMP$Eval$recoverRiStmts(filled0);
+		var unaffected = $author$project$IMP$Eval$recoverRiStmts(unaffected0);
+		var _v1 = $author$project$IMP$Eval$divideAfterFilled(filled);
+		var toExec = _v1.a;
+		var remaining = _v1.b;
+		var remained = _Utils_ap(remaining, unaffected);
+		if ($elm$core$List$isEmpty(toExec)) {
+			return _Utils_update(
+				fwdRes,
+				{riStmts: remained});
+		} else {
+			var _v2 = A4($author$project$IMP$Eval$batchExec, funcEnv1, hb, toExec, fwdRes.scount);
+			var finished = _v2.a;
+			var newlyResidual = _v2.b;
+			var scount1 = _v2.c;
+			var _v3 = A3(
+				$author$project$IMP$Eval$substValinVal,
+				finished,
+				fwdRes.store,
+				_Utils_ap(
+					remained,
+					$author$project$IMP$Eval$recoverRiStmts(newlyResidual)));
+			var store1 = _v3.a;
+			var newlyKnown = _v3.b;
+			var newlyUnknown = _v3.c;
+			return A6($author$project$IMP$Eval$resume, funcEnv1, hb, scount1, store1, newlyKnown, newlyUnknown);
 		}
 	});
 var $elm$core$List$maybeCons = F3(
@@ -11864,6 +13372,62 @@ var $elm$core$List$filterMap = F2(
 			_List_Nil,
 			xs);
 	});
+var $author$project$Controller$keepContextId = F2(
+	function (id, ris) {
+		return A2(
+			$elm$core$List$any,
+			function (_v0) {
+				var id_ = _v0.a;
+				return _Utils_eq(id_, id);
+			},
+			ris) ? id : (-1);
+	});
+var $author$project$IMP$Eval$nextScount = F2(
+	function (scount, ris) {
+		return A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, acc) {
+					var id = _v0.a;
+					return (_Utils_cmp(id + 1, acc) > 0) ? (id + 1) : acc;
+				}),
+			scount,
+			ris);
+	});
+var $author$project$IMP$Utils$oriCompactMap = function (hs) {
+	return $elm$core$Dict$fromList(
+		A2(
+			$elm$core$List$indexedMap,
+			F2(
+				function (i, n) {
+					return _Utils_Tuple2(n, i);
+				}),
+			A3(
+				$elm$core$List$foldl,
+				F2(
+					function (n, acc) {
+						return A2($elm$core$List$member, n, acc) ? acc : _Utils_ap(
+							acc,
+							_List_fromArray(
+								[n]));
+					}),
+				_List_Nil,
+				A2(
+					$elm$core$List$filterMap,
+					function (h) {
+						if (h.$ === 'HOri') {
+							var n = h.a;
+							return $elm$core$Maybe$Just(n);
+						} else {
+							return $elm$core$Maybe$Nothing;
+						}
+					},
+					hs))));
+};
+var $author$project$Controller$oriKeyToInt = function (key) {
+	return A2($elm$core$String$startsWith, 'o:', key) ? $elm$core$String$toInt(
+		A2($elm$core$String$dropLeft, 2, key)) : $elm$core$Maybe$Nothing;
+};
 var $author$project$IMP$Parser_$parseExpr = $elm$parser$Parser$run(
 	A2(
 		$elm$parser$Parser$keeper,
@@ -11872,6 +13436,13 @@ var $author$project$IMP$Parser_$parseExpr = $elm$parser$Parser$run(
 			$elm$parser$Parser$succeed($elm$core$Basics$identity),
 			$author$project$IMP$Parser_$mSpaces),
 		A2($elm$parser$Parser$ignorer, $author$project$IMP$Parser_$expr, $elm$parser$Parser$end)));
+var $author$project$IMP$Printer$printHoleExpr = function (h) {
+	if (h.$ === 'HOri') {
+		return '_';
+	} else {
+		return '{ ' + ($author$project$IMP$Printer$printHoleName(h) + ' }');
+	}
+};
 var $author$project$IMP$Printer$printExpr = function (expr) {
 	switch (expr.$) {
 		case 'EInt':
@@ -11928,9 +13499,13 @@ var $author$project$IMP$Printer$printExpr = function (expr) {
 			if (expr.a.b && (!expr.a.b.b)) {
 				var _v11 = expr.a;
 				var s = _v11.a;
-				return '_' + s;
+				var h = expr.b;
+				return _Utils_ap(
+					$author$project$IMP$Printer$printHoleExpr(h),
+					s);
 			} else {
-				return '_';
+				var h = expr.b;
+				return $author$project$IMP$Printer$printHoleExpr(h);
 			}
 		case 'ENot':
 			if (expr.a.b && (!expr.a.b.b)) {
@@ -12064,6 +13639,40 @@ var $author$project$IMP$Printer$printListTail = F2(
 			return '';
 		}
 	});
+var $author$project$IMP$Printer$printIdentTail = F2(
+	function (commas, names) {
+		var _v0 = _Utils_Tuple2(commas, names);
+		if (_v0.b.b) {
+			if (_v0.a.b) {
+				var _v1 = _v0.a;
+				var c = _v1.a;
+				var cs = _v1.b;
+				var _v2 = _v0.b;
+				var n = _v2.a;
+				var rest = _v2.b;
+				return ',' + (c + (n + A2($author$project$IMP$Printer$printIdentTail, cs, rest)));
+			} else {
+				var _v3 = _v0.b;
+				var n = _v3.a;
+				var rest = _v3.b;
+				return ', ' + (n + A2($author$project$IMP$Printer$printIdentTail, _List_Nil, rest));
+			}
+		} else {
+			return '';
+		}
+	});
+var $author$project$IMP$Printer$printIdents = F2(
+	function (commas, names) {
+		if (!names.b) {
+			return '';
+		} else {
+			var n = names.a;
+			var rest = names.b;
+			return _Utils_ap(
+				n,
+				A2($author$project$IMP$Printer$printIdentTail, commas, rest));
+		}
+	});
 var $author$project$IMP$Printer$printStmt = function (stmt) {
 	switch (stmt.$) {
 		case 'SSkip':
@@ -12156,11 +13765,254 @@ var $author$project$IMP$Printer$printStmt = function (stmt) {
 				var s2 = stmt.c;
 				return $author$project$IMP$Printer$printStmt(s1) + ('; ' + $author$project$IMP$Printer$printStmt(s2));
 			}
+		case 'SFuncDef':
+			if (stmt.a.b && stmt.a.b.b) {
+				var _v14 = stmt.a;
+				var s1 = _v14.a;
+				var _v15 = _v14.b;
+				var sOpen = _v15.a;
+				var rest = _v15.b;
+				var name = stmt.b;
+				var params = stmt.c;
+				var body = stmt.d;
+				var _v16 = $elm$core$List$reverse(rest);
+				if (_v16.b && _v16.b.b) {
+					var sEnd = _v16.a;
+					var _v17 = _v16.b;
+					var sClose = _v17.a;
+					var commasRev = _v17.b;
+					return 'func' + (s1 + (name + ('(' + (sOpen + (A2(
+						$author$project$IMP$Printer$printIdents,
+						$elm$core$List$reverse(commasRev),
+						params) + (')' + (sClose + ($author$project$IMP$Printer$printStmt(body) + ('end' + sEnd)))))))));
+				} else {
+					return 'func ' + (name + ('(' + (A2($elm$core$String$join, ', ', params) + (') ' + ($author$project$IMP$Printer$printStmt(body) + 'end ')))));
+				}
+			} else {
+				var name = stmt.b;
+				var params = stmt.c;
+				var body = stmt.d;
+				return 'func ' + (name + ('(' + (A2($elm$core$String$join, ', ', params) + (') ' + ($author$project$IMP$Printer$printStmt(body) + 'end ')))));
+			}
+		case 'SFuncCall':
+			if (stmt.a.b) {
+				var _v18 = stmt.a;
+				var sOpen = _v18.a;
+				var rest = _v18.b;
+				var name = stmt.b;
+				var args = stmt.c;
+				var _v19 = $elm$core$List$reverse(rest);
+				if (_v19.b) {
+					var sClose = _v19.a;
+					var commasRev = _v19.b;
+					return name + ('(' + (sOpen + (A2(
+						$author$project$IMP$Printer$printListBody,
+						$elm$core$List$reverse(commasRev),
+						args) + (')' + sClose))));
+				} else {
+					return name + ('(' + (A2(
+						$elm$core$String$join,
+						', ',
+						A2($elm$core$List$map, $author$project$IMP$Printer$printExpr, args)) + ') '));
+				}
+			} else {
+				var name = stmt.b;
+				var args = stmt.c;
+				return name + ('(' + (A2(
+					$elm$core$String$join,
+					', ',
+					A2($elm$core$List$map, $author$project$IMP$Printer$printExpr, args)) + ') '));
+			}
 		default:
 			var info = stmt.a;
 			return info;
 	}
 };
+var $author$project$IMP$Utils$remapOriExpr = F2(
+	function (mp, e) {
+		_v0$7:
+		while (true) {
+			switch (e.$) {
+				case 'EHole':
+					if (e.b.$ === 'HOri') {
+						var ws = e.a;
+						var n = e.b.a;
+						var _v1 = A2($elm$core$Dict$get, n, mp);
+						if (_v1.$ === 'Just') {
+							var n_ = _v1.a;
+							return A2(
+								$author$project$IMP$Syntax$EHole,
+								ws,
+								$author$project$IMP$Syntax$HOri(n_));
+						} else {
+							return A2(
+								$author$project$IMP$Syntax$EHole,
+								ws,
+								$author$project$IMP$Syntax$HOri(n));
+						}
+					} else {
+						break _v0$7;
+					}
+				case 'Eop':
+					var ws = e.a;
+					var op = e.b;
+					var e1 = e.c;
+					var e2 = e.d;
+					return A4(
+						$author$project$IMP$Syntax$Eop,
+						ws,
+						op,
+						A2($author$project$IMP$Utils$remapOriExpr, mp, e1),
+						A2($author$project$IMP$Utils$remapOriExpr, mp, e2));
+				case 'ENot':
+					var ws = e.a;
+					var e1 = e.b;
+					return A2(
+						$author$project$IMP$Syntax$ENot,
+						ws,
+						A2($author$project$IMP$Utils$remapOriExpr, mp, e1));
+				case 'EParens':
+					var ws = e.a;
+					var e1 = e.b;
+					return A2(
+						$author$project$IMP$Syntax$EParens,
+						ws,
+						A2($author$project$IMP$Utils$remapOriExpr, mp, e1));
+				case 'EList':
+					var ws = e.a;
+					var es = e.b;
+					return A2(
+						$author$project$IMP$Syntax$EList,
+						ws,
+						A2(
+							$elm$core$List$map,
+							$author$project$IMP$Utils$remapOriExpr(mp),
+							es));
+				case 'EIndex':
+					var ws = e.a;
+					var e1 = e.b;
+					var e2 = e.c;
+					return A3(
+						$author$project$IMP$Syntax$EIndex,
+						ws,
+						A2($author$project$IMP$Utils$remapOriExpr, mp, e1),
+						A2($author$project$IMP$Utils$remapOriExpr, mp, e2));
+				case 'ELength':
+					var ws = e.a;
+					var e1 = e.b;
+					return A2(
+						$author$project$IMP$Syntax$ELength,
+						ws,
+						A2($author$project$IMP$Utils$remapOriExpr, mp, e1));
+				default:
+					break _v0$7;
+			}
+		}
+		return e;
+	});
+var $author$project$IMP$Utils$remapOriStmt = F2(
+	function (mp, s) {
+		switch (s.$) {
+			case 'SAssign':
+				var ws = s.a;
+				var e1 = s.b;
+				var e2 = s.c;
+				return A3(
+					$author$project$IMP$Syntax$SAssign,
+					ws,
+					A2($author$project$IMP$Utils$remapOriExpr, mp, e1),
+					A2($author$project$IMP$Utils$remapOriExpr, mp, e2));
+			case 'SIf':
+				var ws = s.a;
+				var e = s.b;
+				var s1 = s.c;
+				var s2 = s.d;
+				return A4(
+					$author$project$IMP$Syntax$SIf,
+					ws,
+					A2($author$project$IMP$Utils$remapOriExpr, mp, e),
+					A2($author$project$IMP$Utils$remapOriStmt, mp, s1),
+					A2($author$project$IMP$Utils$remapOriStmt, mp, s2));
+			case 'SWhile':
+				var ws = s.a;
+				var e = s.b;
+				var body = s.c;
+				return A3(
+					$author$project$IMP$Syntax$SWhile,
+					ws,
+					A2($author$project$IMP$Utils$remapOriExpr, mp, e),
+					A2($author$project$IMP$Utils$remapOriStmt, mp, body));
+			case 'SPrint':
+				var ws = s.a;
+				var e = s.b;
+				return A2(
+					$author$project$IMP$Syntax$SPrint,
+					ws,
+					A2($author$project$IMP$Utils$remapOriExpr, mp, e));
+			case 'SSeq':
+				var ws = s.a;
+				var s1 = s.b;
+				var s2 = s.c;
+				return A3(
+					$author$project$IMP$Syntax$SSeq,
+					ws,
+					A2($author$project$IMP$Utils$remapOriStmt, mp, s1),
+					A2($author$project$IMP$Utils$remapOriStmt, mp, s2));
+			case 'SFuncDef':
+				var ws = s.a;
+				var name = s.b;
+				var params = s.c;
+				var body = s.d;
+				return A4(
+					$author$project$IMP$Syntax$SFuncDef,
+					ws,
+					name,
+					params,
+					A2($author$project$IMP$Utils$remapOriStmt, mp, body));
+			case 'SFuncCall':
+				var ws = s.a;
+				var name = s.b;
+				var args = s.c;
+				return A3(
+					$author$project$IMP$Syntax$SFuncCall,
+					ws,
+					name,
+					A2(
+						$elm$core$List$map,
+						$author$project$IMP$Utils$remapOriExpr(mp),
+						args));
+			default:
+				return s;
+		}
+	});
+var $author$project$IMP$Utils$remapOriFuncEnv = F2(
+	function (mp, env) {
+		return A2(
+			$elm$core$List$map,
+			function (f) {
+				return _Utils_update(
+					f,
+					{
+						body: A2($author$project$IMP$Utils$remapOriStmt, mp, f.body)
+					});
+			},
+			env);
+	});
+var $author$project$IMP$Utils$remapOriRiStmts = F2(
+	function (mp, ris) {
+		return A2(
+			$elm$core$List$map,
+			function (_v0) {
+				var id = _v0.a;
+				var s = _v0.b;
+				var store = _v0.c;
+				return _Utils_Tuple3(
+					id,
+					A2($author$project$IMP$Utils$remapOriStmt, mp, s),
+					store);
+			},
+			ris);
+	});
 var $elm$core$Dict$sizeHelp = F2(
 	function (n, dict) {
 		sizeHelp:
@@ -12185,18 +14037,21 @@ var $elm$core$Set$size = function (_v0) {
 	var dict = _v0.a;
 	return $elm$core$Dict$size(dict);
 };
-var $author$project$Controller$saveAndFill = function (model) {
+var $author$project$Controller$saveAndFillWith = function (model) {
 	var parsed = A2(
 		$elm$core$List$filterMap,
 		function (key) {
 			return A2(
 				$elm$core$Maybe$andThen,
 				function (src) {
-					var _v2 = $author$project$IMP$Parser_$parseExpr(src);
-					if (_v2.$ === 'Ok') {
-						var e = _v2.a;
+					var _v5 = _Utils_Tuple2(
+						$author$project$Controller$oriKeyToInt(key),
+						$author$project$IMP$Parser_$parseExpr(src));
+					if ((_v5.a.$ === 'Just') && (_v5.b.$ === 'Ok')) {
+						var n = _v5.a.a;
+						var e = _v5.b.a;
 						return $elm$core$Maybe$Just(
-							_Utils_Tuple2(key, e));
+							_Utils_Tuple2(n, e));
 					} else {
 						return $elm$core$Maybe$Nothing;
 					}
@@ -12212,34 +14067,67 @@ var $author$project$Controller$saveAndFill = function (model) {
 			model,
 			{output: 'Parse error in fill expression'});
 	} else {
-		var res = A3(
-			$author$project$IMP$Eval$fill,
-			holeDict,
-			model.holeBindings,
-			{
-				readOnly: $elm$core$Set$empty,
-				riStmts: model.riStmts,
-				scount: $elm$core$List$length(model.riStmts),
-				store: model.store
+		var res = function () {
+			var funcEnv = function () {
+				var _v3 = $author$project$IMP$Parser_$parse(model.code);
+				if (_v3.$ === 'Ok') {
+					var stmt = _v3.a;
+					var _v4 = $author$project$IMP$Utils$prepareStmt(stmt);
+					var env = _v4.c;
+					return env;
+				} else {
+					return _List_Nil;
+				}
+			}();
+			return $timeEval("Fill-and-resume", function () {
+				return A4(
+					$author$project$IMP$Eval$fill,
+					funcEnv,
+					holeDict,
+					model.holeBindings,
+					{
+						readOnly: $elm$core$Set$empty,
+						riStmts: model.riStmts,
+						scount: A2($author$project$IMP$Eval$nextScount, 0, model.riStmts),
+						store: model.store
+					});
 			});
-		var newCode = function () {
-			var _v0 = $author$project$IMP$Parser_$parse(model.code);
-			if (_v0.$ === 'Ok') {
-				var stmt = _v0.a;
-				var _v1 = A2($author$project$IMP$Utils$preprocessStmt, stmt, 0);
-				var stmt_ = _v1.a;
-				return $author$project$IMP$Printer$printStmt(
-					A3($author$project$IMP$Utils$substHoleinStmt, 0, stmt_, holeDict));
+		}();
+		var _v0 = function () {
+			var _v1 = $author$project$IMP$Parser_$parse(model.code);
+			if (_v1.$ === 'Ok') {
+				var stmt = _v1.a;
+				var _v2 = $author$project$IMP$Utils$prepareStmt(stmt);
+				var stmt_ = _v2.a;
+				var funcEnv = _v2.c;
+				var substEnv = A3($author$project$IMP$Utils$substHoleinFuncEnv, 0, funcEnv, holeDict);
+				var substStmt = A3($author$project$IMP$Utils$substHoleinStmt, 0, stmt_, holeDict);
+				var holeMap = $author$project$IMP$Utils$oriCompactMap(
+					_Utils_ap(
+						$author$project$Controller$collectOriInStmt(substStmt),
+						_Utils_ap(
+							$author$project$Controller$collectOriInFuncEnv(substEnv),
+							$author$project$Controller$collectOriInRiStmts(res.riStmts))));
+				var newEnv = A2($author$project$IMP$Utils$remapOriFuncEnv, holeMap, substEnv);
+				var newStmt = A2($author$project$IMP$Utils$remapOriStmt, holeMap, substStmt);
+				return _Utils_Tuple2(
+					$author$project$IMP$Printer$printStmt(
+						A2($author$project$IMP$Utils$attachFuncs, newEnv, newStmt)),
+					A2($author$project$IMP$Utils$remapOriRiStmts, holeMap, res.riStmts));
 			} else {
-				return model.code;
+				return _Utils_Tuple2(model.code, res.riStmts);
 			}
 		}();
+		var newCode = _v0.a;
+		var newRi = _v0.b;
+		var keepId = A2($author$project$Controller$keepContextId, model.currentContext, newRi);
 		return _Utils_update(
 			model,
 			{
 				code: newCode,
 				codeBackup: newCode,
-				currentContext: -1,
+				contextDrafts: A2($author$project$Controller$contextDraftsOf, keepId, newRi),
+				currentContext: keepId,
 				fillDraft: $elm$core$Dict$empty,
 				fillSelected: $elm$core$Set$empty,
 				filling: false,
@@ -12248,168 +14136,23 @@ var $author$project$Controller$saveAndFill = function (model) {
 				holeDict: holeDict,
 				oriHoles: _List_Nil,
 				output: $author$project$IMP$Printer$printOutput(res.store),
-				riStmts: res.riStmts,
+				riStmts: newRi,
 				store: res.store
 			});
 	}
 };
-var $author$project$IMP$Parser_$vfalse = A2(
-	$elm$parser$Parser$ignorer,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed(
-			$author$project$IMP$Syntax$VBool(false)),
-		$elm$parser$Parser$keyword('false')),
-	$author$project$IMP$Parser_$mSpaces);
-var $author$project$IMP$Parser_$vint = $elm$parser$Parser$oneOf(
-	_List_fromArray(
-		[
-			A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$succeed(
-					function (n) {
-						return $author$project$IMP$Syntax$VInt(-n);
-					}),
-				$elm$parser$Parser$symbol('-')),
-			A2($elm$parser$Parser$ignorer, $elm$parser$Parser$int, $author$project$IMP$Parser_$mSpaces)),
-			A2(
-			$elm$parser$Parser$keeper,
-			$elm$parser$Parser$succeed($author$project$IMP$Syntax$VInt),
-			A2($elm$parser$Parser$ignorer, $elm$parser$Parser$int, $author$project$IMP$Parser_$mSpaces))
-		]));
-var $author$project$IMP$Parser_$vstring = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed($author$project$IMP$Syntax$VString),
-		$elm$parser$Parser$symbol('\"')),
-	A2(
-		$elm$parser$Parser$ignorer,
-		A2(
-			$elm$parser$Parser$ignorer,
-			$author$project$IMP$Parser_$string_,
-			$elm$parser$Parser$symbol('\"')),
-		$author$project$IMP$Parser_$mSpaces));
-var $author$project$IMP$Parser_$vtrue = A2(
-	$elm$parser$Parser$ignorer,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed(
-			$author$project$IMP$Syntax$VBool(true)),
-		$elm$parser$Parser$keyword('true')),
-	$author$project$IMP$Parser_$mSpaces);
-var $author$project$IMP$Parser_$vlistTailHelper = function (revItems) {
-	return $elm$parser$Parser$oneOf(
-		_List_fromArray(
-			[
-				A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$ignorer,
-					A2(
-						$elm$parser$Parser$ignorer,
-						$elm$parser$Parser$succeed(
-							function (v) {
-								return $elm$parser$Parser$Loop(
-									A2($elm$core$List$cons, v, revItems));
-							}),
-						$elm$parser$Parser$symbol(',')),
-					$author$project$IMP$Parser_$mSpaces),
-				$elm$parser$Parser$lazy(
-					function (_v0) {
-						return $author$project$IMP$Parser_$cyclic$value_();
-					})),
-				A2(
-				$elm$parser$Parser$map,
-				function (_v1) {
-					return $elm$parser$Parser$Done(
-						$elm$core$List$reverse(revItems));
-				},
-				$elm$parser$Parser$succeed(_Utils_Tuple0))
-			]));
+var $author$project$Controller$saveAndFill = function (model) {
+	var _v0 = $author$project$Controller$applyContextDraft(model);
+	if (_v0.$ === 'Err') {
+		var info = _v0.a;
+		return _Utils_update(
+			model,
+			{output: info});
+	} else {
+		var model1 = _v0.a;
+		return $author$project$Controller$saveAndFillWith(model1);
+	}
 };
-function $author$project$IMP$Parser_$cyclic$value_() {
-	return $elm$parser$Parser$oneOf(
-		_List_fromArray(
-			[
-				$author$project$IMP$Parser_$cyclic$vlist(),
-				$author$project$IMP$Parser_$vstring,
-				$author$project$IMP$Parser_$vtrue,
-				$author$project$IMP$Parser_$vfalse,
-				$author$project$IMP$Parser_$vint
-			]));
-}
-function $author$project$IMP$Parser_$cyclic$vlist() {
-	return A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$ignorer,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$succeed($author$project$IMP$Syntax$VList),
-				$elm$parser$Parser$symbol('[')),
-			$author$project$IMP$Parser_$mSpaces),
-		A2(
-			$elm$parser$Parser$ignorer,
-			A2(
-				$elm$parser$Parser$ignorer,
-				$author$project$IMP$Parser_$cyclic$vlistItems(),
-				$elm$parser$Parser$symbol(']')),
-			$author$project$IMP$Parser_$mSpaces));
-}
-function $author$project$IMP$Parser_$cyclic$vlistItems() {
-	return $elm$parser$Parser$oneOf(
-		_List_fromArray(
-			[
-				A2(
-				$elm$parser$Parser$keeper,
-				A2(
-					$elm$parser$Parser$keeper,
-					$elm$parser$Parser$succeed(
-						F2(
-							function (v, rest) {
-								return A2($elm$core$List$cons, v, rest);
-							})),
-					$elm$parser$Parser$lazy(
-						function (_v2) {
-							return $author$project$IMP$Parser_$cyclic$value_();
-						})),
-				$author$project$IMP$Parser_$cyclic$vlistTail()),
-				$elm$parser$Parser$succeed(_List_Nil)
-			]));
-}
-function $author$project$IMP$Parser_$cyclic$vlistTail() {
-	return A2($elm$parser$Parser$loop, _List_Nil, $author$project$IMP$Parser_$vlistTailHelper);
-}
-try {
-	var $author$project$IMP$Parser_$value_ = $author$project$IMP$Parser_$cyclic$value_();
-	$author$project$IMP$Parser_$cyclic$value_ = function () {
-		return $author$project$IMP$Parser_$value_;
-	};
-	var $author$project$IMP$Parser_$vlist = $author$project$IMP$Parser_$cyclic$vlist();
-	$author$project$IMP$Parser_$cyclic$vlist = function () {
-		return $author$project$IMP$Parser_$vlist;
-	};
-	var $author$project$IMP$Parser_$vlistItems = $author$project$IMP$Parser_$cyclic$vlistItems();
-	$author$project$IMP$Parser_$cyclic$vlistItems = function () {
-		return $author$project$IMP$Parser_$vlistItems;
-	};
-	var $author$project$IMP$Parser_$vlistTail = $author$project$IMP$Parser_$cyclic$vlistTail();
-	$author$project$IMP$Parser_$cyclic$vlistTail = function () {
-		return $author$project$IMP$Parser_$vlistTail;
-	};
-} catch ($) {
-	throw 'Some top-level definitions from `IMP.Parser_` are causing infinite recursion:\n\n  ┌─────┐\n  │    value_\n  │     ↓\n  │    vlist\n  │     ↓\n  │    vlistItems\n  │     ↓\n  │    vlistTail\n  │     ↓\n  │    vlistTailHelper\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
-var $author$project$IMP$Parser_$parseValue = $elm$parser$Parser$run(
-	A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$ignorer,
-			$elm$parser$Parser$succeed($elm$core$Basics$identity),
-			$author$project$IMP$Parser_$mSpaces),
-		A2($elm$parser$Parser$ignorer, $author$project$IMP$Parser_$value_, $elm$parser$Parser$end)));
 var $author$project$Controller$saveInput = function (model) {
 	var _v0 = $author$project$IMP$Parser_$parseValue(model.inputDraft);
 	if (_v0.$ === 'Ok') {
@@ -12435,6 +14178,16 @@ var $author$project$Controller$saveInput = function (model) {
 			{output: 'Parse error in input'});
 	}
 };
+var $author$project$Controller$selectResidual = F2(
+	function (id, model) {
+		var model1 = $author$project$Controller$commitContextDraft(model);
+		return _Utils_update(
+			model1,
+			{
+				contextDrafts: A2($author$project$Controller$contextDraftsOf, id, model1.riStmts),
+				currentContext: id
+			});
+	});
 var $elm$json$Json$Encode$bool = _Json_wrap;
 var $elm$json$Json$Encode$list = F2(
 	function (func, entries) {
@@ -12467,28 +14220,71 @@ var $author$project$Main$setAceRed = _Platform_outgoingPort(
 		return $elm$json$Json$Encode$null;
 	});
 var $author$project$Main$setConsoleVisible = _Platform_outgoingPort('setConsoleVisible', $elm$json$Json$Encode$string);
+var $elm$core$String$lines = _String_lines;
+var $author$project$Controller$parseOutputLines = function (lines) {
+	if (!lines.b) {
+		return $elm$core$Result$Ok(_List_Nil);
+	} else {
+		var line = lines.a;
+		var rest = lines.b;
+		var _v1 = $author$project$IMP$Parser_$parseValue(line);
+		if (_v1.$ === 'Ok') {
+			var v = _v1.a;
+			return A2(
+				$elm$core$Result$map,
+				function (vs) {
+					return A2($elm$core$List$cons, v, vs);
+				},
+				$author$project$Controller$parseOutputLines(rest));
+		} else {
+			return $elm$core$Result$Err('Parse error in output');
+		}
+	}
+};
+var $elm$core$String$trim = _String_trim;
+var $author$project$Controller$parseOutputText = function (src) {
+	return $author$project$Controller$parseOutputLines(
+		A2(
+			$elm$core$List$filter,
+			function (line) {
+				return line !== '';
+			},
+			A2(
+				$elm$core$List$map,
+				$elm$core$String$trim,
+				$elm$core$String$lines(src))));
+};
 var $author$project$IMP$Uneval$defaultUnexecRes = {
+	funcEnv: _List_Nil,
 	hcount: 0,
 	holeBindings: _List_Nil,
 	riStmts: _List_Nil,
 	stmt: $author$project$IMP$Syntax$SSkip(_List_Nil),
 	store: _List_Nil
 };
-var $author$project$IMP$Utils$delStore = F2(
-	function (x, store) {
-		if (store.b) {
-			var _v1 = store.a;
-			var x_ = _v1.a;
-			var v = _v1.b;
-			var rest = store.b;
-			return _Utils_eq(x, x_) ? rest : A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(x_, v),
-				A2($author$project$IMP$Utils$delStore, x, rest));
-		} else {
-			return _List_Nil;
-		}
+var $author$project$IMP$Uneval$dropRiStmt = F2(
+	function (id, ris) {
+		return A2(
+			$elm$core$List$filter,
+			function (_v0) {
+				var id_ = _v0.a;
+				return !_Utils_eq(id_, id);
+			},
+			ris);
 	});
+var $author$project$IMP$Uneval$fmtStore = function (s) {
+	return A2(
+		$elm$core$String$join,
+		' || ',
+		A2(
+			$elm$core$List$map,
+			function (_v0) {
+				var x = _v0.a;
+				var v = _v0.b;
+				return x + ('=' + $author$project$IMP$Printer$printValue(v));
+			},
+			s));
+};
 var $author$project$IMP$Uneval$getFinalRiStmtStore = function (riStmts) {
 	getFinalRiStmtStore:
 	while (true) {
@@ -12508,39 +14304,31 @@ var $author$project$IMP$Uneval$getFinalRiStmtStore = function (riStmts) {
 		}
 	}
 };
-var $author$project$IMP$Uneval$mergeStore = F3(
-	function (store1, store2, store3) {
-		var _v0 = _Utils_Tuple3(store1, store2, store3);
-		if ((_v0.a.b && _v0.b.b) && _v0.c.b) {
+var $author$project$IMP$Utils$lookupFuncBody = F3(
+	function (name, env, defaultBody) {
+		var _v0 = A2($author$project$IMP$Utils$lookupFunc, name, env);
+		if (_v0.$ === 'Just') {
 			var _v1 = _v0.a;
-			var _v2 = _v1.a;
-			var x1 = _v2.a;
-			var v1 = _v2.b;
-			var store1_ = _v1.b;
-			var _v3 = _v0.b;
-			var _v4 = _v3.a;
-			var x2 = _v4.a;
-			var v2 = _v4.b;
-			var store2_ = _v3.b;
-			var _v5 = _v0.c;
-			var _v6 = _v5.a;
-			var x3 = _v6.a;
-			var v3 = _v6.b;
-			var store3_ = _v5.b;
-			return (!_Utils_eq(v1, v3)) ? A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(x1, v1),
-				A3($author$project$IMP$Uneval$mergeStore, store1_, store2_, store3_)) : A2(
-				$elm$core$List$cons,
-				_Utils_Tuple2(x2, v2),
-				A3($author$project$IMP$Uneval$mergeStore, store1_, store2_, store3_));
+			var body = _v1.b;
+			return body;
 		} else {
-			return _List_Nil;
+			return defaultBody;
 		}
 	});
-var $elm$core$String$dropRight = F2(
-	function (n, string) {
-		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
+var $author$project$IMP$Utils$mergeFuncEnv = F3(
+	function (env1, env2, orig) {
+		return A2(
+			$elm$core$List$map,
+			function (f) {
+				var body2 = A3($author$project$IMP$Utils$lookupFuncBody, f.name, env2, f.body);
+				var body1 = A3($author$project$IMP$Utils$lookupFuncBody, f.name, env1, f.body);
+				return (!_Utils_eq(body1, f.body)) ? _Utils_update(
+					f,
+					{body: body1}) : _Utils_update(
+					f,
+					{body: body2});
+			},
+			orig);
 	});
 var $author$project$IMP$Uneval$getElem = F3(
 	function (hn, store, hb) {
@@ -12569,23 +14357,38 @@ var $author$project$IMP$Uneval$getElem = F3(
 				hb);
 		}
 	});
-var $author$project$IMP$Uneval$insertHB = F2(
-	function (_v0, hb) {
-		var h = _v0.a;
-		var s = _v0.b;
-		var v = _v0.c;
-		var _v1 = A3($author$project$IMP$Uneval$getElem, h, s, hb);
-		if (_v1.a.$ === 'VError') {
+var $author$project$IMP$Uneval$mergeList = F3(
+	function (os, vs1, vs2) {
+		var _v1 = _Utils_Tuple3(os, vs1, vs2);
+		if ((_v1.a.b && _v1.b.b) && _v1.c.b) {
+			var _v2 = _v1.a;
+			var o = _v2.a;
+			var os_ = _v2.b;
+			var _v3 = _v1.b;
+			var a = _v3.a;
+			var as_ = _v3.b;
+			var _v4 = _v1.c;
+			var b = _v4.a;
+			var bs_ = _v4.b;
 			return A2(
 				$elm$core$List$cons,
-				_Utils_Tuple3(h, s, v),
-				hb);
+				A3($author$project$IMP$Uneval$mergeValue, o, a, b),
+				A3($author$project$IMP$Uneval$mergeList, os_, as_, bs_));
 		} else {
-			var hb_ = _v1.b;
-			return A2(
-				$elm$core$List$cons,
-				_Utils_Tuple3(h, s, v),
-				hb_);
+			return (!_Utils_eq(vs1, os)) ? vs1 : vs2;
+		}
+	});
+var $author$project$IMP$Uneval$mergeValue = F3(
+	function (orig, v1, v2) {
+		var _v0 = _Utils_Tuple3(orig, v1, v2);
+		if (((_v0.a.$ === 'VList') && (_v0.b.$ === 'VList')) && (_v0.c.$ === 'VList')) {
+			var os = _v0.a.a;
+			var vs1 = _v0.b.a;
+			var vs2 = _v0.c.a;
+			return $author$project$IMP$Syntax$VList(
+				A3($author$project$IMP$Uneval$mergeList, os, vs1, vs2));
+		} else {
+			return (!_Utils_eq(v1, orig)) ? v1 : v2;
 		}
 	});
 var $author$project$IMP$Uneval$elemIn = F3(
@@ -12660,10 +14463,178 @@ var $author$project$IMP$Uneval$mergeHoleBindings = F3(
 			if (v1.$ === 'VError') {
 				return A2($elm$core$List$cons, newE2, resMerge);
 			} else {
-				return (!_Utils_eq(v1, v)) ? A2($elm$core$List$cons, newE1, resMerge) : A2($elm$core$List$cons, newE2, resMerge);
+				if (v2.$ === 'VError') {
+					return (!_Utils_eq(v1, v)) ? A2($elm$core$List$cons, newE1, resMerge) : A2(
+						$elm$core$List$cons,
+						_Utils_Tuple3(hn, store, v),
+						resMerge);
+				} else {
+					return A2(
+						$elm$core$List$cons,
+						_Utils_Tuple3(
+							hn,
+							store,
+							A3($author$project$IMP$Uneval$mergeValue, v, v1, v2)),
+						resMerge);
+				}
 			}
 		} else {
 			return A2($author$project$IMP$Uneval$union, hb1, hb2);
+		}
+	});
+var $author$project$IMP$Uneval$mergeStoreEntry = F4(
+	function (store1, store2, store3, x) {
+		var _v0 = A2($author$project$IMP$Utils$lookup, x, store3);
+		if (_v0.$ === 'Just') {
+			var v3 = _v0.a;
+			var v2 = A2(
+				$elm$core$Maybe$withDefault,
+				v3,
+				A2($author$project$IMP$Utils$lookup, x, store2));
+			var v1 = A2(
+				$elm$core$Maybe$withDefault,
+				v3,
+				A2($author$project$IMP$Utils$lookup, x, store1));
+			return $elm$core$Maybe$Just(
+				_Utils_Tuple2(
+					x,
+					A3($author$project$IMP$Uneval$mergeValue, v3, v1, v2)));
+		} else {
+			var _v1 = _Utils_Tuple2(
+				A2($author$project$IMP$Utils$lookup, x, store1),
+				A2($author$project$IMP$Utils$lookup, x, store2));
+			if (_v1.a.$ === 'Just') {
+				if (_v1.b.$ === 'Just') {
+					var v1 = _v1.a.a;
+					return $elm$core$Maybe$Just(
+						_Utils_Tuple2(x, v1));
+				} else {
+					var v1 = _v1.a.a;
+					var _v2 = _v1.b;
+					return $elm$core$Maybe$Just(
+						_Utils_Tuple2(x, v1));
+				}
+			} else {
+				if (_v1.b.$ === 'Just') {
+					var _v3 = _v1.a;
+					var v2 = _v1.b.a;
+					return $elm$core$Maybe$Just(
+						_Utils_Tuple2(x, v2));
+				} else {
+					var _v4 = _v1.a;
+					var _v5 = _v1.b;
+					return $elm$core$Maybe$Nothing;
+				}
+			}
+		}
+	});
+var $author$project$IMP$Uneval$storeKeyOrder = F3(
+	function (store1, store2, store3) {
+		var addKeys = F2(
+			function (store, _v2) {
+				var acc = _v2.a;
+				var seen = _v2.b;
+				return A3(
+					$elm$core$List$foldl,
+					F2(
+						function (_v0, _v1) {
+							var k = _v0.a;
+							var acc2 = _v1.a;
+							var s = _v1.b;
+							return A2($elm$core$Set$member, k, s) ? _Utils_Tuple2(acc2, s) : _Utils_Tuple2(
+								A2($elm$core$List$cons, k, acc2),
+								A2($elm$core$Set$insert, k, s));
+						}),
+					_Utils_Tuple2(acc, seen),
+					store);
+			});
+		return $elm$core$List$reverse(
+			A3(
+				$elm$core$List$foldl,
+				addKeys,
+				_Utils_Tuple2(_List_Nil, $elm$core$Set$empty),
+				_List_fromArray(
+					[store3, store1, store2])).a);
+	});
+var $author$project$IMP$Uneval$mergeStore = F3(
+	function (store1, store2, store3) {
+		return A2(
+			$elm$core$List$filterMap,
+			A3($author$project$IMP$Uneval$mergeStoreEntry, store1, store2, store3),
+			A3($author$project$IMP$Uneval$storeKeyOrder, store1, store2, store3));
+	});
+var $author$project$IMP$Uneval$stmtTag = function (stmt) {
+	switch (stmt.$) {
+		case 'SAssign':
+			var e1 = stmt.b;
+			return 'SAssign ' + $author$project$IMP$Printer$printExpr(e1);
+		case 'SPrint':
+			var e = stmt.b;
+			return 'SPrint ' + $author$project$IMP$Printer$printExpr(e);
+		case 'SWhile':
+			var e = stmt.b;
+			return 'SWhile ' + $author$project$IMP$Printer$printExpr(e);
+		case 'SIf':
+			var e = stmt.b;
+			return 'SIf ' + $author$project$IMP$Printer$printExpr(e);
+		case 'SSeq':
+			return 'SSeq';
+		case 'SFuncCall':
+			var name = stmt.b;
+			return 'SFuncCall ' + name;
+		case 'SSkip':
+			return 'SSkip';
+		case 'SRead':
+			var x = stmt.b;
+			return 'SRead ' + x;
+		case 'SFuncDef':
+			var name = stmt.b;
+			return 'SFuncDef ' + name;
+		default:
+			var s = stmt.a;
+			return 'SError ' + s;
+	}
+};
+var $author$project$IMP$Uneval$storeKeys = function (s) {
+	return A2(
+		$elm$core$String$join,
+		',',
+		A2($elm$core$List$map, $elm$core$Tuple$first, s));
+};
+var $elm$core$Debug$log = _Debug_log;
+var $author$project$IMP$Uneval$traceOn = false;
+var $author$project$IMP$Uneval$traceLog = F2(
+	function (msg, val) {
+		return $author$project$IMP$Uneval$traceOn ? A2($elm$core$Debug$log, msg, val) : val;
+	});
+var $elm$core$String$dropRight = F2(
+	function (n, string) {
+		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
+	});
+var $author$project$IMP$Uneval$exprOk = function (e) {
+	if (e.$ === 'EError') {
+		return false;
+	} else {
+		return true;
+	}
+};
+var $author$project$IMP$Uneval$insertHB = F2(
+	function (_v0, hb) {
+		var h = _v0.a;
+		var s = _v0.b;
+		var v = _v0.c;
+		var _v1 = A3($author$project$IMP$Uneval$getElem, h, s, hb);
+		if (_v1.a.$ === 'VError') {
+			return A2(
+				$elm$core$List$cons,
+				_Utils_Tuple3(h, s, v),
+				hb);
+		} else {
+			var hb_ = _v1.b;
+			return A2(
+				$elm$core$List$cons,
+				_Utils_Tuple3(h, s, v),
+				hb_);
 		}
 	});
 var $elm$core$String$right = F2(
@@ -12714,6 +14685,8 @@ var $author$project$IMP$Uneval$writeIndexValue = F3(
 									} else {
 										return $author$project$IMP$Syntax$VError('index out of range');
 									}
+								case 'VHole':
+									return xv;
 								default:
 									return $author$project$IMP$Syntax$VError('unsupported expression');
 							}
@@ -12721,35 +14694,38 @@ var $author$project$IMP$Uneval$writeIndexValue = F3(
 							var _v4 = path.a;
 							var i = _v4.a.a;
 							var rest = _v4.b;
-							if (xv.$ === 'VList') {
-								var vs = xv.a;
-								if ((i >= 0) && (_Utils_cmp(
-									i,
-									$elm$core$List$length(vs)) < 0)) {
-									var inner_ = A3(
-										$author$project$IMP$Uneval$writeIndexValue,
-										$author$project$IMP$Syntax$VList(rest),
-										A2($author$project$IMP$Utils$nthValue, vs, i),
-										val);
-									if (inner_.$ === 'VError') {
-										var s = inner_.a;
-										return $author$project$IMP$Syntax$VError(s);
+							switch (xv.$) {
+								case 'VList':
+									var vs = xv.a;
+									if ((i >= 0) && (_Utils_cmp(
+										i,
+										$elm$core$List$length(vs)) < 0)) {
+										var inner_ = A3(
+											$author$project$IMP$Uneval$writeIndexValue,
+											$author$project$IMP$Syntax$VList(rest),
+											A2($author$project$IMP$Utils$nthValue, vs, i),
+											val);
+										if (inner_.$ === 'VError') {
+											var s = inner_.a;
+											return $author$project$IMP$Syntax$VError(s);
+										} else {
+											return A3(
+												$author$project$IMP$Utils$updateValue,
+												$author$project$IMP$Syntax$VList(
+													_List_fromArray(
+														[
+															$author$project$IMP$Syntax$VInt(i)
+														])),
+												xv,
+												inner_);
+										}
 									} else {
-										return A3(
-											$author$project$IMP$Utils$updateValue,
-											$author$project$IMP$Syntax$VList(
-												_List_fromArray(
-													[
-														$author$project$IMP$Syntax$VInt(i)
-													])),
-											xv,
-											inner_);
+										return $author$project$IMP$Syntax$VError('index out of range');
 									}
-								} else {
-									return $author$project$IMP$Syntax$VError('index out of range');
-								}
-							} else {
-								return $author$project$IMP$Syntax$VError('unsupported expression');
+								case 'VHole':
+									return xv;
+								default:
+									return $author$project$IMP$Syntax$VError('unsupported expression');
 							}
 						}
 					} else {
@@ -12779,26 +14755,26 @@ var $author$project$IMP$Uneval$arith = F9(
 					A4($author$project$IMP$Syntax$Eop, ws, op, e1, e2),
 					hcount));
 		} else {
-			var _v334 = $author$project$IMP$Uneval$tryupdearith(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
-			var estore = _v334.a;
-			var eholeBindings = _v334.b;
-			var _v335 = _v334.c;
-			var eexpr = _v335.a;
-			var ehcount = _v335.b;
+			var _v326 = $author$project$IMP$Uneval$tryupdearith(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
+			var estore = _v326.a;
+			var eholeBindings = _v326.b;
+			var _v327 = _v326.c;
+			var eexpr = _v327.a;
+			var ehcount = _v327.b;
 			if (eexpr.$ === 'EError') {
-				var _v337 = $author$project$IMP$Uneval$tryupde1arith(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
-				var e1store = _v337.a;
-				var e1holeBindings = _v337.b;
-				var _v338 = _v337.c;
-				var e1expr = _v338.a;
-				var e1hcount = _v338.b;
+				var _v329 = $author$project$IMP$Uneval$tryupde1arith(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
+				var e1store = _v329.a;
+				var e1holeBindings = _v329.b;
+				var _v330 = _v329.c;
+				var e1expr = _v330.a;
+				var e1hcount = _v330.b;
 				if (e1expr.$ === 'EError') {
-					var _v340 = $author$project$IMP$Uneval$tryupde2arith(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
-					var e2store = _v340.a;
-					var e2holeBindings = _v340.b;
-					var _v341 = _v340.c;
-					var e2expr = _v341.a;
-					var e2hcount = _v341.b;
+					var _v332 = $author$project$IMP$Uneval$tryupde2arith(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
+					var e2store = _v332.a;
+					var e2holeBindings = _v332.b;
+					var _v333 = _v332.c;
+					var e2expr = _v333.a;
+					var e2hcount = _v333.b;
 					if (e2expr.$ === 'EError') {
 						return _Utils_Tuple3(
 							_List_Nil,
@@ -12846,56 +14822,53 @@ var $author$project$IMP$Uneval$checkChange = function (ws) {
 															A4($author$project$IMP$Syntax$Eop, ws, op, e1, e2),
 															hcount));
 												} else {
-													if (_Utils_eq(newv1, v1)) {
-														var _v326 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e2, readOnly, newv2, hcount);
-														var store2 = _v326.a;
-														var holeBindings2 = _v326.b;
-														var _v327 = _v326.c;
-														var expr2 = _v327.a;
-														var hcount2 = _v327.b;
-														return _Utils_Tuple3(
-															store2,
-															holeBindings2,
-															_Utils_Tuple2(
-																A4($author$project$IMP$Syntax$Eop, ws, op, e1, expr2),
-																hcount2));
-													} else {
-														if (_Utils_eq(newv2, v2)) {
-															var _v328 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e1, readOnly, newv1, hcount);
-															var store1 = _v328.a;
-															var holeBindings1 = _v328.b;
-															var _v329 = _v328.c;
-															var expr1 = _v329.a;
-															var hcount1 = _v329.b;
-															return _Utils_Tuple3(
-																store1,
-																holeBindings1,
-																_Utils_Tuple2(
-																	A4($author$project$IMP$Syntax$Eop, ws, op, expr1, e2),
-																	hcount1));
-														} else {
-															var _v330 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e1, readOnly, newv1, hcount);
-															var store1 = _v330.a;
-															var holeBindings1 = _v330.b;
-															var _v331 = _v330.c;
-															var expr1 = _v331.a;
-															var hcount1 = _v331.b;
-															var _v332 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e2, readOnly, newv2, hcount1);
-															var store2 = _v332.a;
-															var holeBindings2 = _v332.b;
-															var _v333 = _v332.c;
-															var expr2 = _v333.a;
-															var hcount2 = _v333.b;
-															var holeBindings_ = A3($author$project$IMP$Uneval$mergeHoleBindings, holeBindings1, holeBindings2, holeBindings);
-															var store_ = A3($author$project$IMP$Uneval$mergeStore, store1, store2, store);
-															return _Utils_Tuple3(
-																store_,
-																holeBindings_,
-																_Utils_Tuple2(
-																	A4($author$project$IMP$Syntax$Eop, ws, op, expr1, expr2),
-																	hcount2));
-														}
-													}
+													var rightChanged = !_Utils_eq(newv2, v2);
+													var leftChanged = !_Utils_eq(newv1, v1);
+													var fail = _Utils_Tuple3(
+														_List_Nil,
+														_List_Nil,
+														_Utils_Tuple2(
+															$author$project$IMP$Syntax$EError('error: uneval: operand update failed'),
+															0));
+													var _v322 = leftChanged ? A6($author$project$IMP$Uneval$uneval, store, holeBindings, e1, readOnly, newv1, hcount) : _Utils_Tuple3(
+														store,
+														holeBindings,
+														_Utils_Tuple2(e1, hcount));
+													var store1 = _v322.a;
+													var holeBindings1 = _v322.b;
+													var _v323 = _v322.c;
+													var expr1 = _v323.a;
+													var hcount1 = _v323.b;
+													var ok1 = $author$project$IMP$Uneval$exprOk(expr1);
+													var _v324 = rightChanged ? A6($author$project$IMP$Uneval$uneval, store, holeBindings, e2, readOnly, newv2, hcount1) : _Utils_Tuple3(
+														store,
+														holeBindings,
+														_Utils_Tuple2(e2, hcount1));
+													var store2 = _v324.a;
+													var holeBindings2 = _v324.b;
+													var _v325 = _v324.c;
+													var expr2 = _v325.a;
+													var hcount2 = _v325.b;
+													var ok2 = $author$project$IMP$Uneval$exprOk(expr2);
+													var rightOnly = _Utils_Tuple3(
+														store2,
+														holeBindings2,
+														_Utils_Tuple2(
+															A4($author$project$IMP$Syntax$Eop, ws, op, e1, expr2),
+															hcount2));
+													var both = _Utils_Tuple3(
+														A3($author$project$IMP$Uneval$mergeStore, store1, store2, store),
+														A3($author$project$IMP$Uneval$mergeHoleBindings, holeBindings1, holeBindings2, holeBindings),
+														_Utils_Tuple2(
+															A4($author$project$IMP$Syntax$Eop, ws, op, expr1, expr2),
+															hcount2));
+													var leftOnly = _Utils_Tuple3(
+														store1,
+														holeBindings1,
+														_Utils_Tuple2(
+															A4($author$project$IMP$Syntax$Eop, ws, op, expr1, e2),
+															hcount1));
+													return (leftChanged && rightChanged) ? ((ok1 && ok2) ? both : (ok1 ? leftOnly : rightOnly)) : (leftChanged ? (ok1 ? leftOnly : fail) : (ok2 ? rightOnly : fail));
 												}
 											};
 										};
@@ -12926,26 +14899,26 @@ var $author$project$IMP$Uneval$comp = F9(
 					A4($author$project$IMP$Syntax$Eop, ws, op, e1, e2),
 					hcount));
 		} else {
-			var _v317 = $author$project$IMP$Uneval$tryupdecomp(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
-			var estore = _v317.a;
-			var eholeBindings = _v317.b;
-			var _v318 = _v317.c;
-			var eexpr = _v318.a;
-			var ehcount = _v318.b;
+			var _v313 = $author$project$IMP$Uneval$tryupdecomp(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
+			var estore = _v313.a;
+			var eholeBindings = _v313.b;
+			var _v314 = _v313.c;
+			var eexpr = _v314.a;
+			var ehcount = _v314.b;
 			if (eexpr.$ === 'EError') {
-				var _v320 = $author$project$IMP$Uneval$tryupde1comp(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
-				var e1store = _v320.a;
-				var e1holeBindings = _v320.b;
-				var _v321 = _v320.c;
-				var e1expr = _v321.a;
-				var e1hcount = _v321.b;
+				var _v316 = $author$project$IMP$Uneval$tryupde1comp(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
+				var e1store = _v316.a;
+				var e1holeBindings = _v316.b;
+				var _v317 = _v316.c;
+				var e1expr = _v317.a;
+				var e1hcount = _v317.b;
 				if (e1expr.$ === 'EError') {
-					var _v323 = $author$project$IMP$Uneval$tryupde2comp(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
-					var e2store = _v323.a;
-					var e2holeBindings = _v323.b;
-					var _v324 = _v323.c;
-					var e2expr = _v324.a;
-					var e2hcount = _v324.b;
+					var _v319 = $author$project$IMP$Uneval$tryupde2comp(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
+					var e2store = _v319.a;
+					var e2holeBindings = _v319.b;
+					var _v320 = _v319.c;
+					var e2expr = _v320.a;
+					var e2hcount = _v320.b;
 					if (e2expr.$ === 'EError') {
 						return _Utils_Tuple3(
 							_List_Nil,
@@ -12990,26 +14963,26 @@ var $author$project$IMP$Uneval$logic = F9(
 					A4($author$project$IMP$Syntax$Eop, ws, op, e1, e2),
 					hcount));
 		} else {
-			var _v308 = $author$project$IMP$Uneval$tryupdelogic(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
-			var estore = _v308.a;
-			var eholeBindings = _v308.b;
-			var _v309 = _v308.c;
-			var eexpr = _v309.a;
-			var ehcount = _v309.b;
+			var _v304 = $author$project$IMP$Uneval$tryupdelogic(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
+			var estore = _v304.a;
+			var eholeBindings = _v304.b;
+			var _v305 = _v304.c;
+			var eexpr = _v305.a;
+			var ehcount = _v305.b;
 			if (eexpr.$ === 'EError') {
-				var _v311 = $author$project$IMP$Uneval$tryupde1logic(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
-				var e1store = _v311.a;
-				var e1holeBindings = _v311.b;
-				var _v312 = _v311.c;
-				var e1expr = _v312.a;
-				var e1hcount = _v312.b;
+				var _v307 = $author$project$IMP$Uneval$tryupde1logic(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
+				var e1store = _v307.a;
+				var e1holeBindings = _v307.b;
+				var _v308 = _v307.c;
+				var e1expr = _v308.a;
+				var e1hcount = _v308.b;
 				if (e1expr.$ === 'EError') {
-					var _v314 = $author$project$IMP$Uneval$tryupde2logic(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
-					var e2store = _v314.a;
-					var e2holeBindings = _v314.b;
-					var _v315 = _v314.c;
-					var e2expr = _v315.a;
-					var e2hcount = _v315.b;
+					var _v310 = $author$project$IMP$Uneval$tryupde2logic(ws)(store)(holeBindings)(readOnly)(e1)(e2)(v1)(v2)(v)(val)(hcount)(op);
+					var e2store = _v310.a;
+					var e2holeBindings = _v310.b;
+					var _v311 = _v310.c;
+					var e2expr = _v311.a;
+					var e2hcount = _v311.b;
 					if (e2expr.$ === 'EError') {
 						return _Utils_Tuple3(
 							_List_Nil,
@@ -13067,12 +15040,12 @@ var $author$project$IMP$Uneval$tryupde1arith = function (ws) {
 																		A4($author$project$IMP$Syntax$Eop, ws, op, e1, e2),
 																		hcount));
 															} else {
-																var _v294 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e1, readOnly, val, hcount);
-																var store_ = _v294.a;
-																var holeBindings_ = _v294.b;
-																var _v295 = _v294.c;
-																var expr_ = _v295.a;
-																var hcount_ = _v295.b;
+																var _v290 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e1, readOnly, val, hcount);
+																var store_ = _v290.a;
+																var holeBindings_ = _v290.b;
+																var _v291 = _v290.c;
+																var expr_ = _v291.a;
+																var hcount_ = _v291.b;
 																return _Utils_Tuple3(
 																	store_,
 																	holeBindings_,
@@ -13083,10 +15056,10 @@ var $author$project$IMP$Uneval$tryupde1arith = function (ws) {
 														}
 													case 'VInt':
 														var n = val.a;
-														var _v296 = function () {
-															var _v297 = _Utils_Tuple2(v1, v2);
-															if (_v297.b.$ === 'VInt') {
-																var n2 = _v297.b.a;
+														var _v292 = function () {
+															var _v293 = _Utils_Tuple2(v1, v2);
+															if (_v293.b.$ === 'VInt') {
+																var n2 = _v293.b.a;
 																switch (op) {
 																	case '+':
 																		return _Utils_Tuple2(
@@ -13115,10 +15088,10 @@ var $author$project$IMP$Uneval$tryupde1arith = function (ws) {
 																	$author$project$IMP$Syntax$VError('unsupported operation'));
 															}
 														}();
-														var newv1 = _v296.a;
-														var newv2 = _v296.b;
-														var _v299 = _Utils_Tuple2(newv1, newv2);
-														if ((_v299.a.$ === 'VError') && (_v299.b.$ === 'VError')) {
+														var newv1 = _v292.a;
+														var newv2 = _v292.b;
+														var _v295 = _Utils_Tuple2(newv1, newv2);
+														if ((_v295.a.$ === 'VError') && (_v295.b.$ === 'VError')) {
 															return _Utils_Tuple3(
 																_List_Nil,
 																_List_Nil,
@@ -13131,10 +15104,10 @@ var $author$project$IMP$Uneval$tryupde1arith = function (ws) {
 													case 'VString':
 														var s = val.a;
 														if (op === '++') {
-															var _v301 = function () {
-																var _v302 = _Utils_Tuple2(v1, v2);
-																if (_v302.b.$ === 'VString') {
-																	var s2 = _v302.b.a;
+															var _v297 = function () {
+																var _v298 = _Utils_Tuple2(v1, v2);
+																if (_v298.b.$ === 'VString') {
+																	var s2 = _v298.b.a;
 																	if (_Utils_cmp(
 																		$elm$core$String$length(s2),
 																		$elm$core$String$length(s)) > 0) {
@@ -13162,11 +15135,11 @@ var $author$project$IMP$Uneval$tryupde1arith = function (ws) {
 																		$author$project$IMP$Syntax$VError('unsupported operation'));
 																}
 															}();
-															var newv1 = _v301.a;
-															var newv2 = _v301.b;
-															var _v303 = _Utils_Tuple2(newv1, newv2);
-															if ((_v303.a.$ === 'VError') && (_v303.b.$ === 'VError')) {
-																var info = _v303.a.a;
+															var newv1 = _v297.a;
+															var newv2 = _v297.b;
+															var _v299 = _Utils_Tuple2(newv1, newv2);
+															if ((_v299.a.$ === 'VError') && (_v299.b.$ === 'VError')) {
+																var info = _v299.a.a;
 																return _Utils_Tuple3(
 																	_List_Nil,
 																	_List_Nil,
@@ -13187,10 +15160,10 @@ var $author$project$IMP$Uneval$tryupde1arith = function (ws) {
 													case 'VList':
 														var vs = val.a;
 														if (op === '++') {
-															var _v305 = function () {
-																var _v306 = _Utils_Tuple2(v1, v2);
-																if (_v306.b.$ === 'VList') {
-																	var vs2 = _v306.b.a;
+															var _v301 = function () {
+																var _v302 = _Utils_Tuple2(v1, v2);
+																if (_v302.b.$ === 'VList') {
+																	var vs2 = _v302.b.a;
 																	if (_Utils_cmp(
 																		$elm$core$List$length(vs2),
 																		$elm$core$List$length(vs)) > 0) {
@@ -13218,11 +15191,11 @@ var $author$project$IMP$Uneval$tryupde1arith = function (ws) {
 																		$author$project$IMP$Syntax$VError('unsupported operation'));
 																}
 															}();
-															var newv1 = _v305.a;
-															var newv2 = _v305.b;
-															var _v307 = _Utils_Tuple2(newv1, newv2);
-															if ((_v307.a.$ === 'VError') && (_v307.b.$ === 'VError')) {
-																var info = _v307.a.a;
+															var newv1 = _v301.a;
+															var newv2 = _v301.b;
+															var _v303 = _Utils_Tuple2(newv1, newv2);
+															if ((_v303.a.$ === 'VError') && (_v303.b.$ === 'VError')) {
+																var info = _v303.a.a;
 																return _Utils_Tuple3(
 																	_List_Nil,
 																	_List_Nil,
@@ -13290,12 +15263,12 @@ var $author$project$IMP$Uneval$tryupde1comp = function (ws) {
 																		A4($author$project$IMP$Syntax$Eop, ws, op, e1, e2),
 																		hcount));
 															} else {
-																var _v275 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e1, readOnly, val, hcount);
-																var store_ = _v275.a;
-																var holeBindings_ = _v275.b;
-																var _v276 = _v275.c;
-																var expr_ = _v276.a;
-																var hcount_ = _v276.b;
+																var _v271 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e1, readOnly, val, hcount);
+																var store_ = _v271.a;
+																var holeBindings_ = _v271.b;
+																var _v272 = _v271.c;
+																var expr_ = _v272.a;
+																var hcount_ = _v272.b;
 																return _Utils_Tuple3(
 																	store_,
 																	holeBindings_,
@@ -13308,10 +15281,10 @@ var $author$project$IMP$Uneval$tryupde1comp = function (ws) {
 														if (val.a) {
 															switch (op) {
 																case '==':
-																	var _v278 = function () {
-																		var _v279 = _Utils_Tuple2(v1, v2);
-																		if (_v279.b.$ === 'VHole') {
-																			var _v280 = _v279.b;
+																	var _v274 = function () {
+																		var _v275 = _Utils_Tuple2(v1, v2);
+																		if (_v275.b.$ === 'VHole') {
+																			var _v276 = _v275.b;
 																			return _Utils_Tuple2(
 																				$author$project$IMP$Syntax$VError('unsupported operation'),
 																				$author$project$IMP$Syntax$VError('unsupported operation'));
@@ -13319,10 +15292,10 @@ var $author$project$IMP$Uneval$tryupde1comp = function (ws) {
 																			return _Utils_Tuple2(v2, v2);
 																		}
 																	}();
-																	var newv1 = _v278.a;
-																	var newv2 = _v278.b;
-																	var _v281 = _Utils_Tuple2(newv1, newv2);
-																	if ((_v281.a.$ === 'VError') && (_v281.b.$ === 'VError')) {
+																	var newv1 = _v274.a;
+																	var newv2 = _v274.b;
+																	var _v277 = _Utils_Tuple2(newv1, newv2);
+																	if ((_v277.a.$ === 'VError') && (_v277.b.$ === 'VError')) {
 																		return _Utils_Tuple3(
 																			_List_Nil,
 																			_List_Nil,
@@ -13416,10 +15389,10 @@ var $author$project$IMP$Uneval$tryupde1comp = function (ws) {
 																			$author$project$IMP$Syntax$EError('Cannot infer in eq'),
 																			0));
 																case '!=':
-																	var _v285 = function () {
-																		var _v286 = _Utils_Tuple2(v1, v2);
-																		if (_v286.b.$ === 'VHole') {
-																			var _v287 = _v286.b;
+																	var _v281 = function () {
+																		var _v282 = _Utils_Tuple2(v1, v2);
+																		if (_v282.b.$ === 'VHole') {
+																			var _v283 = _v282.b;
 																			return _Utils_Tuple2(
 																				$author$project$IMP$Syntax$VError('unsupported operation'),
 																				$author$project$IMP$Syntax$VError('unsupported operation'));
@@ -13427,10 +15400,10 @@ var $author$project$IMP$Uneval$tryupde1comp = function (ws) {
 																			return _Utils_Tuple2(v2, v2);
 																		}
 																	}();
-																	var newv1 = _v285.a;
-																	var newv2 = _v285.b;
-																	var _v288 = _Utils_Tuple2(newv1, newv2);
-																	if ((_v288.a.$ === 'VError') && (_v288.b.$ === 'VError')) {
+																	var newv1 = _v281.a;
+																	var newv2 = _v281.b;
+																	var _v284 = _Utils_Tuple2(newv1, newv2);
+																	if ((_v284.a.$ === 'VError') && (_v284.b.$ === 'VError')) {
 																		return _Utils_Tuple3(
 																			_List_Nil,
 																			_List_Nil,
@@ -13530,133 +15503,133 @@ var $author$project$IMP$Uneval$tryupde1logic = function (ws) {
 									return function (val) {
 										return function (hcount) {
 											return function (op) {
-												var _v238 = function () {
+												var _v234 = function () {
 													switch (v.$) {
 														case 'VHole':
-															var _v240 = _Utils_Tuple2(
+															var _v236 = _Utils_Tuple2(
 																_Utils_Tuple3(v1, v2, val),
 																op);
-															_v240$9:
+															_v236$9:
 															while (true) {
-																switch (_v240.a.c.$) {
+																switch (_v236.a.c.$) {
 																	case 'VBool':
-																		if (!_v240.a.c.a) {
-																			switch (_v240.a.a.$) {
+																		if (!_v236.a.c.a) {
+																			switch (_v236.a.a.$) {
 																				case 'VBool':
-																					if ((_v240.a.a.a && (_v240.a.b.$ === 'VHole')) && (_v240.b === '&&')) {
-																						var _v245 = _v240.a;
-																						var _v246 = _v245.b;
+																					if ((_v236.a.a.a && (_v236.a.b.$ === 'VHole')) && (_v236.b === '&&')) {
+																						var _v241 = _v236.a;
+																						var _v242 = _v241.b;
 																						return _Utils_Tuple2(
 																							$author$project$IMP$Syntax$VBool(false),
 																							v2);
 																					} else {
-																						break _v240$9;
+																						break _v236$9;
 																					}
 																				case 'VHole':
-																					switch (_v240.a.b.$) {
+																					switch (_v236.a.b.$) {
 																						case 'VHole':
-																							if (_v240.b === '&&') {
-																								var _v247 = _v240.a;
-																								var _v248 = _v247.a;
-																								var _v249 = _v247.b;
+																							if (_v236.b === '&&') {
+																								var _v243 = _v236.a;
+																								var _v244 = _v243.a;
+																								var _v245 = _v243.b;
 																								return _Utils_Tuple2(
 																									$author$project$IMP$Syntax$VBool(false),
 																									v2);
 																							} else {
-																								break _v240$9;
+																								break _v236$9;
 																							}
 																						case 'VBool':
-																							if (_v240.a.b.a) {
-																								if (_v240.b === '&&') {
-																									var _v243 = _v240.a;
-																									var _v244 = _v243.a;
+																							if (_v236.a.b.a) {
+																								if (_v236.b === '&&') {
+																									var _v239 = _v236.a;
+																									var _v240 = _v239.a;
 																									return _Utils_Tuple2(
 																										$author$project$IMP$Syntax$VBool(false),
 																										$author$project$IMP$Syntax$VBool(true));
 																								} else {
-																									break _v240$9;
+																									break _v236$9;
 																								}
 																							} else {
-																								if (_v240.b === '||') {
-																									var _v250 = _v240.a;
-																									var _v251 = _v250.a;
+																								if (_v236.b === '||') {
+																									var _v246 = _v236.a;
+																									var _v247 = _v246.a;
 																									return _Utils_Tuple2(
 																										$author$project$IMP$Syntax$VBool(false),
 																										$author$project$IMP$Syntax$VBool(false));
 																								} else {
-																									break _v240$9;
+																									break _v236$9;
 																								}
 																							}
 																						default:
-																							break _v240$9;
+																							break _v236$9;
 																					}
 																				default:
-																					break _v240$9;
+																					break _v236$9;
 																			}
 																		} else {
-																			switch (_v240.a.a.$) {
+																			switch (_v236.a.a.$) {
 																				case 'VBool':
-																					if (((!_v240.a.a.a) && (_v240.a.b.$ === 'VHole')) && (_v240.b === '||')) {
-																						var _v254 = _v240.a;
-																						var _v255 = _v254.b;
+																					if (((!_v236.a.a.a) && (_v236.a.b.$ === 'VHole')) && (_v236.b === '||')) {
+																						var _v250 = _v236.a;
+																						var _v251 = _v250.b;
 																						return _Utils_Tuple2(
 																							$author$project$IMP$Syntax$VBool(true),
 																							v2);
 																					} else {
-																						break _v240$9;
+																						break _v236$9;
 																					}
 																				case 'VHole':
-																					switch (_v240.a.b.$) {
+																					switch (_v236.a.b.$) {
 																						case 'VBool':
-																							if (_v240.a.b.a) {
-																								if (_v240.b === '&&') {
-																									var _v241 = _v240.a;
-																									var _v242 = _v241.a;
+																							if (_v236.a.b.a) {
+																								if (_v236.b === '&&') {
+																									var _v237 = _v236.a;
+																									var _v238 = _v237.a;
 																									return _Utils_Tuple2(
 																										$author$project$IMP$Syntax$VBool(true),
 																										$author$project$IMP$Syntax$VBool(true));
 																								} else {
-																									break _v240$9;
+																									break _v236$9;
 																								}
 																							} else {
-																								if (_v240.b === '||') {
-																									var _v252 = _v240.a;
-																									var _v253 = _v252.a;
+																								if (_v236.b === '||') {
+																									var _v248 = _v236.a;
+																									var _v249 = _v248.a;
 																									return _Utils_Tuple2(
 																										$author$project$IMP$Syntax$VBool(true),
 																										$author$project$IMP$Syntax$VBool(false));
 																								} else {
-																									break _v240$9;
+																									break _v236$9;
 																								}
 																							}
 																						case 'VHole':
-																							if (_v240.b === '||') {
-																								var _v256 = _v240.a;
-																								var _v257 = _v256.a;
-																								var _v258 = _v256.b;
+																							if (_v236.b === '||') {
+																								var _v252 = _v236.a;
+																								var _v253 = _v252.a;
+																								var _v254 = _v252.b;
 																								return _Utils_Tuple2(
 																									$author$project$IMP$Syntax$VBool(true),
 																									v2);
 																							} else {
-																								break _v240$9;
+																								break _v236$9;
 																							}
 																						default:
-																							break _v240$9;
+																							break _v236$9;
 																					}
 																				default:
-																					break _v240$9;
+																					break _v236$9;
 																			}
 																		}
 																	case 'VHole':
-																		if (_v240.b === '&&') {
-																			var _v259 = _v240.a;
-																			var _v260 = _v259.c;
+																		if (_v236.b === '&&') {
+																			var _v255 = _v236.a;
+																			var _v256 = _v255.c;
 																			return _Utils_Tuple2(v1, v2);
 																		} else {
-																			break _v240$9;
+																			break _v236$9;
 																		}
 																	default:
-																		break _v240$9;
+																		break _v236$9;
 																}
 															}
 															return _Utils_Tuple2(
@@ -13671,8 +15644,8 @@ var $author$project$IMP$Uneval$tryupde1logic = function (ws) {
 																		} else {
 																			switch (op) {
 																				case '&&':
-																					var _v263 = _Utils_Tuple2(v1, v2);
-																					if ((((_v263.a.$ === 'VBool') && _v263.a.a) && (_v263.b.$ === 'VBool')) && _v263.b.a) {
+																					var _v259 = _Utils_Tuple2(v1, v2);
+																					if ((((_v259.a.$ === 'VBool') && _v259.a.a) && (_v259.b.$ === 'VBool')) && _v259.b.a) {
 																						return _Utils_Tuple2(
 																							$author$project$IMP$Syntax$VBool(false),
 																							$author$project$IMP$Syntax$VBool(true));
@@ -13682,30 +15655,30 @@ var $author$project$IMP$Uneval$tryupde1logic = function (ws) {
 																							$author$project$IMP$Syntax$VError('unsupported operation'));
 																					}
 																				case '||':
-																					var _v264 = _Utils_Tuple2(v1, v2);
-																					_v264$2:
+																					var _v260 = _Utils_Tuple2(v1, v2);
+																					_v260$2:
 																					while (true) {
-																						if (_v264.b.$ === 'VBool') {
-																							if (!_v264.b.a) {
-																								if ((_v264.a.$ === 'VBool') && _v264.a.a) {
+																						if (_v260.b.$ === 'VBool') {
+																							if (!_v260.b.a) {
+																								if ((_v260.a.$ === 'VBool') && _v260.a.a) {
 																									return _Utils_Tuple2(
 																										$author$project$IMP$Syntax$VBool(false),
 																										$author$project$IMP$Syntax$VBool(false));
 																								} else {
-																									break _v264$2;
+																									break _v260$2;
 																								}
 																							} else {
-																								if (_v264.a.$ === 'VHole') {
-																									var _v265 = _v264.a;
+																								if (_v260.a.$ === 'VHole') {
+																									var _v261 = _v260.a;
 																									return _Utils_Tuple2(
 																										$author$project$IMP$Syntax$VBool(false),
 																										$author$project$IMP$Syntax$VBool(false));
 																								} else {
-																									break _v264$2;
+																									break _v260$2;
 																								}
 																							}
 																						} else {
-																							break _v264$2;
+																							break _v260$2;
 																						}
 																					}
 																					return _Utils_Tuple2(
@@ -13733,37 +15706,37 @@ var $author$project$IMP$Uneval$tryupde1logic = function (ws) {
 																		} else {
 																			switch (op) {
 																				case '&&':
-																					var _v268 = _Utils_Tuple2(v1, v2);
-																					_v268$2:
+																					var _v264 = _Utils_Tuple2(v1, v2);
+																					_v264$2:
 																					while (true) {
-																						if ((_v268.b.$ === 'VBool') && _v268.b.a) {
-																							switch (_v268.a.$) {
+																						if ((_v264.b.$ === 'VBool') && _v264.b.a) {
+																							switch (_v264.a.$) {
 																								case 'VBool':
-																									if (!_v268.a.a) {
+																									if (!_v264.a.a) {
 																										return _Utils_Tuple2(
 																											$author$project$IMP$Syntax$VBool(true),
 																											$author$project$IMP$Syntax$VBool(true));
 																									} else {
-																										break _v268$2;
+																										break _v264$2;
 																									}
 																								case 'VHole':
-																									var _v269 = _v268.a;
+																									var _v265 = _v264.a;
 																									return _Utils_Tuple2(
 																										$author$project$IMP$Syntax$VBool(true),
 																										$author$project$IMP$Syntax$VBool(true));
 																								default:
-																									break _v268$2;
+																									break _v264$2;
 																							}
 																						} else {
-																							break _v268$2;
+																							break _v264$2;
 																						}
 																					}
 																					return _Utils_Tuple2(
 																						$author$project$IMP$Syntax$VError('unsupported operation'),
 																						$author$project$IMP$Syntax$VError('unsupported operation'));
 																				case '||':
-																					var _v270 = _Utils_Tuple2(v1, v2);
-																					if ((((_v270.a.$ === 'VBool') && (!_v270.a.a)) && (_v270.b.$ === 'VBool')) && (!_v270.b.a)) {
+																					var _v266 = _Utils_Tuple2(v1, v2);
+																					if ((((_v266.a.$ === 'VBool') && (!_v266.a.a)) && (_v266.b.$ === 'VBool')) && (!_v266.b.a)) {
 																						return _Utils_Tuple2(
 																							$author$project$IMP$Syntax$VBool(true),
 																							$author$project$IMP$Syntax$VBool(false));
@@ -13793,11 +15766,11 @@ var $author$project$IMP$Uneval$tryupde1logic = function (ws) {
 																$author$project$IMP$Syntax$VError('unsupported operation'));
 													}
 												}();
-												var newv1 = _v238.a;
-												var newv2 = _v238.b;
-												var _v271 = _Utils_Tuple2(newv1, newv2);
-												if ((_v271.a.$ === 'VError') && (_v271.b.$ === 'VError')) {
-													var s = _v271.a.a;
+												var newv1 = _v234.a;
+												var newv2 = _v234.b;
+												var _v267 = _Utils_Tuple2(newv1, newv2);
+												if ((_v267.a.$ === 'VError') && (_v267.b.$ === 'VError')) {
+													var s = _v267.a.a;
 													return _Utils_Tuple3(
 														_List_Nil,
 														_List_Nil,
@@ -13849,12 +15822,12 @@ var $author$project$IMP$Uneval$tryupde2arith = function (ws) {
 																		A4($author$project$IMP$Syntax$Eop, ws, op, e1, e2),
 																		hcount));
 															} else {
-																var _v224 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e2, readOnly, val, hcount);
-																var store_ = _v224.a;
-																var holeBindings_ = _v224.b;
-																var _v225 = _v224.c;
-																var expr_ = _v225.a;
-																var hcount_ = _v225.b;
+																var _v220 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e2, readOnly, val, hcount);
+																var store_ = _v220.a;
+																var holeBindings_ = _v220.b;
+																var _v221 = _v220.c;
+																var expr_ = _v221.a;
+																var hcount_ = _v221.b;
 																return _Utils_Tuple3(
 																	store_,
 																	holeBindings_,
@@ -13865,10 +15838,10 @@ var $author$project$IMP$Uneval$tryupde2arith = function (ws) {
 														}
 													case 'VInt':
 														var n = val.a;
-														var _v226 = function () {
-															var _v227 = _Utils_Tuple2(v1, v2);
-															if (_v227.a.$ === 'VInt') {
-																var n1 = _v227.a.a;
+														var _v222 = function () {
+															var _v223 = _Utils_Tuple2(v1, v2);
+															if (_v223.a.$ === 'VInt') {
+																var n1 = _v223.a.a;
 																switch (op) {
 																	case '+':
 																		return _Utils_Tuple2(
@@ -13897,10 +15870,10 @@ var $author$project$IMP$Uneval$tryupde2arith = function (ws) {
 																	$author$project$IMP$Syntax$VError('unsupported operation'));
 															}
 														}();
-														var newv1 = _v226.a;
-														var newv2 = _v226.b;
-														var _v229 = _Utils_Tuple2(newv1, newv2);
-														if ((_v229.a.$ === 'VError') && (_v229.b.$ === 'VError')) {
+														var newv1 = _v222.a;
+														var newv2 = _v222.b;
+														var _v225 = _Utils_Tuple2(newv1, newv2);
+														if ((_v225.a.$ === 'VError') && (_v225.b.$ === 'VError')) {
 															return _Utils_Tuple3(
 																_List_Nil,
 																_List_Nil,
@@ -13913,10 +15886,10 @@ var $author$project$IMP$Uneval$tryupde2arith = function (ws) {
 													case 'VString':
 														var s = val.a;
 														if (op === '++') {
-															var _v231 = function () {
-																var _v232 = _Utils_Tuple2(v1, v2);
-																if (_v232.a.$ === 'VString') {
-																	var s1 = _v232.a.a;
+															var _v227 = function () {
+																var _v228 = _Utils_Tuple2(v1, v2);
+																if (_v228.a.$ === 'VString') {
+																	var s1 = _v228.a.a;
 																	if (_Utils_cmp(
 																		$elm$core$String$length(s1),
 																		$elm$core$String$length(s)) > 0) {
@@ -13944,11 +15917,11 @@ var $author$project$IMP$Uneval$tryupde2arith = function (ws) {
 																		$author$project$IMP$Syntax$VError('unsupported operation'));
 																}
 															}();
-															var newv1 = _v231.a;
-															var newv2 = _v231.b;
-															var _v233 = _Utils_Tuple2(newv1, newv2);
-															if ((_v233.a.$ === 'VError') && (_v233.b.$ === 'VError')) {
-																var info = _v233.a.a;
+															var newv1 = _v227.a;
+															var newv2 = _v227.b;
+															var _v229 = _Utils_Tuple2(newv1, newv2);
+															if ((_v229.a.$ === 'VError') && (_v229.b.$ === 'VError')) {
+																var info = _v229.a.a;
 																return _Utils_Tuple3(
 																	_List_Nil,
 																	_List_Nil,
@@ -13969,10 +15942,10 @@ var $author$project$IMP$Uneval$tryupde2arith = function (ws) {
 													case 'VList':
 														var vs = val.a;
 														if (op === '++') {
-															var _v235 = function () {
-																var _v236 = _Utils_Tuple2(v1, v2);
-																if (_v236.a.$ === 'VList') {
-																	var vs1 = _v236.a.a;
+															var _v231 = function () {
+																var _v232 = _Utils_Tuple2(v1, v2);
+																if (_v232.a.$ === 'VList') {
+																	var vs1 = _v232.a.a;
 																	if (_Utils_cmp(
 																		$elm$core$List$length(vs1),
 																		$elm$core$List$length(vs)) > 0) {
@@ -14000,11 +15973,11 @@ var $author$project$IMP$Uneval$tryupde2arith = function (ws) {
 																		$author$project$IMP$Syntax$VError('unsupported operation'));
 																}
 															}();
-															var newv1 = _v235.a;
-															var newv2 = _v235.b;
-															var _v237 = _Utils_Tuple2(newv1, newv2);
-															if ((_v237.a.$ === 'VError') && (_v237.b.$ === 'VError')) {
-																var info = _v237.a.a;
+															var newv1 = _v231.a;
+															var newv2 = _v231.b;
+															var _v233 = _Utils_Tuple2(newv1, newv2);
+															if ((_v233.a.$ === 'VError') && (_v233.b.$ === 'VError')) {
+																var info = _v233.a.a;
 																return _Utils_Tuple3(
 																	_List_Nil,
 																	_List_Nil,
@@ -14072,12 +16045,12 @@ var $author$project$IMP$Uneval$tryupde2comp = function (ws) {
 																		A4($author$project$IMP$Syntax$Eop, ws, op, e1, e2),
 																		hcount));
 															} else {
-																var _v205 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e2, readOnly, val, hcount);
-																var store_ = _v205.a;
-																var holeBindings_ = _v205.b;
-																var _v206 = _v205.c;
-																var expr_ = _v206.a;
-																var hcount_ = _v206.b;
+																var _v201 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e2, readOnly, val, hcount);
+																var store_ = _v201.a;
+																var holeBindings_ = _v201.b;
+																var _v202 = _v201.c;
+																var expr_ = _v202.a;
+																var hcount_ = _v202.b;
 																return _Utils_Tuple3(
 																	store_,
 																	holeBindings_,
@@ -14090,10 +16063,10 @@ var $author$project$IMP$Uneval$tryupde2comp = function (ws) {
 														if (val.a) {
 															switch (op) {
 																case '==':
-																	var _v208 = function () {
-																		var _v209 = _Utils_Tuple2(v1, v2);
-																		if (_v209.a.$ === 'VHole') {
-																			var _v210 = _v209.a;
+																	var _v204 = function () {
+																		var _v205 = _Utils_Tuple2(v1, v2);
+																		if (_v205.a.$ === 'VHole') {
+																			var _v206 = _v205.a;
 																			return _Utils_Tuple2(
 																				$author$project$IMP$Syntax$VError('unsupported operation'),
 																				$author$project$IMP$Syntax$VError('unsupported operation'));
@@ -14101,10 +16074,10 @@ var $author$project$IMP$Uneval$tryupde2comp = function (ws) {
 																			return _Utils_Tuple2(v1, v1);
 																		}
 																	}();
-																	var newv1 = _v208.a;
-																	var newv2 = _v208.b;
-																	var _v211 = _Utils_Tuple2(newv1, newv2);
-																	if ((_v211.a.$ === 'VError') && (_v211.b.$ === 'VError')) {
+																	var newv1 = _v204.a;
+																	var newv2 = _v204.b;
+																	var _v207 = _Utils_Tuple2(newv1, newv2);
+																	if ((_v207.a.$ === 'VError') && (_v207.b.$ === 'VError')) {
 																		return _Utils_Tuple3(
 																			_List_Nil,
 																			_List_Nil,
@@ -14198,10 +16171,10 @@ var $author$project$IMP$Uneval$tryupde2comp = function (ws) {
 																			$author$project$IMP$Syntax$EError('Cannot infer in eq'),
 																			0));
 																case '!=':
-																	var _v215 = function () {
-																		var _v216 = _Utils_Tuple2(v1, v2);
-																		if (_v216.b.$ === 'VHole') {
-																			var _v217 = _v216.b;
+																	var _v211 = function () {
+																		var _v212 = _Utils_Tuple2(v1, v2);
+																		if (_v212.b.$ === 'VHole') {
+																			var _v213 = _v212.b;
 																			return _Utils_Tuple2(
 																				$author$project$IMP$Syntax$VError('unsupported operation'),
 																				$author$project$IMP$Syntax$VError('unsupported operation'));
@@ -14209,10 +16182,10 @@ var $author$project$IMP$Uneval$tryupde2comp = function (ws) {
 																			return _Utils_Tuple2(v1, v1);
 																		}
 																	}();
-																	var newv1 = _v215.a;
-																	var newv2 = _v215.b;
-																	var _v218 = _Utils_Tuple2(newv1, newv2);
-																	if ((_v218.a.$ === 'VError') && (_v218.b.$ === 'VError')) {
+																	var newv1 = _v211.a;
+																	var newv2 = _v211.b;
+																	var _v214 = _Utils_Tuple2(newv1, newv2);
+																	if ((_v214.a.$ === 'VError') && (_v214.b.$ === 'VError')) {
 																		return _Utils_Tuple3(
 																			_List_Nil,
 																			_List_Nil,
@@ -14312,133 +16285,133 @@ var $author$project$IMP$Uneval$tryupde2logic = function (ws) {
 									return function (val) {
 										return function (hcount) {
 											return function (op) {
-												var _v169 = function () {
+												var _v165 = function () {
 													switch (v.$) {
 														case 'VHole':
-															var _v171 = _Utils_Tuple2(
+															var _v167 = _Utils_Tuple2(
 																_Utils_Tuple3(v1, v2, val),
 																op);
-															_v171$9:
+															_v167$9:
 															while (true) {
-																switch (_v171.a.c.$) {
+																switch (_v167.a.c.$) {
 																	case 'VBool':
-																		if (!_v171.a.c.a) {
-																			switch (_v171.a.a.$) {
+																		if (!_v167.a.c.a) {
+																			switch (_v167.a.a.$) {
 																				case 'VHole':
-																					if (_v171.b === '&&') {
-																						switch (_v171.a.b.$) {
+																					if (_v167.b === '&&') {
+																						switch (_v167.a.b.$) {
 																							case 'VBool':
-																								if (_v171.a.b.a) {
-																									var _v174 = _v171.a;
-																									var _v175 = _v174.a;
+																								if (_v167.a.b.a) {
+																									var _v170 = _v167.a;
+																									var _v171 = _v170.a;
 																									return _Utils_Tuple2(
 																										v1,
 																										$author$project$IMP$Syntax$VBool(false));
 																								} else {
-																									break _v171$9;
+																									break _v167$9;
 																								}
 																							case 'VHole':
-																								var _v178 = _v171.a;
-																								var _v179 = _v178.a;
-																								var _v180 = _v178.b;
+																								var _v174 = _v167.a;
+																								var _v175 = _v174.a;
+																								var _v176 = _v174.b;
 																								return _Utils_Tuple2(
 																									v1,
 																									$author$project$IMP$Syntax$VBool(false));
 																							default:
-																								break _v171$9;
+																								break _v167$9;
 																						}
 																					} else {
-																						break _v171$9;
+																						break _v167$9;
 																					}
 																				case 'VBool':
-																					if (_v171.a.a.a) {
-																						if ((_v171.a.b.$ === 'VHole') && (_v171.b === '&&')) {
-																							var _v176 = _v171.a;
-																							var _v177 = _v176.b;
-																							return _Utils_Tuple2(
-																								$author$project$IMP$Syntax$VBool(true),
-																								$author$project$IMP$Syntax$VBool(false));
-																						} else {
-																							break _v171$9;
-																						}
-																					} else {
-																						if ((_v171.a.b.$ === 'VHole') && (_v171.b === '||')) {
-																							var _v181 = _v171.a;
-																							var _v182 = _v181.b;
-																							return _Utils_Tuple2(
-																								$author$project$IMP$Syntax$VBool(false),
-																								$author$project$IMP$Syntax$VBool(false));
-																						} else {
-																							break _v171$9;
-																						}
-																					}
-																				default:
-																					break _v171$9;
-																			}
-																		} else {
-																			switch (_v171.a.a.$) {
-																				case 'VBool':
-																					if (_v171.a.a.a) {
-																						if ((_v171.a.b.$ === 'VHole') && (_v171.b === '&&')) {
-																							var _v172 = _v171.a;
+																					if (_v167.a.a.a) {
+																						if ((_v167.a.b.$ === 'VHole') && (_v167.b === '&&')) {
+																							var _v172 = _v167.a;
 																							var _v173 = _v172.b;
 																							return _Utils_Tuple2(
 																								$author$project$IMP$Syntax$VBool(true),
-																								$author$project$IMP$Syntax$VBool(true));
+																								$author$project$IMP$Syntax$VBool(false));
 																						} else {
-																							break _v171$9;
+																							break _v167$9;
 																						}
 																					} else {
-																						if ((_v171.a.b.$ === 'VHole') && (_v171.b === '||')) {
-																							var _v185 = _v171.a;
-																							var _v186 = _v185.b;
+																						if ((_v167.a.b.$ === 'VHole') && (_v167.b === '||')) {
+																							var _v177 = _v167.a;
+																							var _v178 = _v177.b;
+																							return _Utils_Tuple2(
+																								$author$project$IMP$Syntax$VBool(false),
+																								$author$project$IMP$Syntax$VBool(false));
+																						} else {
+																							break _v167$9;
+																						}
+																					}
+																				default:
+																					break _v167$9;
+																			}
+																		} else {
+																			switch (_v167.a.a.$) {
+																				case 'VBool':
+																					if (_v167.a.a.a) {
+																						if ((_v167.a.b.$ === 'VHole') && (_v167.b === '&&')) {
+																							var _v168 = _v167.a;
+																							var _v169 = _v168.b;
+																							return _Utils_Tuple2(
+																								$author$project$IMP$Syntax$VBool(true),
+																								$author$project$IMP$Syntax$VBool(true));
+																						} else {
+																							break _v167$9;
+																						}
+																					} else {
+																						if ((_v167.a.b.$ === 'VHole') && (_v167.b === '||')) {
+																							var _v181 = _v167.a;
+																							var _v182 = _v181.b;
 																							return _Utils_Tuple2(
 																								$author$project$IMP$Syntax$VBool(false),
 																								$author$project$IMP$Syntax$VBool(true));
 																						} else {
-																							break _v171$9;
+																							break _v167$9;
 																						}
 																					}
 																				case 'VHole':
-																					if (_v171.b === '||') {
-																						switch (_v171.a.b.$) {
+																					if (_v167.b === '||') {
+																						switch (_v167.a.b.$) {
 																							case 'VBool':
-																								if (!_v171.a.b.a) {
-																									var _v183 = _v171.a;
-																									var _v184 = _v183.a;
+																								if (!_v167.a.b.a) {
+																									var _v179 = _v167.a;
+																									var _v180 = _v179.a;
 																									return _Utils_Tuple2(
 																										v1,
 																										$author$project$IMP$Syntax$VBool(true));
 																								} else {
-																									break _v171$9;
+																									break _v167$9;
 																								}
 																							case 'VHole':
-																								var _v187 = _v171.a;
-																								var _v188 = _v187.a;
-																								var _v189 = _v187.b;
+																								var _v183 = _v167.a;
+																								var _v184 = _v183.a;
+																								var _v185 = _v183.b;
 																								return _Utils_Tuple2(
 																									v1,
 																									$author$project$IMP$Syntax$VBool(true));
 																							default:
-																								break _v171$9;
+																								break _v167$9;
 																						}
 																					} else {
-																						break _v171$9;
+																						break _v167$9;
 																					}
 																				default:
-																					break _v171$9;
+																					break _v167$9;
 																			}
 																		}
 																	case 'VHole':
-																		if (_v171.b === '&&') {
-																			var _v190 = _v171.a;
-																			var _v191 = _v190.c;
+																		if (_v167.b === '&&') {
+																			var _v186 = _v167.a;
+																			var _v187 = _v186.c;
 																			return _Utils_Tuple2(v1, v2);
 																		} else {
-																			break _v171$9;
+																			break _v167$9;
 																		}
 																	default:
-																		break _v171$9;
+																		break _v167$9;
 																}
 															}
 															return _Utils_Tuple2(
@@ -14453,8 +16426,8 @@ var $author$project$IMP$Uneval$tryupde2logic = function (ws) {
 																		} else {
 																			switch (op) {
 																				case '&&':
-																					var _v194 = _Utils_Tuple2(v1, v2);
-																					if ((((_v194.a.$ === 'VBool') && _v194.a.a) && (_v194.b.$ === 'VBool')) && _v194.b.a) {
+																					var _v190 = _Utils_Tuple2(v1, v2);
+																					if ((((_v190.a.$ === 'VBool') && _v190.a.a) && (_v190.b.$ === 'VBool')) && _v190.b.a) {
 																						return _Utils_Tuple2(
 																							$author$project$IMP$Syntax$VBool(true),
 																							$author$project$IMP$Syntax$VBool(false));
@@ -14464,8 +16437,8 @@ var $author$project$IMP$Uneval$tryupde2logic = function (ws) {
 																							$author$project$IMP$Syntax$VError('unsupported operation'));
 																					}
 																				case '||':
-																					var _v195 = _Utils_Tuple2(v1, v2);
-																					if ((((_v195.a.$ === 'VBool') && (!_v195.a.a)) && (_v195.b.$ === 'VBool')) && _v195.b.a) {
+																					var _v191 = _Utils_Tuple2(v1, v2);
+																					if ((((_v191.a.$ === 'VBool') && (!_v191.a.a)) && (_v191.b.$ === 'VBool')) && _v191.b.a) {
 																						return _Utils_Tuple2(
 																							$author$project$IMP$Syntax$VBool(false),
 																							$author$project$IMP$Syntax$VBool(false));
@@ -14496,37 +16469,37 @@ var $author$project$IMP$Uneval$tryupde2logic = function (ws) {
 																		} else {
 																			switch (op) {
 																				case '&&':
-																					var _v198 = _Utils_Tuple2(v1, v2);
-																					_v198$2:
+																					var _v194 = _Utils_Tuple2(v1, v2);
+																					_v194$2:
 																					while (true) {
-																						if ((_v198.a.$ === 'VBool') && _v198.a.a) {
-																							switch (_v198.b.$) {
+																						if ((_v194.a.$ === 'VBool') && _v194.a.a) {
+																							switch (_v194.b.$) {
 																								case 'VBool':
-																									if (!_v198.b.a) {
+																									if (!_v194.b.a) {
 																										return _Utils_Tuple2(
 																											$author$project$IMP$Syntax$VBool(true),
 																											$author$project$IMP$Syntax$VBool(true));
 																									} else {
-																										break _v198$2;
+																										break _v194$2;
 																									}
 																								case 'VHole':
-																									var _v199 = _v198.b;
+																									var _v195 = _v194.b;
 																									return _Utils_Tuple2(
 																										$author$project$IMP$Syntax$VBool(true),
 																										$author$project$IMP$Syntax$VBool(true));
 																								default:
-																									break _v198$2;
+																									break _v194$2;
 																							}
 																						} else {
-																							break _v198$2;
+																							break _v194$2;
 																						}
 																					}
 																					return _Utils_Tuple2(
 																						$author$project$IMP$Syntax$VError('unsupported operation'),
 																						$author$project$IMP$Syntax$VError('unsupported operation'));
 																				case '||':
-																					var _v200 = _Utils_Tuple2(v1, v2);
-																					if ((((_v200.a.$ === 'VBool') && (!_v200.a.a)) && (_v200.b.$ === 'VBool')) && (!_v200.b.a)) {
+																					var _v196 = _Utils_Tuple2(v1, v2);
+																					if ((((_v196.a.$ === 'VBool') && (!_v196.a.a)) && (_v196.b.$ === 'VBool')) && (!_v196.b.a)) {
 																						return _Utils_Tuple2(
 																							$author$project$IMP$Syntax$VBool(false),
 																							$author$project$IMP$Syntax$VBool(true));
@@ -14556,11 +16529,11 @@ var $author$project$IMP$Uneval$tryupde2logic = function (ws) {
 																$author$project$IMP$Syntax$VError('unsupported operation'));
 													}
 												}();
-												var newv1 = _v169.a;
-												var newv2 = _v169.b;
-												var _v201 = _Utils_Tuple2(newv1, newv2);
-												if ((_v201.a.$ === 'VError') && (_v201.b.$ === 'VError')) {
-													var s = _v201.a.a;
+												var newv1 = _v165.a;
+												var newv2 = _v165.b;
+												var _v197 = _Utils_Tuple2(newv1, newv2);
+												if ((_v197.a.$ === 'VError') && (_v197.b.$ === 'VError')) {
+													var s = _v197.a.a;
 													return _Utils_Tuple3(
 														_List_Nil,
 														_List_Nil,
@@ -14777,27 +16750,27 @@ var $author$project$IMP$Uneval$tryupdearith = function (ws) {
 																					var _v150 = _v149.a;
 																					var _v151 = _v149.b;
 																					return _Utils_Tuple2(
-																						$author$project$IMP$Syntax$VList(_List_Nil),
-																						$author$project$IMP$Syntax$VList(vs));
+																						$author$project$IMP$Syntax$VList(vs),
+																						$author$project$IMP$Syntax$VList(_List_Nil));
 																				case 'VList':
-																					var _v154 = _v149.a;
+																					var _v153 = _v149.a;
 																					var vs2 = _v149.b.a;
-																					var _v155 = (_Utils_cmp(
+																					return ((_Utils_cmp(
 																						$elm$core$List$length(vs2),
-																						$elm$core$List$length(vs)) > 0) ? _Utils_Tuple2(_List_Nil, vs) : _Utils_Tuple2(
+																						$elm$core$List$length(vs)) < 1) && _Utils_eq(
 																						A2(
 																							$elm$core$List$drop,
-																							$elm$core$List$length(vs2),
+																							$elm$core$List$length(vs) - $elm$core$List$length(vs2),
 																							vs),
-																						A2(
-																							$elm$core$List$take,
-																							$elm$core$List$length(vs2),
-																							vs));
-																					var vs1_ = _v155.a;
-																					var vs2_ = _v155.b;
-																					return _Utils_Tuple2(
-																						$author$project$IMP$Syntax$VList(vs1_),
-																						$author$project$IMP$Syntax$VList(vs2_));
+																						vs2)) ? _Utils_Tuple2(
+																						$author$project$IMP$Syntax$VList(
+																							A2(
+																								$elm$core$List$take,
+																								$elm$core$List$length(vs) - $elm$core$List$length(vs2),
+																								vs)),
+																						v2) : _Utils_Tuple2(
+																						$author$project$IMP$Syntax$VList(vs),
+																						$author$project$IMP$Syntax$VList(_List_Nil));
 																				default:
 																					break _v149$4;
 																			}
@@ -14806,26 +16779,26 @@ var $author$project$IMP$Uneval$tryupdearith = function (ws) {
 																				case 'VHole':
 																					var vs1 = _v149.a.a;
 																					var _v152 = _v149.b;
-																					var _v153 = (_Utils_cmp(
+																					return ((_Utils_cmp(
 																						$elm$core$List$length(vs1),
-																						$elm$core$List$length(vs)) > 0) ? _Utils_Tuple2(vs, _List_Nil) : _Utils_Tuple2(
+																						$elm$core$List$length(vs)) < 1) && _Utils_eq(
 																						A2(
 																							$elm$core$List$take,
 																							$elm$core$List$length(vs1),
 																							vs),
-																						A2(
-																							$elm$core$List$drop,
-																							$elm$core$List$length(vs1),
-																							vs));
-																					var vs1_ = _v153.a;
-																					var vs2_ = _v153.b;
-																					return _Utils_Tuple2(
-																						$author$project$IMP$Syntax$VList(vs1_),
-																						$author$project$IMP$Syntax$VList(vs2_));
+																						vs1)) ? _Utils_Tuple2(
+																						v1,
+																						$author$project$IMP$Syntax$VList(
+																							A2(
+																								$elm$core$List$drop,
+																								$elm$core$List$length(vs1),
+																								vs))) : _Utils_Tuple2(
+																						$author$project$IMP$Syntax$VList(vs),
+																						$author$project$IMP$Syntax$VList(_List_Nil));
 																				case 'VList':
 																					var vs1 = _v149.a.a;
 																					var vs2 = _v149.b.a;
-																					var _v156 = (_Utils_cmp(
+																					var _v154 = (_Utils_cmp(
 																						$elm$core$List$length(vs1),
 																						$elm$core$List$length(vs)) > 0) ? _Utils_Tuple2(vs, _List_Nil) : _Utils_Tuple2(
 																						A2(
@@ -14836,8 +16809,8 @@ var $author$project$IMP$Uneval$tryupdearith = function (ws) {
 																							$elm$core$List$drop,
 																							$elm$core$List$length(vs1),
 																							vs));
-																					var vs1_ = _v156.a;
-																					var vs2_ = _v156.b;
+																					var vs1_ = _v154.a;
+																					var vs2_ = _v154.b;
 																					return _Utils_Tuple2(
 																						$author$project$IMP$Syntax$VList(vs1_),
 																						$author$project$IMP$Syntax$VList(vs2_));
@@ -14854,9 +16827,9 @@ var $author$project$IMP$Uneval$tryupdearith = function (ws) {
 															}();
 															var newv1 = _v148.a;
 															var newv2 = _v148.b;
-															var _v157 = _Utils_Tuple2(newv1, newv2);
-															if ((_v157.a.$ === 'VError') && (_v157.b.$ === 'VError')) {
-																var info = _v157.a.a;
+															var _v155 = _Utils_Tuple2(newv1, newv2);
+															if ((_v155.a.$ === 'VError') && (_v155.b.$ === 'VError')) {
+																var info = _v155.a.a;
 																return _Utils_Tuple3(
 																	_List_Nil,
 																	_List_Nil,
@@ -14877,65 +16850,65 @@ var $author$project$IMP$Uneval$tryupdearith = function (ws) {
 													case 'VString':
 														var s = val.a;
 														if (op === '++') {
-															var _v159 = function () {
-																var _v160 = _Utils_Tuple2(v1, v2);
-																_v160$4:
+															var _v157 = function () {
+																var _v158 = _Utils_Tuple2(v1, v2);
+																_v158$4:
 																while (true) {
-																	switch (_v160.a.$) {
+																	switch (_v158.a.$) {
 																		case 'VHole':
-																			switch (_v160.b.$) {
+																			switch (_v158.b.$) {
 																				case 'VHole':
-																					var _v161 = _v160.a;
-																					var _v162 = _v160.b;
+																					var _v159 = _v158.a;
+																					var _v160 = _v158.b;
 																					return _Utils_Tuple2(
-																						$author$project$IMP$Syntax$VString(''),
-																						$author$project$IMP$Syntax$VString(s));
+																						$author$project$IMP$Syntax$VString(s),
+																						$author$project$IMP$Syntax$VString(''));
 																				case 'VString':
-																					var _v165 = _v160.a;
-																					var s2 = _v160.b.a;
-																					var _v166 = (_Utils_cmp(
+																					var _v162 = _v158.a;
+																					var s2 = _v158.b.a;
+																					return ((_Utils_cmp(
 																						$elm$core$String$length(s2),
-																						$elm$core$String$length(s)) > 0) ? _Utils_Tuple2('', s) : _Utils_Tuple2(
-																						A2(
-																							$elm$core$String$dropRight,
-																							$elm$core$String$length(s2),
-																							s),
+																						$elm$core$String$length(s)) < 1) && _Utils_eq(
 																						A2(
 																							$elm$core$String$right,
 																							$elm$core$String$length(s2),
-																							s));
-																					var s1_ = _v166.a;
-																					var s2_ = _v166.b;
-																					return _Utils_Tuple2(
-																						$author$project$IMP$Syntax$VString(s1_),
-																						$author$project$IMP$Syntax$VString(s2_));
+																							s),
+																						s2)) ? _Utils_Tuple2(
+																						$author$project$IMP$Syntax$VString(
+																							A2(
+																								$elm$core$String$dropRight,
+																								$elm$core$String$length(s2),
+																								s)),
+																						v2) : _Utils_Tuple2(
+																						$author$project$IMP$Syntax$VString(s),
+																						$author$project$IMP$Syntax$VString(''));
 																				default:
-																					break _v160$4;
+																					break _v158$4;
 																			}
 																		case 'VString':
-																			switch (_v160.b.$) {
+																			switch (_v158.b.$) {
 																				case 'VHole':
-																					var s1 = _v160.a.a;
-																					var _v163 = _v160.b;
-																					var _v164 = (_Utils_cmp(
+																					var s1 = _v158.a.a;
+																					var _v161 = _v158.b;
+																					return ((_Utils_cmp(
 																						$elm$core$String$length(s1),
-																						$elm$core$String$length(s)) > 0) ? _Utils_Tuple2(s, '') : _Utils_Tuple2(
+																						$elm$core$String$length(s)) < 1) && _Utils_eq(
 																						A2(
 																							$elm$core$String$left,
 																							$elm$core$String$length(s1),
 																							s),
-																						A2(
-																							$elm$core$String$dropLeft,
-																							$elm$core$String$length(s1),
-																							s));
-																					var s1_ = _v164.a;
-																					var s2_ = _v164.b;
-																					return _Utils_Tuple2(
-																						$author$project$IMP$Syntax$VString(s1_),
-																						$author$project$IMP$Syntax$VString(s2_));
+																						s1)) ? _Utils_Tuple2(
+																						v1,
+																						$author$project$IMP$Syntax$VString(
+																							A2(
+																								$elm$core$String$dropLeft,
+																								$elm$core$String$length(s1),
+																								s))) : _Utils_Tuple2(
+																						$author$project$IMP$Syntax$VString(s),
+																						$author$project$IMP$Syntax$VString(''));
 																				case 'VString':
-																					var s1 = _v160.a.a;
-																					var _v167 = (_Utils_cmp(
+																					var s1 = _v158.a.a;
+																					var _v163 = (_Utils_cmp(
 																						$elm$core$String$length(s1),
 																						$elm$core$String$length(s)) > 0) ? _Utils_Tuple2(s, '') : _Utils_Tuple2(
 																						A2(
@@ -14946,27 +16919,27 @@ var $author$project$IMP$Uneval$tryupdearith = function (ws) {
 																							$elm$core$String$dropLeft,
 																							$elm$core$String$length(s1),
 																							s));
-																					var s1_ = _v167.a;
-																					var s2_ = _v167.b;
+																					var s1_ = _v163.a;
+																					var s2_ = _v163.b;
 																					return _Utils_Tuple2(
 																						$author$project$IMP$Syntax$VString(s1_),
 																						$author$project$IMP$Syntax$VString(s2_));
 																				default:
-																					break _v160$4;
+																					break _v158$4;
 																			}
 																		default:
-																			break _v160$4;
+																			break _v158$4;
 																	}
 																}
 																return _Utils_Tuple2(
 																	$author$project$IMP$Syntax$VError('unsupported operation'),
 																	$author$project$IMP$Syntax$VError('unsupported operation'));
 															}();
-															var newv1 = _v159.a;
-															var newv2 = _v159.b;
-															var _v168 = _Utils_Tuple2(newv1, newv2);
-															if ((_v168.a.$ === 'VError') && (_v168.b.$ === 'VError')) {
-																var info = _v168.a.a;
+															var newv1 = _v157.a;
+															var newv2 = _v157.b;
+															var _v164 = _Utils_Tuple2(newv1, newv2);
+															if ((_v164.a.$ === 'VError') && (_v164.b.$ === 'VError')) {
+																var info = _v164.a.a;
 																return _Utils_Tuple3(
 																	_List_Nil,
 																	_List_Nil,
@@ -16361,13 +18334,10 @@ var $author$project$IMP$Uneval$uneval = F6(
 										var xv = _v36.a;
 										var newx = A3($author$project$IMP$Uneval$writeIndexValue, path, xv, val);
 										if (newx.$ === 'VError') {
-											var s = newx.a;
 											return _Utils_Tuple3(
-												_List_Nil,
-												_List_Nil,
-												_Utils_Tuple2(
-													$author$project$IMP$Syntax$EError(s),
-													0));
+												store,
+												holeBindings,
+												_Utils_Tuple2(expr, hcount));
 										} else {
 											return _Utils_Tuple3(
 												A3($author$project$IMP$Utils$updateStore, x, newx, store),
@@ -16468,23 +18438,23 @@ var $author$project$IMP$Uneval$unevalList = F6(
 			var v = _v2.a;
 			var vs_ = _v2.b;
 			var _v3 = A6($author$project$IMP$Uneval$unevalList, store, holeBindings, readOnly, es_, vs_, hcount);
-			var newstore_ = _v3.a;
-			var newhb_ = _v3.b;
+			var storeTail = _v3.a;
+			var hbTail = _v3.b;
 			var _v4 = _v3.c;
-			var newexprs = _v4.a;
+			var exprs = _v4.a;
 			var hcount_ = _v4.b;
 			var _v5 = A6($author$project$IMP$Uneval$uneval, store, holeBindings, e, readOnly, v, hcount_);
-			var estore_ = _v5.a;
-			var ehb_ = _v5.b;
+			var storeHead = _v5.a;
+			var hbHead = _v5.b;
 			var _v6 = _v5.c;
 			var eexpr = _v6.a;
-			var ehcount_ = _v6.b;
+			var hcount__ = _v6.b;
 			return _Utils_Tuple3(
-				A3($author$project$IMP$Uneval$mergeStore, estore_, newstore_, store),
-				A3($author$project$IMP$Uneval$mergeHoleBindings, ehb_, newhb_, holeBindings),
+				A3($author$project$IMP$Uneval$mergeStore, storeHead, storeTail, store),
+				A3($author$project$IMP$Uneval$mergeHoleBindings, hbHead, hbTail, holeBindings),
 				_Utils_Tuple2(
-					A2($elm$core$List$cons, eexpr, newexprs),
-					ehcount_));
+					A2($elm$core$List$cons, eexpr, exprs),
+					hcount__));
 		} else {
 			return _Utils_Tuple3(
 				store,
@@ -16507,10 +18477,11 @@ var $author$project$IMP$Uneval$unpollute = F3(
 								var store_ = store.b;
 								var output_ = function () {
 									var _v2 = $elm$core$List$reverse(vs);
-									if (((_v2.b && (_v2.a.$ === 'VHole')) && (_v2.a.a.$ === 'HVar')) && (_v2.a.a.a === 'output')) {
+									if (_v2.b && (_v2.a.$ === 'VHole')) {
 										var _v3 = _v2.a;
+										var h = _v3.a;
 										var id = _v3.b;
-										if (_Utils_eq(id, scount)) {
+										if (_Utils_eq(id, scount) && $author$project$IMP$Utils$isOutputSuffixHole(h)) {
 											var oriv = A2($author$project$IMP$Utils$lookup, 'output', oristore);
 											if (oriv.$ === 'Just') {
 												var v = oriv.a;
@@ -16588,10 +18559,25 @@ var $author$project$IMP$Uneval$unpollute = F3(
 				A3($author$project$IMP$Uneval$unpollute, store_, oristore, scount));
 		}
 	});
-var $author$project$IMP$Uneval$unexec = F8(
-	function (store, holeBindings, riStmts, readOnly, stmt, hcount, scount, _v0) {
-		var newstore = _v0.a;
-		var newriStmts = _v0.b;
+var $author$project$IMP$Utils$updateFuncEnv = F3(
+	function (name, body, env) {
+		return A2(
+			$elm$core$List$map,
+			function (f) {
+				return _Utils_eq(f.name, name) ? _Utils_update(
+					f,
+					{body: body}) : f;
+			},
+			env);
+	});
+var $author$project$IMP$Uneval$unexec = F9(
+	function (funcEnv, store, holeBindings, riStmts, readOnly, stmt, hcount, scount, _v12) {
+		var newstore = _v12.a;
+		var newriStmts = _v12.b;
+		var _v13 = A2(
+			$author$project$IMP$Uneval$traceLog,
+			'UNEXEC',
+			$author$project$IMP$Uneval$stmtTag(stmt) + (' scount=' + ($elm$core$String$fromInt(scount) + ('\n  old.keys ' + ($author$project$IMP$Uneval$storeKeys(store) + ('\n  new.keys ' + ($author$project$IMP$Uneval$storeKeys(newstore) + ('\n  old ' + ($author$project$IMP$Uneval$fmtStore(store) + ('\n  new ' + $author$project$IMP$Uneval$fmtStore(newstore)))))))))));
 		switch (stmt.$) {
 			case 'SAssign':
 				var ws = stmt.a;
@@ -16604,20 +18590,21 @@ var $author$project$IMP$Uneval$unexec = F8(
 						var newval = A2($author$project$IMP$Utils$lookup, x, newstore);
 						var val = A3($author$project$IMP$Eval$eval, store, holeBindings, e2);
 						var oldval = A2($author$project$IMP$Utils$lookup, x, store);
-						var _v3 = _Utils_Tuple3(val, newval, oldval);
-						if (_v3.b.$ === 'Just') {
-							if (_v3.c.$ === 'Just') {
-								switch (_v3.a.$) {
+						var _v16 = _Utils_Tuple3(val, newval, oldval);
+						if (_v16.b.$ === 'Just') {
+							if (_v16.c.$ === 'Just') {
+								switch (_v16.a.$) {
 									case 'VHole':
-										var _v4 = _v3.a;
-										var nv = _v3.b.a;
-										var ov = _v3.c.a;
+										var _v17 = _v16.a;
+										var nv = _v16.b.a;
+										var ov = _v16.c.a;
 										if ((nv.$ === 'VHole') && (nv.a.$ === 'HVar')) {
 											var x_ = nv.a.a;
 											var id_ = nv.b;
 											if (_Utils_eq(x_, x) && _Utils_eq(id_, scount)) {
 												var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
 												return {
+													funcEnv: funcEnv,
 													hcount: hcount,
 													holeBindings: holeBindings,
 													riStmts: A2(
@@ -16633,181 +18620,9 @@ var $author$project$IMP$Uneval$unexec = F8(
 												};
 											} else {
 												var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
-												var _v6 = A6(
-													$author$project$IMP$Uneval$uneval,
-													A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
-													holeBindings,
-													e2,
-													readOnly,
-													nv,
-													hcount);
-												var finalstore = _v6.a;
-												var newhb = _v6.b;
-												var _v7 = _v6.c;
-												var newexpr = _v7.a;
-												var hcount_ = _v7.b;
-												return {
-													hcount: hcount_,
-													holeBindings: newhb,
-													riStmts: A2(
-														$elm$core$List$take,
-														$elm$core$List$length(newriStmts) - 1,
-														newriStmts),
-													stmt: A3(
-														$author$project$IMP$Syntax$SAssign,
-														ws,
-														A2($author$project$IMP$Syntax$EVar, ws1, x),
-														newexpr),
-													store: A3($author$project$IMP$Uneval$mergeStore, userstore, finalstore, store)
-												};
-											}
-										} else {
-											var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
-											var _v8 = A6(
-												$author$project$IMP$Uneval$uneval,
-												A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
-												holeBindings,
-												e2,
-												readOnly,
-												nv,
-												hcount);
-											var finalstore = _v8.a;
-											var newhb = _v8.b;
-											var _v9 = _v8.c;
-											var newexpr = _v9.a;
-											var hcount_ = _v9.b;
-											return {
-												hcount: hcount_,
-												holeBindings: newhb,
-												riStmts: A2(
-													$elm$core$List$take,
-													$elm$core$List$length(newriStmts) - 1,
-													newriStmts),
-												stmt: A3(
-													$author$project$IMP$Syntax$SAssign,
-													ws,
-													A2($author$project$IMP$Syntax$EVar, ws1, x),
-													newexpr),
-												store: A3($author$project$IMP$Uneval$mergeStore, userstore, finalstore, store)
-											};
-										}
-									case 'VList':
-										var vs = _v3.a.a;
-										var nv = _v3.b.a;
-										var ov = _v3.c.a;
-										if ($author$project$IMP$Utils$hasHole(vs)) {
-											var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
-											var _v10 = A6(
-												$author$project$IMP$Uneval$uneval,
-												A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
-												holeBindings,
-												e2,
-												readOnly,
-												nv,
-												hcount);
-											var finalstore = _v10.a;
-											var newhb = _v10.b;
-											var _v11 = _v10.c;
-											var newexpr = _v11.a;
-											var hcount_ = _v11.b;
-											return {
-												hcount: hcount_,
-												holeBindings: newhb,
-												riStmts: A2(
-													$elm$core$List$take,
-													$elm$core$List$length(newriStmts) - 1,
-													newriStmts),
-												stmt: A3(
-													$author$project$IMP$Syntax$SAssign,
-													ws,
-													A2($author$project$IMP$Syntax$EVar, ws1, x),
-													newexpr),
-												store: A3($author$project$IMP$Uneval$mergeStore, userstore, finalstore, store)
-											};
-										} else {
-											var _v12 = A6(
-												$author$project$IMP$Uneval$uneval,
-												A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
-												holeBindings,
-												e2,
-												readOnly,
-												nv,
-												hcount);
-											var finalstore = _v12.a;
-											var newhb = _v12.b;
-											var _v13 = _v12.c;
-											var newexpr = _v13.a;
-											var hcount_ = _v13.b;
-											return {
-												hcount: hcount_,
-												holeBindings: newhb,
-												riStmts: newriStmts,
-												stmt: A3(
-													$author$project$IMP$Syntax$SAssign,
-													ws,
-													A2($author$project$IMP$Syntax$EVar, ws1, x),
-													newexpr),
-												store: finalstore
-											};
-										}
-									default:
-										var nv = _v3.b.a;
-										var ov = _v3.c.a;
-										var _v14 = A6(
-											$author$project$IMP$Uneval$uneval,
-											A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
-											holeBindings,
-											e2,
-											readOnly,
-											nv,
-											hcount);
-										var finalstore = _v14.a;
-										var newhb = _v14.b;
-										var _v15 = _v14.c;
-										var newexpr = _v15.a;
-										var hcount_ = _v15.b;
-										return {
-											hcount: hcount_,
-											holeBindings: newhb,
-											riStmts: newriStmts,
-											stmt: A3(
-												$author$project$IMP$Syntax$SAssign,
-												ws,
-												A2($author$project$IMP$Syntax$EVar, ws1, x),
-												newexpr),
-											store: finalstore
-										};
-								}
-							} else {
-								switch (_v3.a.$) {
-									case 'VHole':
-										var _v16 = _v3.a;
-										var nv = _v3.b.a;
-										var _v17 = _v3.c;
-										if ((nv.$ === 'VHole') && (nv.a.$ === 'HVar')) {
-											var x_ = nv.a.a;
-											var id_ = nv.b;
-											if (_Utils_eq(x_, x) && _Utils_eq(id_, scount)) {
-												var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
-												return {
-													hcount: hcount,
-													holeBindings: holeBindings,
-													riStmts: A2(
-														$elm$core$List$take,
-														$elm$core$List$length(newriStmts) - 1,
-														newriStmts),
-													stmt: stmt,
-													store: A3(
-														$author$project$IMP$Uneval$mergeStore,
-														userstore,
-														A2($author$project$IMP$Utils$delStore, x, newstore),
-														store)
-												};
-											} else {
-												var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
 												var _v19 = A6(
 													$author$project$IMP$Uneval$uneval,
-													A2($author$project$IMP$Utils$delStore, x, newstore),
+													A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
 													holeBindings,
 													e2,
 													readOnly,
@@ -16819,6 +18634,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 												var newexpr = _v20.a;
 												var hcount_ = _v20.b;
 												return {
+													funcEnv: funcEnv,
 													hcount: hcount_,
 													holeBindings: newhb,
 													riStmts: A2(
@@ -16837,7 +18653,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 											var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
 											var _v21 = A6(
 												$author$project$IMP$Uneval$uneval,
-												A2($author$project$IMP$Utils$delStore, x, newstore),
+												A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
 												holeBindings,
 												e2,
 												readOnly,
@@ -16849,6 +18665,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 											var newexpr = _v22.a;
 											var hcount_ = _v22.b;
 											return {
+												funcEnv: funcEnv,
 												hcount: hcount_,
 												holeBindings: newhb,
 												riStmts: A2(
@@ -16864,25 +18681,26 @@ var $author$project$IMP$Uneval$unexec = F8(
 											};
 										}
 									case 'VList':
-										var vs = _v3.a.a;
-										var nv = _v3.b.a;
-										var _v23 = _v3.c;
+										var vs = _v16.a.a;
+										var nv = _v16.b.a;
+										var ov = _v16.c.a;
 										if ($author$project$IMP$Utils$hasHole(vs)) {
 											var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
-											var _v24 = A6(
+											var _v23 = A6(
 												$author$project$IMP$Uneval$uneval,
-												A2($author$project$IMP$Utils$delStore, x, newstore),
+												A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
 												holeBindings,
 												e2,
 												readOnly,
 												nv,
 												hcount);
-											var finalstore = _v24.a;
-											var newhb = _v24.b;
-											var _v25 = _v24.c;
-											var newexpr = _v25.a;
-											var hcount_ = _v25.b;
+											var finalstore = _v23.a;
+											var newhb = _v23.b;
+											var _v24 = _v23.c;
+											var newexpr = _v24.a;
+											var hcount_ = _v24.b;
 											return {
+												funcEnv: funcEnv,
 												hcount: hcount_,
 												holeBindings: newhb,
 												riStmts: A2(
@@ -16897,20 +18715,21 @@ var $author$project$IMP$Uneval$unexec = F8(
 												store: A3($author$project$IMP$Uneval$mergeStore, userstore, finalstore, store)
 											};
 										} else {
-											var _v26 = A6(
+											var _v25 = A6(
 												$author$project$IMP$Uneval$uneval,
-												A2($author$project$IMP$Utils$delStore, x, newstore),
+												A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
 												holeBindings,
 												e2,
 												readOnly,
 												nv,
 												hcount);
-											var finalstore = _v26.a;
-											var newhb = _v26.b;
-											var _v27 = _v26.c;
-											var newexpr = _v27.a;
-											var hcount_ = _v27.b;
+											var finalstore = _v25.a;
+											var newhb = _v25.b;
+											var _v26 = _v25.c;
+											var newexpr = _v26.a;
+											var hcount_ = _v26.b;
 											return {
+												funcEnv: funcEnv,
 												hcount: hcount_,
 												holeBindings: newhb,
 												riStmts: newriStmts,
@@ -16923,9 +18742,187 @@ var $author$project$IMP$Uneval$unexec = F8(
 											};
 										}
 									default:
-										var nv = _v3.b.a;
-										var _v28 = _v3.c;
-										var _v29 = A6(
+										var nv = _v16.b.a;
+										var ov = _v16.c.a;
+										var _v27 = A6(
+											$author$project$IMP$Uneval$uneval,
+											A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
+											holeBindings,
+											e2,
+											readOnly,
+											nv,
+											hcount);
+										var finalstore = _v27.a;
+										var newhb = _v27.b;
+										var _v28 = _v27.c;
+										var newexpr = _v28.a;
+										var hcount_ = _v28.b;
+										return {
+											funcEnv: funcEnv,
+											hcount: hcount_,
+											holeBindings: newhb,
+											riStmts: newriStmts,
+											stmt: A3(
+												$author$project$IMP$Syntax$SAssign,
+												ws,
+												A2($author$project$IMP$Syntax$EVar, ws1, x),
+												newexpr),
+											store: finalstore
+										};
+								}
+							} else {
+								switch (_v16.a.$) {
+									case 'VHole':
+										var _v29 = _v16.a;
+										var nv = _v16.b.a;
+										var _v30 = _v16.c;
+										if ((nv.$ === 'VHole') && (nv.a.$ === 'HVar')) {
+											var x_ = nv.a.a;
+											var id_ = nv.b;
+											if (_Utils_eq(x_, x) && _Utils_eq(id_, scount)) {
+												var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
+												return {
+													funcEnv: funcEnv,
+													hcount: hcount,
+													holeBindings: holeBindings,
+													riStmts: A2(
+														$elm$core$List$take,
+														$elm$core$List$length(newriStmts) - 1,
+														newriStmts),
+													stmt: stmt,
+													store: A3(
+														$author$project$IMP$Uneval$mergeStore,
+														userstore,
+														A2($author$project$IMP$Utils$delStore, x, newstore),
+														store)
+												};
+											} else {
+												var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
+												var _v32 = A6(
+													$author$project$IMP$Uneval$uneval,
+													A2($author$project$IMP$Utils$delStore, x, newstore),
+													holeBindings,
+													e2,
+													readOnly,
+													nv,
+													hcount);
+												var finalstore = _v32.a;
+												var newhb = _v32.b;
+												var _v33 = _v32.c;
+												var newexpr = _v33.a;
+												var hcount_ = _v33.b;
+												return {
+													funcEnv: funcEnv,
+													hcount: hcount_,
+													holeBindings: newhb,
+													riStmts: A2(
+														$elm$core$List$take,
+														$elm$core$List$length(newriStmts) - 1,
+														newriStmts),
+													stmt: A3(
+														$author$project$IMP$Syntax$SAssign,
+														ws,
+														A2($author$project$IMP$Syntax$EVar, ws1, x),
+														newexpr),
+													store: A3($author$project$IMP$Uneval$mergeStore, userstore, finalstore, store)
+												};
+											}
+										} else {
+											var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
+											var _v34 = A6(
+												$author$project$IMP$Uneval$uneval,
+												A2($author$project$IMP$Utils$delStore, x, newstore),
+												holeBindings,
+												e2,
+												readOnly,
+												nv,
+												hcount);
+											var finalstore = _v34.a;
+											var newhb = _v34.b;
+											var _v35 = _v34.c;
+											var newexpr = _v35.a;
+											var hcount_ = _v35.b;
+											return {
+												funcEnv: funcEnv,
+												hcount: hcount_,
+												holeBindings: newhb,
+												riStmts: A2(
+													$elm$core$List$take,
+													$elm$core$List$length(newriStmts) - 1,
+													newriStmts),
+												stmt: A3(
+													$author$project$IMP$Syntax$SAssign,
+													ws,
+													A2($author$project$IMP$Syntax$EVar, ws1, x),
+													newexpr),
+												store: A3($author$project$IMP$Uneval$mergeStore, userstore, finalstore, store)
+											};
+										}
+									case 'VList':
+										var vs = _v16.a.a;
+										var nv = _v16.b.a;
+										var _v36 = _v16.c;
+										if ($author$project$IMP$Utils$hasHole(vs)) {
+											var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
+											var _v37 = A6(
+												$author$project$IMP$Uneval$uneval,
+												A2($author$project$IMP$Utils$delStore, x, newstore),
+												holeBindings,
+												e2,
+												readOnly,
+												nv,
+												hcount);
+											var finalstore = _v37.a;
+											var newhb = _v37.b;
+											var _v38 = _v37.c;
+											var newexpr = _v38.a;
+											var hcount_ = _v38.b;
+											return {
+												funcEnv: funcEnv,
+												hcount: hcount_,
+												holeBindings: newhb,
+												riStmts: A2(
+													$elm$core$List$take,
+													$elm$core$List$length(newriStmts) - 1,
+													newriStmts),
+												stmt: A3(
+													$author$project$IMP$Syntax$SAssign,
+													ws,
+													A2($author$project$IMP$Syntax$EVar, ws1, x),
+													newexpr),
+												store: A3($author$project$IMP$Uneval$mergeStore, userstore, finalstore, store)
+											};
+										} else {
+											var _v39 = A6(
+												$author$project$IMP$Uneval$uneval,
+												A2($author$project$IMP$Utils$delStore, x, newstore),
+												holeBindings,
+												e2,
+												readOnly,
+												nv,
+												hcount);
+											var finalstore = _v39.a;
+											var newhb = _v39.b;
+											var _v40 = _v39.c;
+											var newexpr = _v40.a;
+											var hcount_ = _v40.b;
+											return {
+												funcEnv: funcEnv,
+												hcount: hcount_,
+												holeBindings: newhb,
+												riStmts: newriStmts,
+												stmt: A3(
+													$author$project$IMP$Syntax$SAssign,
+													ws,
+													A2($author$project$IMP$Syntax$EVar, ws1, x),
+													newexpr),
+												store: finalstore
+											};
+										}
+									default:
+										var nv = _v16.b.a;
+										var _v41 = _v16.c;
+										var _v42 = A6(
 											$author$project$IMP$Uneval$uneval,
 											A2($author$project$IMP$Utils$delStore, x, newstore),
 											holeBindings,
@@ -16933,12 +18930,13 @@ var $author$project$IMP$Uneval$unexec = F8(
 											readOnly,
 											nv,
 											hcount);
-										var finalstore = _v29.a;
-										var newhb = _v29.b;
-										var _v30 = _v29.c;
-										var newexpr = _v30.a;
-										var hcount_ = _v30.b;
+										var finalstore = _v42.a;
+										var newhb = _v42.b;
+										var _v43 = _v42.c;
+										var newexpr = _v43.a;
+										var hcount_ = _v43.b;
 										return {
+											funcEnv: funcEnv,
 											hcount: hcount_,
 											holeBindings: newhb,
 											riStmts: newriStmts,
@@ -16955,26 +18953,45 @@ var $author$project$IMP$Uneval$unexec = F8(
 							return _Utils_update(
 								$author$project$IMP$Uneval$defaultUnexecRes,
 								{
+									funcEnv: funcEnv,
 									stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SAssign: newval not found')
 								});
 						}
 					case 'EIndex':
-						var _v31 = A3($author$project$IMP$Eval$findIndex, store, holeBindings, e1);
-						var x = _v31.a;
-						var path = _v31.b;
+						var _v44 = A3($author$project$IMP$Eval$findIndex, store, holeBindings, e1);
+						var x = _v44.a;
+						var path = _v44.b;
 						var oldv = A2($author$project$IMP$Utils$lookup, x, store);
 						var newv = A2($author$project$IMP$Utils$lookup, x, newstore);
 						var val = A3($author$project$IMP$Eval$eval, store, holeBindings, e2);
-						var _v32 = _Utils_Tuple3(path, oldv, newv);
-						_v32$2:
-						while (true) {
-							if ((_v32.b.$ === 'Just') && (_v32.c.$ === 'Just')) {
-								switch (_v32.a.$) {
-									case 'VHole':
-										var _v33 = _v32.a;
-										var ov = _v32.b.a;
+						var _v45 = _Utils_Tuple3(path, oldv, newv);
+						if ((_v45.b.$ === 'Just') && (_v45.c.$ === 'Just')) {
+							switch (_v45.a.$) {
+								case 'VHole':
+									var _v46 = _v45.a;
+									var ov = _v45.b.a;
+									var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
+									return {
+										funcEnv: funcEnv,
+										hcount: hcount,
+										holeBindings: holeBindings,
+										riStmts: A2(
+											$elm$core$List$take,
+											$elm$core$List$length(newriStmts) - 1,
+											newriStmts),
+										stmt: stmt,
+										store: A3(
+											$author$project$IMP$Uneval$mergeStore,
+											userstore,
+											A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
+											store)
+									};
+								case 'VList':
+									if (_v45.b.a.$ === 'VHole') {
+										var ov = _v45.b.a;
 										var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
 										return {
+											funcEnv: funcEnv,
 											hcount: hcount,
 											holeBindings: holeBindings,
 											riStmts: A2(
@@ -16988,10 +19005,10 @@ var $author$project$IMP$Uneval$unexec = F8(
 												A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
 												store)
 										};
-									case 'VList':
-										var p = _v32.a.a;
-										var ov = _v32.b.a;
-										var nv = _v32.c.a;
+									} else {
+										var p = _v45.a.a;
+										var ov = _v45.b.a;
+										var nv = _v45.c.a;
 										var vprime = A2(
 											$author$project$IMP$Utils$findVal,
 											$author$project$IMP$Syntax$VList(p),
@@ -17014,15 +19031,16 @@ var $author$project$IMP$Uneval$unexec = F8(
 											$elm$core$List$take,
 											$elm$core$List$length(newriStmts) - 1,
 											newriStmts);
-										var _v34 = _Utils_Tuple2(val, vprime);
-										switch (_v34.a.$) {
+										var _v47 = _Utils_Tuple2(val, vprime);
+										switch (_v47.a.$) {
 											case 'VHole':
-												if (_v34.b.$ === 'VHole') {
-													var _v35 = _v34.a;
-													var _v36 = _v34.b;
-													var id = _v36.b;
+												if (_v47.b.$ === 'VHole') {
+													var _v48 = _v47.a;
+													var _v49 = _v47.b;
+													var id = _v49.b;
 													if (_Utils_eq(id, scount)) {
 														return {
+															funcEnv: funcEnv,
 															hcount: hcount,
 															holeBindings: holeBindings,
 															riStmts: pop,
@@ -17030,13 +19048,14 @@ var $author$project$IMP$Uneval$unexec = F8(
 															store: A3($author$project$IMP$Uneval$mergeStore, userstore, store1, store)
 														};
 													} else {
-														var _v37 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e2, readOnly, vprime, hcount);
-														var finalstore = _v37.a;
-														var newhb = _v37.b;
-														var _v38 = _v37.c;
-														var newexpr = _v38.a;
-														var hcount_ = _v38.b;
+														var _v50 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e2, readOnly, vprime, hcount);
+														var finalstore = _v50.a;
+														var newhb = _v50.b;
+														var _v51 = _v50.c;
+														var newexpr = _v51.a;
+														var hcount_ = _v51.b;
 														return {
+															funcEnv: funcEnv,
 															hcount: hcount_,
 															holeBindings: newhb,
 															riStmts: pop,
@@ -17045,14 +19064,15 @@ var $author$project$IMP$Uneval$unexec = F8(
 														};
 													}
 												} else {
-													var _v39 = _v34.a;
-													var _v40 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e2, readOnly, vprime, hcount);
-													var finalstore = _v40.a;
-													var newhb = _v40.b;
-													var _v41 = _v40.c;
-													var newexpr = _v41.a;
-													var hcount_ = _v41.b;
+													var _v52 = _v47.a;
+													var _v53 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e2, readOnly, vprime, hcount);
+													var finalstore = _v53.a;
+													var newhb = _v53.b;
+													var _v54 = _v53.c;
+													var newexpr = _v54.a;
+													var hcount_ = _v54.b;
 													return {
+														funcEnv: funcEnv,
 														hcount: hcount_,
 														holeBindings: newhb,
 														riStmts: pop,
@@ -17061,15 +19081,16 @@ var $author$project$IMP$Uneval$unexec = F8(
 													};
 												}
 											case 'VList':
-												var vs = _v34.a.a;
+												var vs = _v47.a.a;
 												if ($author$project$IMP$Utils$hasHole(vs)) {
-													var _v42 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e2, readOnly, vprime, hcount);
-													var finalstore = _v42.a;
-													var newhb = _v42.b;
-													var _v43 = _v42.c;
-													var newexpr = _v43.a;
-													var hcount_ = _v43.b;
+													var _v55 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e2, readOnly, vprime, hcount);
+													var finalstore = _v55.a;
+													var newhb = _v55.b;
+													var _v56 = _v55.c;
+													var newexpr = _v56.a;
+													var hcount_ = _v56.b;
 													return {
+														funcEnv: funcEnv,
 														hcount: hcount_,
 														holeBindings: newhb,
 														riStmts: pop,
@@ -17077,13 +19098,14 @@ var $author$project$IMP$Uneval$unexec = F8(
 														store: A3($author$project$IMP$Uneval$mergeStore, userstore, finalstore, store)
 													};
 												} else {
-													var _v44 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e2, readOnly, vprime, hcount);
-													var finalstore = _v44.a;
-													var newhb = _v44.b;
-													var _v45 = _v44.c;
-													var newexpr = _v45.a;
-													var hcount_ = _v45.b;
+													var _v57 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e2, readOnly, vprime, hcount);
+													var finalstore = _v57.a;
+													var newhb = _v57.b;
+													var _v58 = _v57.c;
+													var newexpr = _v58.a;
+													var hcount_ = _v58.b;
 													return {
+														funcEnv: funcEnv,
 														hcount: hcount_,
 														holeBindings: newhb,
 														riStmts: newriStmts,
@@ -17092,13 +19114,14 @@ var $author$project$IMP$Uneval$unexec = F8(
 													};
 												}
 											default:
-												var _v46 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e2, readOnly, vprime, hcount);
-												var finalstore = _v46.a;
-												var newhb = _v46.b;
-												var _v47 = _v46.c;
-												var newexpr = _v47.a;
-												var hcount_ = _v47.b;
+												var _v59 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e2, readOnly, vprime, hcount);
+												var finalstore = _v59.a;
+												var newhb = _v59.b;
+												var _v60 = _v59.c;
+												var newexpr = _v60.a;
+												var hcount_ = _v60.b;
 												return {
+													funcEnv: funcEnv,
 													hcount: hcount_,
 													holeBindings: newhb,
 													riStmts: newriStmts,
@@ -17106,34 +19129,47 @@ var $author$project$IMP$Uneval$unexec = F8(
 													store: finalstore
 												};
 										}
-									default:
-										break _v32$2;
-								}
-							} else {
-								break _v32$2;
+									}
+								default:
+									var ov = _v45.b.a;
+									var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
+									return {
+										funcEnv: funcEnv,
+										hcount: hcount,
+										holeBindings: holeBindings,
+										riStmts: A2(
+											$elm$core$List$take,
+											$elm$core$List$length(newriStmts) - 1,
+											newriStmts),
+										stmt: stmt,
+										store: A3(
+											$author$project$IMP$Uneval$mergeStore,
+											userstore,
+											A3($author$project$IMP$Utils$updateStore, x, ov, newstore),
+											store)
+									};
 							}
+						} else {
+							return {funcEnv: funcEnv, hcount: hcount, holeBindings: holeBindings, riStmts: newriStmts, stmt: stmt, store: newstore};
 						}
-						return _Utils_update(
-							$author$project$IMP$Uneval$defaultUnexecRes,
-							{
-								stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SAssign: index not found')
-							});
 					default:
 						return _Utils_update(
 							$author$project$IMP$Uneval$defaultUnexecRes,
 							{
+								funcEnv: funcEnv,
 								stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SAssign: unsupported lhs')
 							});
 				}
 			case 'SSkip':
-				return {hcount: hcount, holeBindings: holeBindings, riStmts: newriStmts, stmt: stmt, store: newstore};
+				return {funcEnv: funcEnv, hcount: hcount, holeBindings: holeBindings, riStmts: newriStmts, stmt: stmt, store: newstore};
 			case 'SSeq':
 				var ws = stmt.a;
 				var s1 = stmt.b;
 				var s2 = stmt.c;
-				var fres1 = A6($author$project$IMP$Eval$exec, store, holeBindings, riStmts, s1, readOnly, scount);
-				var bres2 = A8(
+				var fres1 = A7($author$project$IMP$Eval$exec, funcEnv, store, holeBindings, riStmts, s1, readOnly, scount);
+				var bres2 = A9(
 					$author$project$IMP$Uneval$unexec,
+					funcEnv,
 					fres1.store,
 					holeBindings,
 					fres1.riStmts,
@@ -17142,8 +19178,9 @@ var $author$project$IMP$Uneval$unexec = F8(
 					hcount,
 					fres1.scount,
 					_Utils_Tuple2(newstore, newriStmts));
-				var bres1 = A8(
+				var bres1 = A9(
 					$author$project$IMP$Uneval$unexec,
+					funcEnv,
 					store,
 					bres2.holeBindings,
 					bres2.riStmts,
@@ -17153,6 +19190,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 					scount,
 					_Utils_Tuple2(bres2.store, bres2.riStmts));
 				return {
+					funcEnv: A3($author$project$IMP$Utils$mergeFuncEnv, bres1.funcEnv, bres2.funcEnv, funcEnv),
 					hcount: bres1.hcount,
 					holeBindings: bres1.holeBindings,
 					riStmts: bres1.riStmts,
@@ -17166,17 +19204,17 @@ var $author$project$IMP$Uneval$unexec = F8(
 				var oldinput = A2($author$project$IMP$Utils$lookup, 'input', store);
 				var newx = A2($author$project$IMP$Utils$lookup, x, newstore);
 				var oldx = A2($author$project$IMP$Utils$lookup, x, store);
-				var _v48 = _Utils_Tuple2(newinput, oldinput);
-				_v48$2:
+				var _v61 = _Utils_Tuple2(newinput, oldinput);
+				_v61$2:
 				while (true) {
-					if ((_v48.a.$ === 'Just') && (_v48.b.$ === 'Just')) {
-						switch (_v48.a.a.$) {
+					if ((_v61.a.$ === 'Just') && (_v61.b.$ === 'Just')) {
+						switch (_v61.a.a.$) {
 							case 'VHole':
-								if (((((_v48.a.a.a.$ === 'HVar') && (_v48.a.a.a.a === 'input')) && (_v48.b.a.$ === 'VHole')) && (_v48.b.a.a.$ === 'HVar')) && (_v48.b.a.a.a === 'input')) {
-									var _v49 = _v48.a.a;
-									var newid = _v49.b;
-									var _v50 = _v48.b.a;
-									var id = _v50.b;
+								if (((((_v61.a.a.a.$ === 'HVar') && (_v61.a.a.a.a === 'input')) && (_v61.b.a.$ === 'VHole')) && (_v61.b.a.a.$ === 'HVar')) && (_v61.b.a.a.a === 'input')) {
+									var _v62 = _v61.a.a;
+									var newid = _v62.b;
+									var _v63 = _v61.b.a;
+									var id = _v63.b;
 									if (newx.$ === 'Just') {
 										var v = newx.a;
 										if (_Utils_eq(newid, scount) && _Utils_eq(
@@ -17190,6 +19228,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 												var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
 												var store_ = A3($author$project$IMP$Utils$updateStore, x, ov, newstore);
 												return {
+													funcEnv: funcEnv,
 													hcount: hcount,
 													holeBindings: holeBindings,
 													riStmts: A2(
@@ -17214,6 +19253,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 												var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
 												var store_ = A2($author$project$IMP$Utils$delStore, x, newstore);
 												return {
+													funcEnv: funcEnv,
 													hcount: hcount,
 													holeBindings: holeBindings,
 													riStmts: A2(
@@ -17239,6 +19279,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 											return _Utils_update(
 												$author$project$IMP$Uneval$defaultUnexecRes,
 												{
+													funcEnv: funcEnv,
 													stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SRead: input updated')
 												});
 										}
@@ -17246,26 +19287,28 @@ var $author$project$IMP$Uneval$unexec = F8(
 										return _Utils_update(
 											$author$project$IMP$Uneval$defaultUnexecRes,
 											{
+												funcEnv: funcEnv,
 												stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SRead: input variable not found')
 											});
 									}
 								} else {
-									break _v48$2;
+									break _v61$2;
 								}
 							case 'VList':
-								if (_v48.b.a.$ === 'VList') {
-									var vs = _v48.a.a.a;
-									var os = _v48.b.a.a;
-									var _v53 = _Utils_Tuple2(newx, oldx);
-									if (_v53.a.$ === 'Just') {
-										if (_v53.b.$ === 'Just') {
-											var v = _v53.a.a;
-											var ov = _v53.b.a;
+								if (_v61.b.a.$ === 'VList') {
+									var vs = _v61.a.a.a;
+									var os = _v61.b.a.a;
+									var _v66 = _Utils_Tuple2(newx, oldx);
+									if (_v66.a.$ === 'Just') {
+										if (_v66.b.$ === 'Just') {
+											var v = _v66.a.a;
+											var ov = _v66.b.a;
 											if (_Utils_eq(
 												A2($elm$core$List$cons, v, vs),
 												os)) {
 												var store_ = A3($author$project$IMP$Utils$updateStore, x, ov, newstore);
 												return {
+													funcEnv: funcEnv,
 													hcount: hcount,
 													holeBindings: holeBindings,
 													riStmts: newriStmts,
@@ -17280,17 +19323,19 @@ var $author$project$IMP$Uneval$unexec = F8(
 												return _Utils_update(
 													$author$project$IMP$Uneval$defaultUnexecRes,
 													{
+														funcEnv: funcEnv,
 														stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SRead: input length mismatch')
 													});
 											}
 										} else {
-											var v = _v53.a.a;
-											var _v54 = _v53.b;
+											var v = _v66.a.a;
+											var _v67 = _v66.b;
 											if (_Utils_eq(
 												A2($elm$core$List$cons, v, vs),
 												os)) {
 												var store_ = A2($author$project$IMP$Utils$delStore, x, newstore);
 												return {
+													funcEnv: funcEnv,
 													hcount: hcount,
 													holeBindings: holeBindings,
 													riStmts: newriStmts,
@@ -17305,6 +19350,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 												return _Utils_update(
 													$author$project$IMP$Uneval$defaultUnexecRes,
 													{
+														funcEnv: funcEnv,
 														stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SRead: input length mismatch')
 													});
 											}
@@ -17313,22 +19359,24 @@ var $author$project$IMP$Uneval$unexec = F8(
 										return _Utils_update(
 											$author$project$IMP$Uneval$defaultUnexecRes,
 											{
+												funcEnv: funcEnv,
 												stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SRead: input not found')
 											});
 									}
 								} else {
-									break _v48$2;
+									break _v61$2;
 								}
 							default:
-								break _v48$2;
+								break _v61$2;
 						}
 					} else {
-						break _v48$2;
+						break _v61$2;
 					}
 				}
 				return _Utils_update(
 					$author$project$IMP$Uneval$defaultUnexecRes,
 					{
+						funcEnv: funcEnv,
 						stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SRead: input not found')
 					});
 			case 'SPrint':
@@ -17337,17 +19385,17 @@ var $author$project$IMP$Uneval$unexec = F8(
 				var val = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
 				var oldout = A2($author$project$IMP$Utils$lookup, 'output', store);
 				var newout = A2($author$project$IMP$Utils$lookup, 'output', newstore);
-				var _v55 = _Utils_Tuple2(newout, oldout);
-				if ((((_v55.a.$ === 'Just') && (_v55.a.a.$ === 'VList')) && (_v55.b.$ === 'Just')) && (_v55.b.a.$ === 'VList')) {
-					var vs = _v55.a.a.a;
-					var os = _v55.b.a.a;
+				var _v68 = _Utils_Tuple2(newout, oldout);
+				if ((((_v68.a.$ === 'Just') && (_v68.a.a.$ === 'VList')) && (_v68.b.$ === 'Just')) && (_v68.b.a.$ === 'VList')) {
+					var vs = _v68.a.a.a;
+					var os = _v68.b.a.a;
 					if (_Utils_eq(
 						$elm$core$List$length(vs),
 						$elm$core$List$length(os) + 1)) {
-						var _v56 = $elm$core$List$head(
+						var _v69 = $elm$core$List$head(
 							$elm$core$List$reverse(vs));
-						if (_v56.$ === 'Just') {
-							var vprime = _v56.a;
+						if (_v69.$ === 'Just') {
+							var vprime = _v69.a;
 							var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
 							var store1 = A3(
 								$author$project$IMP$Utils$updateStore,
@@ -17364,28 +19412,40 @@ var $author$project$IMP$Uneval$unexec = F8(
 								newriStmts);
 							var goUneval = F2(
 								function (merge, pop_) {
-									var _v61 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e, readOnly, vprime, hcount);
-									var finalstore = _v61.a;
-									var newhb = _v61.b;
-									var _v62 = _v61.c;
-									var newexpr = _v62.a;
-									var hcount_ = _v62.b;
-									return {
-										hcount: hcount_,
-										holeBindings: newhb,
-										riStmts: pop_,
-										stmt: A2($author$project$IMP$Syntax$SPrint, ws, newexpr),
-										store: merge ? A3($author$project$IMP$Uneval$mergeStore, userstore, finalstore, store) : finalstore
-									};
+									var _v74 = A6($author$project$IMP$Uneval$uneval, store1, holeBindings, e, readOnly, vprime, hcount);
+									var finalstore = _v74.a;
+									var newhb = _v74.b;
+									var _v75 = _v74.c;
+									var newexpr = _v75.a;
+									var hcount_ = _v75.b;
+									if (newexpr.$ === 'EError') {
+										var info = newexpr.a;
+										return _Utils_update(
+											$author$project$IMP$Uneval$defaultUnexecRes,
+											{
+												funcEnv: funcEnv,
+												stmt: $author$project$IMP$Syntax$SError(info)
+											});
+									} else {
+										return {
+											funcEnv: funcEnv,
+											hcount: hcount_,
+											holeBindings: newhb,
+											riStmts: pop_,
+											stmt: A2($author$project$IMP$Syntax$SPrint, ws, newexpr),
+											store: merge ? A3($author$project$IMP$Uneval$mergeStore, userstore, finalstore, store) : finalstore
+										};
+									}
 								});
-							var _v57 = _Utils_Tuple2(val, vprime);
-							switch (_v57.a.$) {
+							var _v70 = _Utils_Tuple2(val, vprime);
+							switch (_v70.a.$) {
 								case 'VHole':
-									if (_v57.b.$ === 'VHole') {
-										var _v58 = _v57.a;
-										var _v59 = _v57.b;
-										var id = _v59.b;
+									if (_v70.b.$ === 'VHole') {
+										var _v71 = _v70.a;
+										var _v72 = _v70.b;
+										var id = _v72.b;
 										return _Utils_eq(id, scount) ? {
+											funcEnv: funcEnv,
 											hcount: hcount,
 											holeBindings: holeBindings,
 											riStmts: pop,
@@ -17393,11 +19453,11 @@ var $author$project$IMP$Uneval$unexec = F8(
 											store: A3($author$project$IMP$Uneval$mergeStore, userstore, store1, store)
 										} : A2(goUneval, true, pop);
 									} else {
-										var _v60 = _v57.a;
+										var _v73 = _v70.a;
 										return A2(goUneval, true, pop);
 									}
 								case 'VList':
-									var vs2 = _v57.a.a;
+									var vs2 = _v70.a.a;
 									return $author$project$IMP$Utils$hasHole(vs2) ? A2(goUneval, true, pop) : A2(goUneval, false, newriStmts);
 								default:
 									return A2(goUneval, false, newriStmts);
@@ -17406,6 +19466,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 							return _Utils_update(
 								$author$project$IMP$Uneval$defaultUnexecRes,
 								{
+									funcEnv: funcEnv,
 									stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SPrint: newval not found')
 								});
 						}
@@ -17413,6 +19474,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 						return _Utils_update(
 							$author$project$IMP$Uneval$defaultUnexecRes,
 							{
+								funcEnv: funcEnv,
 								stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SPrint: output length mismatch')
 							});
 					}
@@ -17420,6 +19482,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 					return _Utils_update(
 						$author$project$IMP$Uneval$defaultUnexecRes,
 						{
+							funcEnv: funcEnv,
 							stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SPrint: output not found')
 						});
 				}
@@ -17431,89 +19494,86 @@ var $author$project$IMP$Uneval$unexec = F8(
 				var guard = A3($author$project$IMP$Eval$eval, store, holeBindings, e);
 				switch (guard.$) {
 					case 'VHole':
-						var oldres = A6($author$project$IMP$Eval$exec, store, holeBindings, riStmts, stmt, readOnly, scount);
+						var oldres = A7($author$project$IMP$Eval$exec, funcEnv, store, holeBindings, riStmts, stmt, readOnly, scount);
 						var userstore = $author$project$IMP$Uneval$getFinalRiStmtStore(newriStmts);
-						if (A2($author$project$IMP$Utils$isSameStore, oldres.store, newstore)) {
+						var maymod = $author$project$IMP$Utils$unique(
+							_Utils_ap(
+								A2($author$project$IMP$Utils$modVars, funcEnv, s1),
+								A2($author$project$IMP$Utils$modVars, funcEnv, s2)));
+						if (A3($author$project$IMP$Utils$sameVars, maymod, oldres.store, newstore)) {
+							var unpollutedstore = A3($author$project$IMP$Uneval$unpollute, newstore, store, scount);
 							return {
+								funcEnv: funcEnv,
 								hcount: hcount,
 								holeBindings: holeBindings,
-								riStmts: A2(
-									$elm$core$List$take,
-									$elm$core$List$length(newriStmts) - 1,
-									newriStmts),
+								riStmts: A2($author$project$IMP$Uneval$dropRiStmt, scount, newriStmts),
 								stmt: A4($author$project$IMP$Syntax$SIf, ws, e, s1, s2),
-								store: userstore
+								store: A3($author$project$IMP$Uneval$mergeStore, userstore, unpollutedstore, store)
 							};
 						} else {
-							var _v64 = _Utils_Tuple2(s1, s2);
-							if (((_v64.a.$ === 'SSeq') && (_v64.a.c.$ === 'SWhile')) && (_v64.b.$ === 'SSkip')) {
-								var _v65 = _v64.a;
-								var ws1 = _v65.a;
-								var s_ = _v65.b;
-								var _v66 = _v65.c;
-								var ws2 = _v66.a;
-								var e_ = _v66.b;
-								var sw = _v66.c;
-								var fres = A6($author$project$IMP$Eval$exec, store, holeBindings, riStmts, s_, readOnly, scount);
-								var _v67 = A6(
-									$author$project$IMP$Uneval$uneval,
-									newstore,
-									holeBindings,
-									e_,
-									fres.readOnly,
-									$author$project$IMP$Syntax$VBool(false),
-									hcount);
-								var guardstore = _v67.a;
-								var guardhb = _v67.b;
-								var _v68 = _v67.c;
-								var guardexpr = _v68.a;
-								var guardhcount = _v68.b;
-								var bres = A8(
-									$author$project$IMP$Uneval$unexec,
-									store,
-									guardhb,
-									riStmts,
-									fres.readOnly,
-									s_,
-									guardhcount,
-									fres.scount,
-									_Utils_Tuple2(guardstore, newriStmts));
-								var _v69 = A6(
-									$author$project$IMP$Uneval$uneval,
-									store,
-									bres.holeBindings,
-									e,
-									readOnly,
-									$author$project$IMP$Syntax$VBool(true),
-									bres.hcount);
-								var exprstore = _v69.a;
-								var exprhb = _v69.b;
-								var _v70 = _v69.c;
-								var expr = _v70.a;
-								var hcount_ = _v70.b;
-								var unpollutedstore = A3($author$project$IMP$Uneval$unpollute, exprstore, store, scount);
-								return {
-									hcount: hcount_,
-									holeBindings: exprhb,
-									riStmts: A2(
-										$elm$core$List$take,
-										$elm$core$List$length(bres.riStmts) - 1,
-										bres.riStmts),
-									stmt: A4(
-										$author$project$IMP$Syntax$SIf,
-										ws,
-										expr,
-										A3(
-											$author$project$IMP$Syntax$SSeq,
-											ws1,
-											bres.stmt,
-											A3($author$project$IMP$Syntax$SWhile, ws2, guardexpr, sw)),
-										$author$project$IMP$Syntax$SSkip(_List_Nil)),
-									store: A3($author$project$IMP$Uneval$mergeStore, userstore, unpollutedstore, store)
-								};
+							var _v78 = _Utils_Tuple2(s1, s2);
+							if (((_v78.a.$ === 'SSeq') && (_v78.a.c.$ === 'SWhile')) && (_v78.b.$ === 'SSkip')) {
+								var _v79 = _v78.a;
+								var ws1 = _v79.a;
+								var s_ = _v79.b;
+								var _v80 = _v79.c;
+								var ws2 = _v80.a;
+								var e_ = _v80.b;
+								var sw = _v80.c;
+								var _v81 = A3($author$project$IMP$Eval$eval, newstore, holeBindings, e);
+								if ((_v81.$ === 'VBool') && (!_v81.a)) {
+									var fres = A7($author$project$IMP$Eval$exec, funcEnv, store, holeBindings, riStmts, s_, readOnly, scount + 1);
+									var bres = A9(
+										$author$project$IMP$Uneval$unexec,
+										funcEnv,
+										store,
+										holeBindings,
+										riStmts,
+										readOnly,
+										s_,
+										hcount,
+										scount + 1,
+										_Utils_Tuple2(newstore, fres.riStmts));
+									var _v82 = A3($author$project$IMP$Eval$eval, bres.store, bres.holeBindings, e);
+									if ((_v82.$ === 'VBool') && _v82.a) {
+										var unpollutedstore = A3($author$project$IMP$Uneval$unpollute, bres.store, store, scount);
+										return {
+											funcEnv: bres.funcEnv,
+											hcount: bres.hcount,
+											holeBindings: bres.holeBindings,
+											riStmts: A2($author$project$IMP$Uneval$dropRiStmt, scount, newriStmts),
+											stmt: A4(
+												$author$project$IMP$Syntax$SIf,
+												ws,
+												e,
+												A3(
+													$author$project$IMP$Syntax$SSeq,
+													ws1,
+													bres.stmt,
+													A3($author$project$IMP$Syntax$SWhile, ws2, e_, sw)),
+												$author$project$IMP$Syntax$SSkip(_List_Nil)),
+											store: A3($author$project$IMP$Uneval$mergeStore, userstore, unpollutedstore, store)
+										};
+									} else {
+										return _Utils_update(
+											$author$project$IMP$Uneval$defaultUnexecRes,
+											{
+												funcEnv: funcEnv,
+												stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SWhile: guard is not true before the last iteration')
+											});
+									}
+								} else {
+									return _Utils_update(
+										$author$project$IMP$Uneval$defaultUnexecRes,
+										{
+											funcEnv: funcEnv,
+											stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SWhile: guard is not false after the loop')
+										});
+								}
 							} else {
-								var bres = A8(
+								var bres = A9(
 									$author$project$IMP$Uneval$unexec,
+									funcEnv,
 									store,
 									holeBindings,
 									riStmts,
@@ -17522,10 +19582,11 @@ var $author$project$IMP$Uneval$unexec = F8(
 									hcount,
 									scount,
 									_Utils_Tuple2(newstore, newriStmts));
-								var _v71 = bres.stmt;
-								if (_v71.$ === 'SError') {
-									var bres2 = A8(
+								var _v83 = bres.stmt;
+								if (_v83.$ === 'SError') {
+									var bres2 = A9(
 										$author$project$IMP$Uneval$unexec,
+										funcEnv,
 										store,
 										holeBindings,
 										riStmts,
@@ -17534,15 +19595,16 @@ var $author$project$IMP$Uneval$unexec = F8(
 										hcount,
 										scount,
 										_Utils_Tuple2(newstore, newriStmts));
-									var _v72 = bres2.stmt;
-									if (_v72.$ === 'SError') {
+									var _v84 = bres2.stmt;
+									if (_v84.$ === 'SError') {
 										return _Utils_update(
 											$author$project$IMP$Uneval$defaultUnexecRes,
 											{
+												funcEnv: funcEnv,
 												stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SIf: both branches error')
 											});
 									} else {
-										var _v73 = A6(
+										var _v85 = A6(
 											$author$project$IMP$Uneval$uneval,
 											bres2.store,
 											bres2.holeBindings,
@@ -17550,22 +19612,23 @@ var $author$project$IMP$Uneval$unexec = F8(
 											readOnly,
 											$author$project$IMP$Syntax$VBool(false),
 											bres2.hcount);
-										var finalstore = _v73.a;
-										var newhb = _v73.b;
-										var _v74 = _v73.c;
-										var newexpr = _v74.a;
-										var hcount_ = _v74.b;
+										var finalstore = _v85.a;
+										var newhb = _v85.b;
+										var _v86 = _v85.c;
+										var newexpr = _v86.a;
+										var hcount_ = _v86.b;
 										var unpollutedstore = A3($author$project$IMP$Uneval$unpollute, finalstore, store, scount);
 										return {
+											funcEnv: bres2.funcEnv,
 											hcount: hcount_,
 											holeBindings: newhb,
-											riStmts: bres2.riStmts,
-											stmt: A4($author$project$IMP$Syntax$SIf, ws, newexpr, bres2.stmt, s2),
+											riStmts: A2($author$project$IMP$Uneval$dropRiStmt, scount, bres2.riStmts),
+											stmt: A4($author$project$IMP$Syntax$SIf, ws, newexpr, s1, bres2.stmt),
 											store: A3($author$project$IMP$Uneval$mergeStore, userstore, unpollutedstore, store)
 										};
 									}
 								} else {
-									var _v75 = A6(
+									var _v87 = A6(
 										$author$project$IMP$Uneval$uneval,
 										bres.store,
 										bres.holeBindings,
@@ -17573,16 +19636,17 @@ var $author$project$IMP$Uneval$unexec = F8(
 										readOnly,
 										$author$project$IMP$Syntax$VBool(true),
 										bres.hcount);
-									var finalstore = _v75.a;
-									var newhb = _v75.b;
-									var _v76 = _v75.c;
-									var newexpr = _v76.a;
-									var hcount_ = _v76.b;
+									var finalstore = _v87.a;
+									var newhb = _v87.b;
+									var _v88 = _v87.c;
+									var newexpr = _v88.a;
+									var hcount_ = _v88.b;
 									var unpollutedstore = A3($author$project$IMP$Uneval$unpollute, finalstore, store, scount);
 									return {
+										funcEnv: bres.funcEnv,
 										hcount: hcount_,
 										holeBindings: newhb,
-										riStmts: bres.riStmts,
+										riStmts: A2($author$project$IMP$Uneval$dropRiStmt, scount, bres.riStmts),
 										stmt: A4($author$project$IMP$Syntax$SIf, ws, newexpr, bres.stmt, s2),
 										store: A3($author$project$IMP$Uneval$mergeStore, userstore, unpollutedstore, store)
 									};
@@ -17591,8 +19655,9 @@ var $author$project$IMP$Uneval$unexec = F8(
 						}
 					case 'VBool':
 						if (guard.a) {
-							var res = A8(
+							var res = A9(
 								$author$project$IMP$Uneval$unexec,
+								funcEnv,
 								store,
 								holeBindings,
 								riStmts,
@@ -17601,13 +19666,14 @@ var $author$project$IMP$Uneval$unexec = F8(
 								hcount,
 								scount,
 								_Utils_Tuple2(newstore, newriStmts));
-							var _v77 = A6($author$project$IMP$Uneval$uneval, res.store, res.holeBindings, e, readOnly, guard, res.hcount);
-							var finalstore = _v77.a;
-							var newhb = _v77.b;
-							var _v78 = _v77.c;
-							var newexpr = _v78.a;
-							var hcount_ = _v78.b;
+							var _v89 = A6($author$project$IMP$Uneval$uneval, res.store, res.holeBindings, e, readOnly, guard, res.hcount);
+							var finalstore = _v89.a;
+							var newhb = _v89.b;
+							var _v90 = _v89.c;
+							var newexpr = _v90.a;
+							var hcount_ = _v90.b;
 							return {
+								funcEnv: res.funcEnv,
 								hcount: hcount_,
 								holeBindings: newhb,
 								riStmts: res.riStmts,
@@ -17615,8 +19681,9 @@ var $author$project$IMP$Uneval$unexec = F8(
 								store: finalstore
 							};
 						} else {
-							var res = A8(
+							var res = A9(
 								$author$project$IMP$Uneval$unexec,
+								funcEnv,
 								store,
 								holeBindings,
 								riStmts,
@@ -17625,13 +19692,14 @@ var $author$project$IMP$Uneval$unexec = F8(
 								hcount,
 								scount,
 								_Utils_Tuple2(newstore, newriStmts));
-							var _v79 = A6($author$project$IMP$Uneval$uneval, res.store, res.holeBindings, e, readOnly, guard, res.hcount);
-							var finalstore = _v79.a;
-							var newhb = _v79.b;
-							var _v80 = _v79.c;
-							var newexpr = _v80.a;
-							var hcount_ = _v80.b;
+							var _v91 = A6($author$project$IMP$Uneval$uneval, res.store, res.holeBindings, e, readOnly, guard, res.hcount);
+							var finalstore = _v91.a;
+							var newhb = _v91.b;
+							var _v92 = _v91.c;
+							var newexpr = _v92.a;
+							var hcount_ = _v92.b;
 							return {
+								funcEnv: res.funcEnv,
 								hcount: hcount_,
 								holeBindings: newhb,
 								riStmts: res.riStmts,
@@ -17643,6 +19711,7 @@ var $author$project$IMP$Uneval$unexec = F8(
 						return _Utils_update(
 							$author$project$IMP$Uneval$defaultUnexecRes,
 							{
+								funcEnv: funcEnv,
 								stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SIf: guard type error')
 							});
 				}
@@ -17650,8 +19719,9 @@ var $author$project$IMP$Uneval$unexec = F8(
 				var ws = stmt.a;
 				var e = stmt.b;
 				var s = stmt.c;
-				var res = A8(
+				var res = A9(
 					$author$project$IMP$Uneval$unexec,
+					funcEnv,
 					store,
 					holeBindings,
 					riStmts,
@@ -17669,17 +19739,18 @@ var $author$project$IMP$Uneval$unexec = F8(
 					hcount,
 					scount,
 					_Utils_Tuple2(newstore, newriStmts));
-				var _v81 = res.stmt;
-				if ((((_v81.$ === 'SIf') && (_v81.c.$ === 'SSeq')) && (_v81.c.c.$ === 'SWhile')) && (_v81.d.$ === 'SSkip')) {
-					var e_ = _v81.b;
-					var _v82 = _v81.c;
-					var s1_ = _v82.b;
-					var _v83 = _v82.c;
-					var e2_ = _v83.b;
-					var s2_ = _v83.c;
+				var _v93 = res.stmt;
+				if ((((_v93.$ === 'SIf') && (_v93.c.$ === 'SSeq')) && (_v93.c.c.$ === 'SWhile')) && (_v93.d.$ === 'SSkip')) {
+					var e_ = _v93.b;
+					var _v94 = _v93.c;
+					var s1_ = _v94.b;
+					var _v95 = _v94.c;
+					var e2_ = _v95.b;
+					var s2_ = _v95.c;
 					var news = (!_Utils_eq(s2_, s)) ? s2_ : s1_;
 					var newe = (!_Utils_eq(e2_, e)) ? e2_ : e_;
 					return {
+						funcEnv: res.funcEnv,
 						hcount: res.hcount,
 						holeBindings: res.holeBindings,
 						riStmts: res.riStmts,
@@ -17690,85 +19761,281 @@ var $author$project$IMP$Uneval$unexec = F8(
 					return _Utils_update(
 						$author$project$IMP$Uneval$defaultUnexecRes,
 						{
+							funcEnv: funcEnv,
 							stmt: $author$project$IMP$Syntax$SError('Error: unexecStmt: SWhile: unexpected statement')
 						});
 				}
+			case 'SFuncDef':
+				return _Utils_update(
+					$author$project$IMP$Uneval$defaultUnexecRes,
+					{
+						funcEnv: funcEnv,
+						stmt: $author$project$IMP$Syntax$SError('function definition is not allowed during execution')
+					});
+			case 'SFuncCall':
+				var ws = stmt.a;
+				var name = stmt.b;
+				var args = stmt.c;
+				return $author$project$IMP$Uneval$unexecFuncCall(funcEnv)(store)(holeBindings)(riStmts)(readOnly)(hcount)(scount)(
+					_Utils_Tuple2(newstore, newriStmts))(ws)(name)(args);
 			default:
 				var s = stmt.a;
 				return _Utils_update(
 					$author$project$IMP$Uneval$defaultUnexecRes,
 					{
+						funcEnv: funcEnv,
 						stmt: $author$project$IMP$Syntax$SError(s)
 					});
 		}
 	});
+var $author$project$IMP$Uneval$unexecArgBinds = F7(
+	function (funcEnv, origStore, origHB, origRi, callRO, steps, acc) {
+		if (!steps.b) {
+			return $elm$core$Result$Ok(
+				_Utils_Tuple2(acc, _List_Nil));
+		} else {
+			return A7($author$project$IMP$Uneval$unexecArgBindsMerge, funcEnv, origStore, origHB, origRi, callRO, steps, acc);
+		}
+	});
+var $author$project$IMP$Uneval$unexecArgBindsMerge = F7(
+	function (funcEnv, origStore, origHB, origRi, callRO, steps, acc) {
+		if (!steps.b) {
+			return $elm$core$Result$Ok(
+				_Utils_Tuple2(acc, _List_Nil));
+		} else {
+			var step = steps.a;
+			var rest = steps.b;
+			var _v8 = A7($author$project$IMP$Uneval$unexecArgBindsMerge, funcEnv, origStore, origHB, origRi, callRO, rest, acc);
+			if (_v8.$ === 'Err') {
+				var info = _v8.a;
+				return $elm$core$Result$Err(info);
+			} else {
+				var _v9 = _v8.a;
+				var later = _v9.a;
+				var es = _v9.b;
+				var target = A3(
+					$author$project$IMP$Utils$overlayParams,
+					_List_fromArray(
+						[step.param]),
+					acc.store,
+					origStore);
+				var r = A9(
+					$author$project$IMP$Uneval$unexec,
+					funcEnv,
+					origStore,
+					origHB,
+					origRi,
+					callRO,
+					A3(
+						$author$project$IMP$Syntax$SAssign,
+						_List_Nil,
+						A2($author$project$IMP$Syntax$EVar, _List_Nil, step.param),
+						step.arg),
+					later.hcount,
+					step.scount,
+					_Utils_Tuple2(target, later.riStmts));
+				var _v10 = r.stmt;
+				switch (_v10.$) {
+					case 'SAssign':
+						var e = _v10.c;
+						return $elm$core$Result$Ok(
+							_Utils_Tuple2(
+								_Utils_update(
+									r,
+									{
+										funcEnv: later.funcEnv,
+										holeBindings: A3($author$project$IMP$Uneval$mergeHoleBindings, r.holeBindings, later.holeBindings, origHB),
+										store: A3($author$project$IMP$Uneval$mergeStore, r.store, later.store, origStore)
+									}),
+								A2($elm$core$List$cons, e, es)));
+					case 'SError':
+						var info = _v10.a;
+						return $elm$core$Result$Err(info);
+					default:
+						return $elm$core$Result$Err('Error: unexecStmt: SFuncCall: unexpected statement');
+				}
+			}
+		}
+	});
+var $author$project$IMP$Uneval$unexecFuncCall = function (funcEnv) {
+	return function (store) {
+		return function (holeBindings) {
+			return function (riStmts) {
+				return function (readOnly) {
+					return function (hcount) {
+						return function (scount) {
+							return function (_v0) {
+								return function (ws) {
+									return function (name) {
+										return function (args) {
+											var newstore = _v0.a;
+											var newriStmts = _v0.b;
+											var _v1 = A2($author$project$IMP$Utils$lookupFunc, name, funcEnv);
+											if (_v1.$ === 'Nothing') {
+												return _Utils_update(
+													$author$project$IMP$Uneval$defaultUnexecRes,
+													{
+														funcEnv: funcEnv,
+														stmt: $author$project$IMP$Syntax$SError('Function not found')
+													});
+											} else {
+												var _v2 = _v1.a;
+												var params = _v2.a;
+												var body = _v2.b;
+												if (!_Utils_eq(
+													$elm$core$List$length(params),
+													$elm$core$List$length(args))) {
+													return _Utils_update(
+														$author$project$IMP$Uneval$defaultUnexecRes,
+														{
+															funcEnv: funcEnv,
+															stmt: $author$project$IMP$Syntax$SError('Argument count mismatch')
+														});
+												} else {
+													var callRO = A3($elm$core$List$foldl, $elm$core$Set$remove, readOnly, params);
+													var _v3 = A8($author$project$IMP$Eval$bindParamsParallel, funcEnv, store, holeBindings, riStmts, callRO, scount, params, args);
+													var bound = _v3.a;
+													var steps = _v3.b;
+													if ($author$project$IMP$Utils$isErrorStore(bound.store)) {
+														return _Utils_update(
+															$author$project$IMP$Uneval$defaultUnexecRes,
+															{
+																funcEnv: funcEnv,
+																stmt: $author$project$IMP$Syntax$SError('Error in function call')
+															});
+													} else {
+														var target = A3($author$project$IMP$Utils$overlayParams, params, bound.store, newstore);
+														var bresBody = A9(
+															$author$project$IMP$Uneval$unexec,
+															funcEnv,
+															bound.store,
+															holeBindings,
+															bound.riStmts,
+															callRO,
+															body,
+															hcount,
+															bound.scount,
+															_Utils_Tuple2(target, newriStmts));
+														var _v4 = bresBody.stmt;
+														if (_v4.$ === 'SError') {
+															return bresBody;
+														} else {
+															var _v5 = A7($author$project$IMP$Uneval$unexecArgBinds, funcEnv, store, holeBindings, riStmts, callRO, steps, bresBody);
+															if (_v5.$ === 'Err') {
+																var info = _v5.a;
+																return _Utils_update(
+																	$author$project$IMP$Uneval$defaultUnexecRes,
+																	{
+																		funcEnv: bresBody.funcEnv,
+																		stmt: $author$project$IMP$Syntax$SError(info)
+																	});
+															} else {
+																var _v6 = _v5.a;
+																var bresBinds = _v6.a;
+																var newArgs = _v6.b;
+																return _Utils_update(
+																	bresBinds,
+																	{
+																		funcEnv: A3($author$project$IMP$Utils$updateFuncEnv, name, bresBody.stmt, bresBinds.funcEnv),
+																		stmt: A3($author$project$IMP$Syntax$SFuncCall, ws, name, newArgs),
+																		store: A2(
+																			$author$project$IMP$Utils$restoreParams,
+																			A2($author$project$IMP$Utils$snapshotParams, params, newstore),
+																			bresBinds.store)
+																	});
+															}
+														}
+													}
+												}
+											}
+										};
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	};
+};
 var $author$project$Controller$unevalCodeToModel = F2(
 	function (model, commit) {
-		var _v0 = $author$project$IMP$Parser_$parseValue(model.output);
-		if (_v0.$ === 'Ok') {
-			if (_v0.a.$ === 'VList') {
-				var vs = _v0.a.a;
-				var _v1 = $author$project$IMP$Parser_$parse(model.code);
-				if (_v1.$ === 'Ok') {
-					var stmt = _v1.a;
+		var _v0 = $author$project$Controller$applyContextDraft(model);
+		if (_v0.$ === 'Err') {
+			var info = _v0.a;
+			return _Utils_update(
+				model,
+				{output: info});
+		} else {
+			var model1 = _v0.a;
+			var _v1 = $author$project$Controller$parseOutputText(model1.output);
+			if (_v1.$ === 'Ok') {
+				var vs = _v1.a;
+				var _v2 = $author$project$IMP$Parser_$parse(model1.code);
+				if (_v2.$ === 'Ok') {
+					var stmt = _v2.a;
 					var newstore = A3(
 						$author$project$IMP$Utils$updateStore,
 						'output',
 						$author$project$IMP$Syntax$VList(vs),
-						model.store);
-					var _v2 = A2($author$project$IMP$Utils$preprocessStmt, stmt, 0);
-					var stmt_ = _v2.a;
-					var hcount = _v2.b;
-					var res = A8(
-						$author$project$IMP$Uneval$unexec,
-						model.startStore,
-						model.holeBindings,
-						_List_Nil,
-						$elm$core$Set$empty,
-						stmt_,
-						hcount,
-						0,
-						_Utils_Tuple2(newstore, model.riStmts));
-					var _v3 = res.stmt;
-					if (_v3.$ === 'SError') {
-						var info = _v3.a;
+						model1.store);
+					var _v3 = $author$project$IMP$Utils$prepareStmt(stmt);
+					var stmt_ = _v3.a;
+					var hcount = _v3.b;
+					var funcEnv = _v3.c;
+					var res = $timeEval("Backward evaluation", function () {
+						return A9(
+							$author$project$IMP$Uneval$unexec,
+							funcEnv,
+							model1.startStore,
+							model1.holeBindings,
+							_List_Nil,
+							$elm$core$Set$empty,
+							stmt_,
+							hcount,
+							0,
+							_Utils_Tuple2(newstore, model1.riStmts));
+					});
+					var _v4 = res.stmt;
+					if (_v4.$ === 'SError') {
+						var info = _v4.a;
 						return _Utils_update(
-							model,
+							model1,
 							{output: info});
 					} else {
-						var newCode = $author$project$IMP$Printer$printStmt(res.stmt);
+						var newCode = $author$project$IMP$Printer$printStmt(
+							A2($author$project$IMP$Utils$attachFuncs, res.funcEnv, res.stmt));
+						var keepId = A2($author$project$Controller$keepContextId, model1.currentContext, res.riStmts);
 						return _Utils_update(
-							model,
+							model1,
 							{
 								code: newCode,
-								codeBackup: commit ? newCode : model.codeBackup,
-								currentContext: -1,
-								hbBackup: commit ? res.holeBindings : model.hbBackup,
+								codeBackup: commit ? newCode : model1.codeBackup,
+								contextDrafts: A2($author$project$Controller$contextDraftsOf, keepId, res.riStmts),
+								currentContext: keepId,
+								hbBackup: commit ? res.holeBindings : model1.hbBackup,
 								holeBindings: res.holeBindings,
-								isOutputChange: commit ? false : model.isOutputChange,
-								output: $author$project$IMP$Printer$printValue(
-									$author$project$IMP$Syntax$VList(vs)),
+								isOutputChange: commit ? false : model1.isOutputChange,
+								output: $author$project$IMP$Printer$printOutputList(vs),
 								riStmts: res.riStmts,
 								store: newstore
 							});
 					}
 				} else {
-					var info = _v1.a;
+					var info = _v2.a;
 					return _Utils_update(
-						model,
+						model1,
 						{
 							output: $elm$core$Debug$toString(info)
 						});
 				}
 			} else {
+				var info = _v1.a;
 				return _Utils_update(
-					model,
-					{output: 'Output must be a list, e.g. [1]'});
+					model1,
+					{output: info});
 			}
-		} else {
-			return _Utils_update(
-				model,
-				{output: 'Parse error in output'});
 		}
 	});
 var $author$project$Main$update = F2(
@@ -17837,9 +20104,13 @@ var $author$project$Main$update = F2(
 			case 'SelectResidual':
 				var id = msg.a;
 				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{currentContext: id}),
+					A2($author$project$Controller$selectResidual, id, model),
+					$elm$core$Platform$Cmd$none);
+			case 'ContextValueChange':
+				var x = msg.a;
+				var text = msg.b;
+				return _Utils_Tuple2(
+					A3($author$project$Controller$contextValueChange, x, text, model),
 					$elm$core$Platform$Cmd$none);
 			case 'Preview':
 				var newModel = A2($author$project$Controller$unevalCodeToModel, model, false);
@@ -18168,7 +20439,6 @@ var $author$project$IMP$Printer$printStore = function (s) {
 			},
 			s)) + '] \n');
 };
-var $elm$core$String$trim = _String_trim;
 var $author$project$View$displayHB = function (hb) {
 	if (!hb.b) {
 		return _List_Nil;
@@ -18364,45 +20634,118 @@ var $author$project$View$displayResiduals = function (model) {
 				$author$project$View$displayResidualRow(model.currentContext),
 				model.riStmts)));
 };
-var $elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
+var $author$project$Model$ContextValueChange = F2(
+	function (a, b) {
+		return {$: 'ContextValueChange', a: a, b: b};
 	});
-var $author$project$View$displaySelectedStore = function (model) {
-	var selected = A2(
+var $author$project$View$displayContextRow = F2(
+	function (model, _v0) {
+		var x = _v0.a;
+		var v = _v0.b;
+		return A2(
+			$elm$html$Html$tr,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$td,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('hole-name')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(x)
+						])),
+					A2(
+					$elm$html$Html$td,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$input,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('context-item'),
+									$elm$html$Html$Attributes$value(
+									A2(
+										$elm$core$Maybe$withDefault,
+										$author$project$IMP$Printer$printValue(v),
+										A2($elm$core$Dict$get, x, model.contextDrafts))),
+									$elm$html$Html$Events$onInput(
+									$author$project$Model$ContextValueChange(x))
+								]),
+							_List_Nil)
+						]))
+				]));
+	});
+var $author$project$View$displayContextRows = function (model) {
+	var _v0 = A2(
 		$elm$core$List$filter,
-		function (_v2) {
-			var id = _v2.a;
+		function (_v1) {
+			var id = _v1.a;
 			return _Utils_eq(id, model.currentContext);
 		},
 		model.riStmts);
-	if (selected.b) {
-		var _v1 = selected.a;
-		var store = _v1.c;
+	if (_v0.b) {
+		var _v2 = _v0.a;
+		var store = _v2.c;
 		return A2(
-			$elm$html$Html$div,
-			_List_fromArray(
-				[
-					A2($elm$html$Html$Attributes$style, 'padding', '8px'),
-					A2($elm$html$Html$Attributes$style, 'font-family', 'Verdana'),
-					A2($elm$html$Html$Attributes$style, 'font-size', '14px'),
-					A2($elm$html$Html$Attributes$style, 'white-space', 'pre-wrap')
-				]),
-			_List_fromArray(
-				[
-					$elm$html$Html$text(
-					$author$project$IMP$Printer$printStore(store))
-				]));
+			$elm$core$List$map,
+			$author$project$View$displayContextRow(model),
+			store);
 	} else {
-		return $elm$html$Html$text('');
+		return _List_Nil;
 	}
+};
+var $author$project$View$displaySelectedStore = function (model) {
+	return (model.currentContext < 0) ? $elm$html$Html$text('') : A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$id('context-area')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('area-title')
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('CONTEXT')
+					])),
+				A2(
+				$elm$html$Html$table,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$id('context-store-table')
+					]),
+				A2(
+					$elm$core$List$cons,
+					A2(
+						$elm$html$Html$th,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('hole-name')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Variable')
+							])),
+					A2(
+						$elm$core$List$cons,
+						A2(
+							$elm$html$Html$th,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Value')
+								])),
+						$author$project$View$displayContextRows(model))))
+			]));
 };
 var $author$project$View$view = function (model) {
 	return A2(

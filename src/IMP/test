@@ -1,0 +1,56 @@
+io = [("input",[VInt 0, VInt 1]),("output",[])]
+store = []
+hb = []
+ris = []
+hcount = 0
+scount = 0
+
+stmt = SAssign [] "x" (EInt [] 0)
+
+stmt = SSeq [] (SAssign [] "x" (EInt [] 1)) (SRead [] "x")
+
+stmt = SAssign [] "x" (Eop [] "+" (EInt [] 1) (EInt [] 1))
+
+stmt = SAssign [] "x" (Eop [] "+" (EInt [] 1) (EHole [] (HOri 0)))
+
+stmt = SSeq [] (SAssign [] "x" (EInt [] 1)) (SAssign [] "x" (Eop [] "+" (EInt [] 1) (EHole [] (HOri 0))))
+
+stmt = SSeq [] (SAssign [] "x" (Eop [] "+" (EInt [] 1) (EHole [] (HOri 0)))) (SAssign [] "x" (EInt [] 1)) 
+
+stmt = SSeq [] (SAssign [] "x" (Eop [] "+" (EInt [] 1) (EHole [] (HOri 0)))) (SSeq [] (SAssign [] "y" (EVar [] "x")) (SAssign [] "x" (EInt [] 1))) 
+
+stmt = SSeq [] (SAssign [] "x" (EInt [] 0)) (SIf [] (EHole [] (HOri 0)) (SAssign [] "x" (EInt [] 1)) (SSkip [])) 
+
+stmt = SSeq [] (SAssign [] "x" (EInt [] 0)) (SSeq [] (SIf [] (EHole [] (HOri 0)) (SAssign [] "x" (EInt [] 1)) (SSkip [])) (SAssign [] "y" (EVar [] "x")))
+
+stmt = SSeq [] (SAssign [] "x" (EBool [] True)) (SWhile [] (EHole [] (HOri 0)) (SAssign [] "x" (EHole [] (HOri 1)))) 
+
+stmt = SSeq [] (SAssign [] "x" (EBool [] True)) (SWhile [] (EHole [] (HOri 0)) (SSeq [] (SRead [] "x") (SAssign [] "x" (Eop [] "==" (EVar [] "x") (EInt [] 1))))) 
+
+stmt = SSeq [] (SAssign [] "x" (EBool [] True)) (SSeq [] (SWhile [] (EHole [] (HOri 0)) (SSeq [] (SRead [] "x") (SAssign [] "x" (Eop [] "==" (EVar [] "x") (EInt [] 1))))) (SRead [] "x"))
+
+stmt = SSeq [] (SAssign [] "x" (EInt [] 5)) (SWhile [] (EHole [] (HOri 0)) (SAssign [] "x" (EHole [] (HOri 1)))) 
+
+stmt = SSeq [] (SAssign [] "x" (EInt [] 5)) (SWhile [] (EHole [] (HOri 0)) (SSeq [] (SAssign [] "x" (EHole [] (HOri 1))) (SPrint [] (EVar [] "x")))) 
+
+exec store io hb ris stmt 0 0
+
+holes = Dict.insert (holeKey (HOri 0)) (EInt [] 1) Dict.empty
+
+holes = Dict.insert (holeKey (HOri 0)) (EBool [] True) Dict.empty
+
+holes = Dict.insert (holeKey (HOri 0)) (EVar [] "x") Dict.empty
+
+holes = Dict.insert (holeKey (HOri 1)) (EBool [] False) Dict.empty
+
+holes = Dict.insert (holeKey (HOri 0)) (Eop [] "<" (EVar [] "x") (EInt [] 10)) Dict.empty
+
+holes = Dict.insert (holeKey (HOri 1)) (Eop [] "+" (EVar [] "x") (EInt [] 1)) Dict.empty
+
+fill holes [] 
+
+x := _;
+x := _;
+x := 1
+
+x :=  store = ....
