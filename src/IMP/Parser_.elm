@@ -158,7 +158,7 @@ holeVar : Parser String
 holeVar =
     variable
         { start = Char.isLower
-        , inner = Char.isAlphaNum
+        , inner = \c -> Char.isAlphaNum c || c == '-'
         , reserved = Set.empty
         }
 

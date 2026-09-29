@@ -153,6 +153,71 @@ sameVars xs s1 s2 =
             else
                 False
 
+
+-- If-UnMod：普通变量仍要求值相同；output 只要求本轮 pollute 追加的那一格还在新 output 里
+sameMayMod : List String -> Store -> Store -> SCount -> Bool
+sameMayMod xs polluted newstore scount =
+    case xs of
+        [] ->
+            True
+
+        "output" :: rest ->
+            outputRoundCellKept polluted newstore scount
+                && sameMayMod rest polluted newstore scount
+
+        x :: rest ->
+            if lookup x polluted == lookup x newstore then
+                sameMayMod rest polluted newstore scount
+
+            else
+                False
+
+
+outputRoundCellKept : Store -> Store -> SCount -> Bool
+outputRoundCellKept polluted newstore scount =
+    case ( lookup "output" polluted, lookup "output" newstore ) of
+        ( Just (VList oldvs), Just (VList newvs) ) ->
+            case findOutputRoundCell oldvs scount of
+                Just cell ->
+                    List.member cell newvs
+
+                Nothing ->
+                    oldvs == newvs
+
+        ( a, b ) ->
+            a == b
+
+
+findOutputRoundCell : List Value -> SCount -> Maybe Value
+findOutputRoundCell vs scount =
+    case vs of
+        [] ->
+            Nothing
+
+        (VHole h id as v) :: rest ->
+            if id == scount && isOutputSuffixHole h then
+                Just v
+
+            else
+                findOutputRoundCell rest scount
+
+        _ :: rest ->
+            findOutputRoundCell rest scount
+
+
+dropOutputRoundCell : List Value -> SCount -> List Value
+dropOutputRoundCell vs scount =
+    List.filter
+        (\v ->
+            case v of
+                VHole h id ->
+                    not (id == scount && isOutputSuffixHole h)
+
+                _ ->
+                    True
+        )
+        vs
+
 updateStore : String -> Value -> Store -> Store
 updateStore x v store =
     -- if x == "input" || x == "output" then store else 

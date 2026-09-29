@@ -810,7 +810,7 @@ unexec funcEnv store holeBindings riStmts readOnly stmt hcount scount (newstore,
                     let oldres = exec funcEnv store holeBindings riStmts stmt readOnly scount in
                     let userstore = getFinalRiStmtStore newriStmts in
                     let maymod = unique (modVars funcEnv s1 ++ modVars funcEnv s2) in
-                    if sameVars maymod oldres.store newstore then
+                    if sameMayMod maymod oldres.store newstore scount then
                         let unpollutedstore = unpollute newstore store scount in
                         {
                             store = mergeStore userstore unpollutedstore store,
@@ -1757,17 +1757,51 @@ mergeValue orig v1 v2 =
                 v2
 
 
-mergeList : List Value -> List Value -> List Value -> List Value
-mergeList os vs1 vs2 =
-    case (os, vs1, vs2) of
-        (o :: os_, a :: as_, b :: bs_) ->
-            mergeValue o a b :: mergeList os_ as_ bs_
+mergeOutput : Value -> Value -> Value -> Value
+mergeOutput orig v1 v2 =
+    case ( orig, v1, v2 ) of
+        ( VList os, VList as_, VList bs_ ) ->
+            VList (mergeList os as_ bs_)
+
+        ( VList os, VList as_, _ ) ->
+            VList (mergeList os as_ os)
+
+        ( VList os, _, VList bs_ ) ->
+            VList (mergeList os os bs_)
 
         _ ->
-            if vs1 /= os then
-                vs1
+            mergeValue orig v1 v2
+
+
+mergeList : List Value -> List Value -> List Value -> List Value
+mergeList os vs1 vs2 =
+    case ( os, vs1, vs2 ) of
+        ( o :: os_, a :: as_, b :: bs_ ) ->
+            mergeValue o a b :: mergeList os_ as_ bs_
+
+        ( [], a :: as_, b :: bs_ ) ->
+            (if a /= b then a else b) :: mergeList [] as_ bs_
+
+        ( [], as_, [] ) ->
+            as_
+
+        ( [], [], bs_ ) ->
+            bs_
+
+        ( _, [], [] ) ->
+            []
+
+        ( orest, [], brest ) ->
+            if brest /= orest then
+                brest
             else
-                vs2
+                orest
+
+        ( orest, arest, [] ) ->
+            if arest /= orest then
+                arest
+            else
+                orest
 
 
 storeKeyOrder : Store -> Store -> Store -> List String
@@ -1801,7 +1835,12 @@ mergeStoreEntry store1 store2 store3 x =
                 v2 =
                     Maybe.withDefault v3 (lookup x store2)
             in
-            Just ( x, mergeValue v3 v1 v2 )
+            Just ( x
+                , if x == "output" then
+                    mergeOutput v3 v1 v2
+                  else
+                    mergeValue v3 v1 v2
+                )
 
         Nothing ->
             case ( lookup x store1, lookup x store2 ) of
@@ -1899,19 +1938,8 @@ unpollute : Store -> Store -> SCount -> Store
 unpollute store oristore scount =
     case store of
         ("output", VList vs) :: store_ ->
-            let 
-                output_ = 
-                    case List.reverse vs of
-                        (VHole h id) :: _ -> 
-                            if id == scount && isOutputSuffixHole h then 
-                                let oriv = lookup "output" oristore in
-                                case oriv of
-                                    Just v -> v
-                                    Nothing -> VError "unsupported operation"
-                            else VList vs
-                        _ -> VList vs
-            in
-            ("output", output_) :: (unpollute store_ oristore scount)
+            ("output", VList (dropOutputRoundCell vs scount))
+                :: unpollute store_ oristore scount
         (x, VHole (HVar x_) id) :: store_ -> 
             if x_ == x && id == scount then 
                 case lookup x oristore of
