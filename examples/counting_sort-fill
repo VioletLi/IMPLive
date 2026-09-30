@@ -1,0 +1,32 @@
+a := [2, 5, 3, 0, 2, 3, 0, 3];
+k := 5;
+n := a.length;
+c := [];
+i := 0;
+while i <= k do
+    c := c ++ [0];
+    i := i + 1
+end;
+j := 0;
+while j < n do
+    c[a[j]] := c[a[j]] + 1;
+    j := j + 1
+end;
+i := 1;
+while i <= k do
+    c[i] := _;
+    i := i + 1
+end;
+b := [];
+i := 0;
+while i < n do
+    b := b ++ [_];
+    i := i + 1
+end;
+j := n - 1;
+while j >= 0 do
+    b[c[a[j]] - 1] := _;
+    c[a[j]] := c[a[j]] - 1;
+    j := j - 1
+end;
+print b

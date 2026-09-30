@@ -7,6 +7,20 @@ function $timeEval(label, fn) {
 	console.log(label + ": " + (performance.now() - t0).toFixed(3) + " ms");
 	return result;
 }
+var $fillFwdMs = 0;
+var $fillDpMs = 0;
+function $timeFillFwd(fn) {
+	var t0 = performance.now();
+	var result = fn();
+	$fillFwdMs += performance.now() - t0;
+	return result;
+}
+function $timeFillDp(fn) {
+	var t0 = performance.now();
+	var result = fn();
+	$fillDpMs += performance.now() - t0;
+	return result;
+}
 function F(arity, fun, wrapper) {
   wrapper.a = arity;
   wrapper.f = fun;
@@ -6270,7 +6284,15 @@ var $elm$parser$Parser$variable = function (i) {
 		{expecting: $elm$parser$Parser$ExpectingVariable, inner: i.inner, reserved: i.reserved, start: i.start});
 };
 var $author$project$IMP$Parser_$holeVar = $elm$parser$Parser$variable(
-	{inner: $elm$core$Char$isAlphaNum, reserved: $elm$core$Set$empty, start: $elm$core$Char$isLower});
+	{
+		inner: function (c) {
+			return $elm$core$Char$isAlphaNum(c) || _Utils_eq(
+				c,
+				_Utils_chr('-'));
+		},
+		reserved: $elm$core$Set$empty,
+		start: $elm$core$Char$isLower
+	});
 var $author$project$IMP$Parser_$holeNameBase = $elm$parser$Parser$oneOf(
 	_List_fromArray(
 		[
@@ -13062,17 +13084,21 @@ var $author$project$IMP$Eval$resume = F6(
 			if (!known.b) {
 				return {readOnly: $elm$core$Set$empty, riStmts: unknown, scount: scount, store: store};
 			} else {
-				var _v1 = A4($author$project$IMP$Eval$batchExec, funcEnv, hb, known, scount);
+				var _v1 = $timeFillFwd(function () {
+					return A4($author$project$IMP$Eval$batchExec, funcEnv, hb, known, scount);
+				});
 				var finished = _v1.a;
 				var newlyResidual = _v1.b;
 				var scount1 = _v1.c;
-				var _v2 = A3(
-					$author$project$IMP$Eval$substValinVal,
-					finished,
-					store,
-					_Utils_ap(
-						unknown,
-						$author$project$IMP$Eval$recoverRiStmts(newlyResidual)));
+				var _v2 = $timeFillDp(function () {
+					return A3(
+						$author$project$IMP$Eval$substValinVal,
+						finished,
+						store,
+						_Utils_ap(
+							unknown,
+							$author$project$IMP$Eval$recoverRiStmts(newlyResidual)));
+				});
 				var store1 = _v2.a;
 				var known1 = _v2.b;
 				var unknown1 = _v2.c;
@@ -13337,17 +13363,21 @@ var $author$project$IMP$Eval$fill = F4(
 				fwdRes,
 				{riStmts: remained});
 		} else {
-			var _v2 = A4($author$project$IMP$Eval$batchExec, funcEnv1, hb, toExec, fwdRes.scount);
+			var _v2 = $timeFillFwd(function () {
+				return A4($author$project$IMP$Eval$batchExec, funcEnv1, hb, toExec, fwdRes.scount);
+			});
 			var finished = _v2.a;
 			var newlyResidual = _v2.b;
 			var scount1 = _v2.c;
-			var _v3 = A3(
-				$author$project$IMP$Eval$substValinVal,
-				finished,
-				fwdRes.store,
-				_Utils_ap(
-					remained,
-					$author$project$IMP$Eval$recoverRiStmts(newlyResidual)));
+			var _v3 = $timeFillDp(function () {
+				return A3(
+					$author$project$IMP$Eval$substValinVal,
+					finished,
+					fwdRes.store,
+					_Utils_ap(
+						remained,
+						$author$project$IMP$Eval$recoverRiStmts(newlyResidual)));
+			});
 			var store1 = _v3.a;
 			var newlyKnown = _v3.b;
 			var newlyUnknown = _v3.c;
@@ -14080,7 +14110,9 @@ var $author$project$Controller$saveAndFillWith = function (model) {
 				}
 			}();
 			return $timeEval("Fill-and-resume", function () {
-				return A4(
+				$fillFwdMs = 0;
+				$fillDpMs = 0;
+				var result = A4(
 					$author$project$IMP$Eval$fill,
 					funcEnv,
 					holeDict,
@@ -14091,6 +14123,9 @@ var $author$project$Controller$saveAndFillWith = function (model) {
 						scount: A2($author$project$IMP$Eval$nextScount, 0, model.riStmts),
 						store: model.store
 					});
+				console.log("Fill-and-resume DP: " + $fillDpMs.toFixed(3) + " ms");
+				console.log("Fill-and-resume forward: " + $fillFwdMs.toFixed(3) + " ms");
+				return result;
 			});
 		}();
 		var _v0 = function () {
@@ -14360,23 +14395,66 @@ var $author$project$IMP$Uneval$getElem = F3(
 var $author$project$IMP$Uneval$mergeList = F3(
 	function (os, vs1, vs2) {
 		var _v1 = _Utils_Tuple3(os, vs1, vs2);
-		if ((_v1.a.b && _v1.b.b) && _v1.c.b) {
-			var _v2 = _v1.a;
-			var o = _v2.a;
-			var os_ = _v2.b;
-			var _v3 = _v1.b;
-			var a = _v3.a;
-			var as_ = _v3.b;
-			var _v4 = _v1.c;
-			var b = _v4.a;
-			var bs_ = _v4.b;
-			return A2(
-				$elm$core$List$cons,
-				A3($author$project$IMP$Uneval$mergeValue, o, a, b),
-				A3($author$project$IMP$Uneval$mergeList, os_, as_, bs_));
-		} else {
-			return (!_Utils_eq(vs1, os)) ? vs1 : vs2;
+		_v1$2:
+		while (true) {
+			if (_v1.b.b) {
+				if (_v1.c.b) {
+					if (_v1.a.b) {
+						var _v2 = _v1.a;
+						var o = _v2.a;
+						var os_ = _v2.b;
+						var _v3 = _v1.b;
+						var a = _v3.a;
+						var as_ = _v3.b;
+						var _v4 = _v1.c;
+						var b = _v4.a;
+						var bs_ = _v4.b;
+						return A2(
+							$elm$core$List$cons,
+							A3($author$project$IMP$Uneval$mergeValue, o, a, b),
+							A3($author$project$IMP$Uneval$mergeList, os_, as_, bs_));
+					} else {
+						var _v5 = _v1.b;
+						var a = _v5.a;
+						var as_ = _v5.b;
+						var _v6 = _v1.c;
+						var b = _v6.a;
+						var bs_ = _v6.b;
+						return A2(
+							$elm$core$List$cons,
+							(!_Utils_eq(a, b)) ? a : b,
+							A3($author$project$IMP$Uneval$mergeList, _List_Nil, as_, bs_));
+					}
+				} else {
+					if (!_v1.a.b) {
+						break _v1$2;
+					} else {
+						var orest = _v1.a;
+						var arest = _v1.b;
+						return (!_Utils_eq(arest, orest)) ? arest : orest;
+					}
+				}
+			} else {
+				if (!_v1.c.b) {
+					if (!_v1.a.b) {
+						break _v1$2;
+					} else {
+						return _List_Nil;
+					}
+				} else {
+					if (!_v1.a.b) {
+						var bs_ = _v1.c;
+						return bs_;
+					} else {
+						var orest = _v1.a;
+						var brest = _v1.c;
+						return (!_Utils_eq(brest, orest)) ? brest : orest;
+					}
+				}
+			}
 		}
+		var as_ = _v1.b;
+		return as_;
 	});
 var $author$project$IMP$Uneval$mergeValue = F3(
 	function (orig, v1, v2) {
@@ -14482,6 +14560,41 @@ var $author$project$IMP$Uneval$mergeHoleBindings = F3(
 			return A2($author$project$IMP$Uneval$union, hb1, hb2);
 		}
 	});
+var $author$project$IMP$Uneval$mergeOutput = F3(
+	function (orig, v1, v2) {
+		var _v0 = _Utils_Tuple3(orig, v1, v2);
+		_v0$3:
+		while (true) {
+			if (_v0.a.$ === 'VList') {
+				if (_v0.b.$ === 'VList') {
+					if (_v0.c.$ === 'VList') {
+						var os = _v0.a.a;
+						var as_ = _v0.b.a;
+						var bs_ = _v0.c.a;
+						return $author$project$IMP$Syntax$VList(
+							A3($author$project$IMP$Uneval$mergeList, os, as_, bs_));
+					} else {
+						var os = _v0.a.a;
+						var as_ = _v0.b.a;
+						return $author$project$IMP$Syntax$VList(
+							A3($author$project$IMP$Uneval$mergeList, os, as_, os));
+					}
+				} else {
+					if (_v0.c.$ === 'VList') {
+						var os = _v0.a.a;
+						var bs_ = _v0.c.a;
+						return $author$project$IMP$Syntax$VList(
+							A3($author$project$IMP$Uneval$mergeList, os, os, bs_));
+					} else {
+						break _v0$3;
+					}
+				}
+			} else {
+				break _v0$3;
+			}
+		}
+		return A3($author$project$IMP$Uneval$mergeValue, orig, v1, v2);
+	});
 var $author$project$IMP$Uneval$mergeStoreEntry = F4(
 	function (store1, store2, store3, x) {
 		var _v0 = A2($author$project$IMP$Utils$lookup, x, store3);
@@ -14498,7 +14611,7 @@ var $author$project$IMP$Uneval$mergeStoreEntry = F4(
 			return $elm$core$Maybe$Just(
 				_Utils_Tuple2(
 					x,
-					A3($author$project$IMP$Uneval$mergeValue, v3, v1, v2)));
+					(x === 'output') ? A3($author$project$IMP$Uneval$mergeOutput, v3, v1, v2) : A3($author$project$IMP$Uneval$mergeValue, v3, v1, v2)));
 		} else {
 			var _v1 = _Utils_Tuple2(
 				A2($author$project$IMP$Utils$lookup, x, store1),
@@ -14562,6 +14675,91 @@ var $author$project$IMP$Uneval$mergeStore = F3(
 			$elm$core$List$filterMap,
 			A3($author$project$IMP$Uneval$mergeStoreEntry, store1, store2, store3),
 			A3($author$project$IMP$Uneval$storeKeyOrder, store1, store2, store3));
+	});
+var $author$project$IMP$Utils$findOutputRoundCell = F2(
+	function (vs, scount) {
+		findOutputRoundCell:
+		while (true) {
+			if (!vs.b) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				if (vs.a.$ === 'VHole') {
+					var v = vs.a;
+					var h = v.a;
+					var id = v.b;
+					var rest = vs.b;
+					if (_Utils_eq(id, scount) && $author$project$IMP$Utils$isOutputSuffixHole(h)) {
+						return $elm$core$Maybe$Just(v);
+					} else {
+						var $temp$vs = rest,
+							$temp$scount = scount;
+						vs = $temp$vs;
+						scount = $temp$scount;
+						continue findOutputRoundCell;
+					}
+				} else {
+					var rest = vs.b;
+					var $temp$vs = rest,
+						$temp$scount = scount;
+					vs = $temp$vs;
+					scount = $temp$scount;
+					continue findOutputRoundCell;
+				}
+			}
+		}
+	});
+var $author$project$IMP$Utils$outputRoundCellKept = F3(
+	function (polluted, newstore, scount) {
+		var _v0 = _Utils_Tuple2(
+			A2($author$project$IMP$Utils$lookup, 'output', polluted),
+			A2($author$project$IMP$Utils$lookup, 'output', newstore));
+		if ((((_v0.a.$ === 'Just') && (_v0.a.a.$ === 'VList')) && (_v0.b.$ === 'Just')) && (_v0.b.a.$ === 'VList')) {
+			var oldvs = _v0.a.a.a;
+			var newvs = _v0.b.a.a;
+			var _v1 = A2($author$project$IMP$Utils$findOutputRoundCell, oldvs, scount);
+			if (_v1.$ === 'Just') {
+				var cell = _v1.a;
+				return A2($elm$core$List$member, cell, newvs);
+			} else {
+				return _Utils_eq(oldvs, newvs);
+			}
+		} else {
+			var a = _v0.a;
+			var b = _v0.b;
+			return _Utils_eq(a, b);
+		}
+	});
+var $author$project$IMP$Utils$sameMayMod = F4(
+	function (xs, polluted, newstore, scount) {
+		sameMayMod:
+		while (true) {
+			if (!xs.b) {
+				return true;
+			} else {
+				if (xs.a === 'output') {
+					var rest = xs.b;
+					return A3($author$project$IMP$Utils$outputRoundCellKept, polluted, newstore, scount) && A4($author$project$IMP$Utils$sameMayMod, rest, polluted, newstore, scount);
+				} else {
+					var x = xs.a;
+					var rest = xs.b;
+					if (_Utils_eq(
+						A2($author$project$IMP$Utils$lookup, x, polluted),
+						A2($author$project$IMP$Utils$lookup, x, newstore))) {
+						var $temp$xs = rest,
+							$temp$polluted = polluted,
+							$temp$newstore = newstore,
+							$temp$scount = scount;
+						xs = $temp$xs;
+						polluted = $temp$polluted;
+						newstore = $temp$newstore;
+						scount = $temp$scount;
+						continue sameMayMod;
+					} else {
+						return false;
+					}
+				}
+			}
+		}
 	});
 var $author$project$IMP$Uneval$stmtTag = function (stmt) {
 	switch (stmt.$) {
@@ -18462,6 +18660,21 @@ var $author$project$IMP$Uneval$unevalList = F6(
 				_Utils_Tuple2(_List_Nil, hcount));
 		}
 	});
+var $author$project$IMP$Utils$dropOutputRoundCell = F2(
+	function (vs, scount) {
+		return A2(
+			$elm$core$List$filter,
+			function (v) {
+				if (v.$ === 'VHole') {
+					var h = v.a;
+					var id = v.b;
+					return !(_Utils_eq(id, scount) && $author$project$IMP$Utils$isOutputSuffixHole(h));
+				} else {
+					return true;
+				}
+			},
+			vs);
+	});
 var $author$project$IMP$Uneval$unpollute = F3(
 	function (store, oristore, scount) {
 		unpollute:
@@ -18475,46 +18688,28 @@ var $author$project$IMP$Uneval$unpollute = F3(
 								var _v1 = store.a;
 								var vs = _v1.b.a;
 								var store_ = store.b;
-								var output_ = function () {
-									var _v2 = $elm$core$List$reverse(vs);
-									if (_v2.b && (_v2.a.$ === 'VHole')) {
-										var _v3 = _v2.a;
-										var h = _v3.a;
-										var id = _v3.b;
-										if (_Utils_eq(id, scount) && $author$project$IMP$Utils$isOutputSuffixHole(h)) {
-											var oriv = A2($author$project$IMP$Utils$lookup, 'output', oristore);
-											if (oriv.$ === 'Just') {
-												var v = oriv.a;
-												return v;
-											} else {
-												return $author$project$IMP$Syntax$VError('unsupported operation');
-											}
-										} else {
-											return $author$project$IMP$Syntax$VList(vs);
-										}
-									} else {
-										return $author$project$IMP$Syntax$VList(vs);
-									}
-								}();
 								return A2(
 									$elm$core$List$cons,
-									_Utils_Tuple2('output', output_),
+									_Utils_Tuple2(
+										'output',
+										$author$project$IMP$Syntax$VList(
+											A2($author$project$IMP$Utils$dropOutputRoundCell, vs, scount))),
 									A3($author$project$IMP$Uneval$unpollute, store_, oristore, scount));
 							} else {
 								break _v0$2;
 							}
 						case 'VHole':
 							if (store.a.b.a.$ === 'HVar') {
-								var _v5 = store.a;
-								var x = _v5.a;
-								var _v6 = _v5.b;
-								var x_ = _v6.a.a;
-								var id = _v6.b;
+								var _v2 = store.a;
+								var x = _v2.a;
+								var _v3 = _v2.b;
+								var x_ = _v3.a.a;
+								var id = _v3.b;
 								var store_ = store.b;
 								if (_Utils_eq(x_, x) && _Utils_eq(id, scount)) {
-									var _v7 = A2($author$project$IMP$Utils$lookup, x, oristore);
-									if (_v7.$ === 'Just') {
-										var v = _v7.a;
+									var _v4 = A2($author$project$IMP$Utils$lookup, x, oristore);
+									if (_v4.$ === 'Just') {
+										var v = _v4.a;
 										return A2(
 											$elm$core$List$cons,
 											_Utils_Tuple2(x, v),
@@ -18549,9 +18744,9 @@ var $author$project$IMP$Uneval$unpollute = F3(
 					return _List_Nil;
 				}
 			}
-			var _v8 = store.a;
-			var x = _v8.a;
-			var v = _v8.b;
+			var _v5 = store.a;
+			var x = _v5.a;
+			var v = _v5.b;
 			var store_ = store.b;
 			return A2(
 				$elm$core$List$cons,
@@ -19500,7 +19695,7 @@ var $author$project$IMP$Uneval$unexec = F9(
 							_Utils_ap(
 								A2($author$project$IMP$Utils$modVars, funcEnv, s1),
 								A2($author$project$IMP$Utils$modVars, funcEnv, s2)));
-						if (A3($author$project$IMP$Utils$sameVars, maymod, oldres.store, newstore)) {
+						if (A4($author$project$IMP$Utils$sameMayMod, maymod, oldres.store, newstore, scount)) {
 							var unpollutedstore = A3($author$project$IMP$Uneval$unpollute, newstore, store, scount);
 							return {
 								funcEnv: funcEnv,

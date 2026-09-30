@@ -1,0 +1,13 @@
+a := [4, 3, 5];
+i := 1;
+while i < a.length do
+    key := a[i];
+    j := i;
+    while j > 0 && _ do
+        a[j] := _;
+        j := j - 1
+    end;
+    a[j] := _;
+    i := i + 1
+end;
+print a
