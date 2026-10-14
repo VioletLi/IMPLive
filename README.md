@@ -2,33 +2,49 @@
 This is a bidirectional programming system for incomplete imperative programs.
 
 ## Tool Instructions
-### Initial Incomplete Programs
-1. In the editor on the left, write a program based on the syntax mentioned in the paper
 
-   - Hole: `_` (underscore)
-   - Lambda Expression: `\x=>x+1`
-   - Function Call: `(\x=>x) 3`
-   - List Construction: `1::2::[]` (or, `[1,2]`)
-   - Tuple: `(1,2)`
-   - Let-Binding: `let a = 1 in a`
-   - Letrec-Binding: `letrec f = ... in ...`
-   - If Conditional: `If x==y then ... else ...`
-   - Case Expression: `case x==y of true=>...|false=>...|...`
-2. Click "Eval" Button to see the output
+### Forward Evaluation
 
-### Direct Manipulate on Output/Context
-1. Modify the text in the **Output** window
-2. Modify the values in the **Context** window
+1. Write a program in the editor. Functions are declared at the top with `func` and expanded into statements before evaluation. Expression holes are written as `_`. For example, the partitioning step of quicksort can leave the swap incomplete:
 
-    - Click hole values to jump to its closure
-3. Click **Uneval and Preview** Button
-    - To see the preview of the code changes
-    - Click **Revert Code** to revert to the original code
-4. Click **Uneval and Update** Button
-    - Make sure the updated code and cannot retract
+```
+func partition(lo, hi)
+    pivot := a[hi];
+    i := lo;
+    j := lo;
+    while j < hi do
+        if a[j] <= pivot then
+            tmp := _;
+            a[i] := _;
+            a[j] := _;
+            i := i + 1
+        else
+            skip
+        end;
+        j := j + 1
+    end;
+    a[hi] := a[i];
+    a[i] := pivot;
+    print a
+end;
+a := [4, 2, 6, 5, 7, 1, 3];
+partition(0, a.length - 1)
+```
 
-### Others
-**Clear Hole-Bindings** Button: To clear the bindings of holes in the programs
+2. Click **Input** to set the input array consumed by `read`, then **Save**. Programs that do not use `read` can skip this step.
+3. Click **Eval**. The **Output** panel shows the values produced by `print`, including partially determined arrays. The **Residual** panel lists statements suspended because of holes. Select one to inspect the value environment at that point.
+
+### Backward Evaluation
+
+1. Edit the text in **Output**, or select a residual computation and edit a value in its **Context**. Either edit states the result the program should have produced.
+2. Click **Uneval and Update**. IMPLive propagates the edit backward and fills the **Hole Bindings** table. Each row gives a hole, the environment in which it was evaluated, and the value it should produce in that environment. **Uneval and Preview** to inspect the updated program without committing it. **Revert Code** restores the program from before the preview.
+
+### Fill-and-Resume
+
+1. From the hole bindings and the surrounding code, decide which expression should replace a hole.
+2. Click **Clear Hole-Bindings**, then **Eval** again. This restores the residual computations of the original incomplete program. Bindings produced by backward evaluation are not reused as the values of the filled expressions.
+3. Click **Fill-and-Resume**, enter an expression for one or more holes, and click **Save**. IMPLive substitutes those expressions into the affected residual computations and resumes them, without re-evaluating the program from the original input.
+4. Repeat until the residual computations are completed and **Output** shows the full result.
 
 ## Usage
 - git clone
@@ -45,3 +61,7 @@ The examples are in the folder `examples`. To evaluate the running time, use the
 elm make src/Main.elm --output=elm.js
 node patch_timing.js
 ```
+and open the `index.html`. After the clicking the "Eval"/"Uneval and Update"/"Fill-and-Resume" button, the running time will be recorded and printed in the console.
+The effeciency evaluation results are in `raw_data.xlsx`.
+
+The fill-and-resume evaluation uses three benchmark programs, each containing three holes. For two programs, we added holes to bring the total to three and saved the modified versions in files with the suffix `-fill`. The `quick_sort` benchmark already contains three holes, so we use the original file without a separate `-fill` version.
