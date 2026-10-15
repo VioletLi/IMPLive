@@ -43,7 +43,7 @@ partition(0, a.length - 1)
 
 1. From the hole bindings and the surrounding code, decide which expression should replace a hole.
 2. Click **Clear Hole-Bindings**, then **Eval** again. This restores the residual computations of the original incomplete program. Bindings produced by backward evaluation are not reused as the values of the filled expressions.
-3. Click **Fill-and-Resume**, enter an expression for one or more holes, and click **Save**. IMPLive substitutes those expressions into the affected residual computations and resumes them, without re-evaluating the program from the original input.
+3. Click **Fill-and-Resume**, enter an expression for one or more holes, check the corresponding checkbox, and click **Save**. IMPLive substitutes those expressions into the affected residual computations and resumes them, without re-evaluating the program from the original input.
 4. Repeat until the residual computations are completed and **Output** shows the full result.
 
 ## Usage
